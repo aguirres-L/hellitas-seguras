@@ -1,0 +1,261 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Scroll suave global */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Animaciones personalizadas - Efecto Lámpara de Lava */
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1) skew(0deg, 0deg);
+  }
+  12.5% {
+    transform: translate(15px, -20px) scale(1.02) skew(2deg, -1deg);
+  }
+  25% {
+    transform: translate(35px, -40px) scale(1.08) skew(3deg, -2deg);
+  }
+  37.5% {
+    transform: translate(25px, -15px) scale(1.05) skew(1deg, 1deg);
+  }
+  50% {
+    transform: translate(-15px, 25px) scale(0.98) skew(-2deg, 2deg);
+  }
+  62.5% {
+    transform: translate(-30px, 15px) scale(0.95) skew(-3deg, 1deg);
+  }
+  75% {
+    transform: translate(20px, 25px) scale(1.03) skew(1deg, -1deg);
+  }
+  87.5% {
+    transform: translate(8px, 10px) scale(1.01) skew(0deg, 1deg);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1) skew(0deg, 0deg);
+  }
+}
+
+@keyframes blob-viscous {
+  0% {
+    transform: translate(0px, 0px) scale(1) skew(0deg, 0deg) rotate(0deg);
+  }
+  20% {
+    transform: translate(25px, -35px) scale(1.1) skew(4deg, -3deg) rotate(5deg);
+  }
+  40% {
+    transform: translate(15px, -15px) scale(1.05) skew(2deg, 1deg) rotate(-3deg);
+  }
+  60% {
+    transform: translate(-20px, 25px) scale(0.92) skew(-3deg, 2deg) rotate(2deg);
+  }
+  80% {
+    transform: translate(18px, 15px) scale(1.06) skew(2deg, -2deg) rotate(-1deg);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1) skew(0deg, 0deg) rotate(0deg);
+  }
+}
+
+.animate-blob {
+  animation: blob 8s ease-in-out infinite;
+}
+
+.animate-blob-viscous {
+  animation: blob-viscous 10s ease-in-out infinite;
+}
+
+.animate-blob-fast {
+  animation: blob 4s ease-in-out infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 1.5s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 3s;
+}
+
+.animation-delay-1000 {
+  animation-delay: 0.8s;
+}
+
+.animation-delay-6000 {
+  animation-delay: 4.5s;
+}
+
+/* Utilidad para truncar texto */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Transiciones suaves para elementos interactivos */
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Efectos hover mejorados */
+.hover\:scale-105:hover {
+  transform: scale(1.05);
+}
+
+.image-exit {
+  animation: imageZoomOut 0.3s ease-in forwards;
+}
+
+/* Sombras personalizadas */
+.shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Gradientes personalizados */
+.bg-gradient-to-r {
+  background-image: linear-gradient(to right, var(--tw-gradient-stops));
+}
+
+.from-orange-500 {
+  --tw-gradient-from: #f97316;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(249, 115, 22, 0));
+}
+
+.to-pink-500 {
+  --tw-gradient-to: #ec4899;
+}
+
+.hover\:from-orange-600:hover {
+  --tw-gradient-from: #ea580c;
+}
+
+.hover\:to-pink-600:hover {
+  --tw-gradient-to: #db2777;
+}
+
+
+
+/* Animación de entrada y salida del modal */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.photo-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: modalFadeIn 0.3s ease-out forwards;
+}
+
+.photo-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+}
+
+.photo-modal-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease-out forwards;
+  display: flex;
+  flex-direction: column;
+}
+
+.photo-modal-image {
+  max-width: 100%;
+  max-height: calc(90vh - 100px);
+  object-fit: contain;
+  margin: 0 auto;
+  display: block;
+}
+
+.photo-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.photo-modal-close svg {
+  color: white;
+  width: 20px;
+  height: 20px;
+}
+
+.photo-modal-close:hover {
+  background: rgba(0, 0, 0, 0.7);
+  transform: scale(1.1);
+}
+
+.photo-modal-caption {
+  padding: 15px;
+  background: white;
+  text-align: center;
+  border-top: 1px solid #eee;
+}
+
+/* Efecto de hover para la imagen pequeña */
+img[class*="cursor-pointer"] {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+img[class*="cursor-pointer"]:hover {
+  transform: scale(1.05);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .photo-modal-content {
+    max-width: 95%;
+    max-height: 95%;
+  }
+  
+  .photo-modal-image {
+    max-height: calc(100vh - 150px);
+  }
+}
