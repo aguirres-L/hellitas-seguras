@@ -65,18 +65,27 @@ const Dashboard = () => {
   ];
 
   // Función para mapear datos de profesionales al formato esperado por los componentes
-  const mapearProfesionalAVeterinaria = (profesional) => ({
-    id: profesional.id,
-    nombre: profesional.nombre,
-    direccion: profesional.direccion,
-    telefono: profesional.telefono,
-    especialidades: profesional.especialidad ? [profesional.especialidad] : [],
-    servicios: profesional.servicios ? profesional.servicios.map(servicio => servicio.nombre) : [],
-    horario: profesional.horario || 'Horario no disponible',
-    calificacion: 4.5, // Valor por defecto, se puede implementar sistema de calificaciones después
-    distancia: 'Distancia no disponible', // Se puede implementar geolocalización después
-    fotoLocalUrl: profesional.fotoLocalUrl || null // Agregar URL de la imagen del local
-  });
+  const mapearProfesionalAVeterinaria = (profesional) => {
+    const serviciosMapeados = profesional.servicios ? profesional.servicios.map(servicio => servicio.nombre) : [];
+    console.log('🔍 Debug mapeo veterinario:', {
+      profesional: profesional,
+      serviciosOriginales: profesional.servicios,
+      serviciosMapeados: serviciosMapeados
+    });
+    
+    return {
+      id: profesional.id,
+      nombre: profesional.nombre,
+      direccion: profesional.direccion,
+      telefono: profesional.telefono,
+      especialidades: profesional.especialidad ? [profesional.especialidad] : [],
+      servicios: serviciosMapeados,
+      horario: profesional.horario || 'Horario no disponible',
+      calificacion: 4.5, // Valor por defecto, se puede implementar sistema de calificaciones después
+      distancia: 'Distancia no disponible', // Se puede implementar geolocalización después
+      fotoLocalUrl: profesional.fotoLocalUrl || null // Agregar URL de la imagen del local
+    };
+  };
 
   const mapearProfesionalAPeluqueria = (profesional) => ({
     id: profesional.id,

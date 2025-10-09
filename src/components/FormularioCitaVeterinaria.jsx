@@ -20,7 +20,7 @@ const [formData, setFormData] = useState({
   mascotaNombre: mascotas[0]?.nombre || '',
   fecha: '',
   hora: '',
-  tipoConsulta: '',
+  servicios: [],
   sintomas: '',
   urgencia: 'normal',
   observaciones: '',
@@ -35,25 +35,20 @@ const [formData, setFormData] = useState({
   const [isCargando, setIsCargando] = useState(false);
   const [errores, setErrores] = useState({});
 
-  const tiposConsulta = [
-    'Consulta General',
-    'Vacunación',
-    'Cirugía',
-    'Dermatología',
-    'Cardiología',
-    'Ortopedia',
-    'Neurología',
-    'Emergencia',
-    'Control Post-operatorio',
-    'Otro'
-  ];
+  const serviciosDisponibles = clinica.servicios;
+  console.log('🔍 Debug servicios veterinarios:', {
+    clinica: clinica,
+    serviciosDisponibles: serviciosDisponibles,
+    serviciosLength: serviciosDisponibles?.length
+  });
+
 
   const validarFormulario = () => {
     const nuevosErrores = {};
 
     if (!formData.fecha) nuevosErrores.fecha = 'La fecha es obligatoria';
     if (!formData.hora) nuevosErrores.hora = 'La hora es obligatoria';
-    if (!formData.tipoConsulta) nuevosErrores.tipoConsulta = 'El tipo de consulta es obligatorio';
+    // Los servicios son opcionales, igual que en peluquería
     if (!formData.sintomas) nuevosErrores.sintomas = 'Los síntomas son obligatorios';
     if (!formData.telefonoContacto) nuevosErrores.telefonoContacto = 'El teléfono es obligatorio';
 
@@ -106,6 +101,18 @@ const [formData, setFormData] = useState({
     setFormData(prev => ({ ...prev, [campo]: valor }));
     if (errores[campo]) {
       setErrores(prev => ({ ...prev, [campo]: '' }));
+    }
+  };
+
+  const manejarServicio = (servicio) => {
+    setFormData(prev => ({
+      ...prev,
+      servicios: prev.servicios.includes(servicio)
+        ? prev.servicios.filter(s => s !== servicio)
+        : [...prev.servicios, servicio]
+    }));
+    if (errores.servicios) {
+      setErrores(prev => ({ ...prev, servicios: '' }));
     }
   };
 
@@ -193,25 +200,36 @@ const [formData, setFormData] = useState({
             </div>
           </div>
 
-          {/* Tipo de Consulta */}
+          {/* Servicios */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tipo de Consulta *
+              Servicios Deseados
             </label>
-            <select
-              value={formData.tipoConsulta}
-              onChange={(e) => manejarCambio('tipoConsulta', e.target.value)}
-              className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errores.tipoConsulta ? 'border-red-500' : 'border-gray-300'
-              }`}
-            >
-              <option value="">Selecciona el tipo de consulta</option>
-              {tiposConsulta.map(tipo => (
-                <option key={tipo} value={tipo}>{tipo}</option>
-              ))}
-            </select>
-            {errores.tipoConsulta && <p className="text-red-500 text-xs mt-1">{errores.tipoConsulta}</p>}
+            {serviciosDisponibles && serviciosDisponibles.length > 0 ? (
+              <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                {serviciosDisponibles.map(servicio => {
+                  console.log(servicio, 'servicio veterinario');
+                  return (
+                    <label key={servicio} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.servicios.includes(servicio)}
+                        onChange={() => manejarServicio(servicio)}
+                        className="mr-2 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">{servicio}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm text-blue-600">No hay servicios disponibles</p>
+              </div>
+            )}
+            {errores.servicios && <p className="text-red-500 text-xs mt-1">{errores.servicios}</p>}
           </div>
+
 
           {/* Nivel de Urgencia */}
           <div>
