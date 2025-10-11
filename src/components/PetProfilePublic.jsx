@@ -196,7 +196,7 @@ console.log(mascota,'mascota');
             />
             <div className="photo-modal-caption">
               <p className="text-lg font-semibold">{mascota.nombre}</p>
-              <p className="text-sm text-gray-600">{mascota.raza} • {mascota.edad} años</p>
+              <p className="text-sm text-gray-600">{mascota.raza} • {mascota.edad}</p>
             </div>
           </div>
         </div>
@@ -234,7 +234,7 @@ console.log(mascota,'mascota');
               </div>
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">{mascota.nombre}</h2>
-                <p className="text-gray-600 mb-3">{mascota.raza} • {mascota.edad} años</p>
+                <p className="text-gray-600 mb-3">{mascota.raza} • {mascota.edad}</p>
                 {mascota.color && (
                   <p className="text-gray-600">Color: {mascota.color}</p>
                 )}

@@ -14,7 +14,8 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
   const [nombre, setNombre] = useState('');
   const [razaSeleccionada, setRazaSeleccionada] = useState('');
   const [raza, setRaza] = useState('');
-  const [edad, setEdad] = useState('');
+  const [fechaNacimiento, setFechaNacimiento] = useState('');
+  const [edadCalculada, setEdadCalculada] = useState('');
   const [color, setColor] = useState('');
   const [archivoImagen, setArchivoImagen] = useState(null);
   const [urlImagenMascota, setUrlImagenMascota] = useState('');
@@ -35,6 +36,69 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
 
   // Generar ID único para esta mascota (una sola vez)
   const [mascotaId] = useState(() => generarIdUnico());
+
+  // Función para calcular edad desde fecha de nacimiento
+  const calcularEdad = (fechaNac) => {
+    if (!fechaNac) return '';
+    
+    const hoy = new Date();
+    const nacimiento = new Date(fechaNac);
+    
+    // Validar que la fecha no sea futura
+    if (nacimiento > hoy) return 'Fecha inválida';
+    
+    let años = hoy.getFullYear() - nacimiento.getFullYear();
+    let meses = hoy.getMonth() - nacimiento.getMonth();
+    let días = hoy.getDate() - nacimiento.getDate();
+    
+    // Ajustar si el día aún no ha llegado este mes
+    if (días < 0) {
+      meses--;
+      const ultimoMes = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+      días += ultimoMes.getDate();
+    }
+    
+    // Ajustar si el mes aún no ha llegado este año
+    if (meses < 0) {
+      años--;
+      meses += 12;
+    }
+    
+    // Formatear resultado
+    if (años === 0) {
+      if (meses === 0) {
+        return `${días} día${días !== 1 ? 's' : ''}`;
+      }
+      return `${meses} mes${meses !== 1 ? 'es' : ''}`;
+    }
+    
+    if (meses === 0) {
+      return `${años} año${años !== 1 ? 's' : ''}`;
+    }
+    
+    return `${años} año${años !== 1 ? 's' : ''} y ${meses} mes${meses !== 1 ? 'es' : ''}`;
+  };
+
+  // Función para calcular edad numérica (en años con decimales)
+  const calcularEdadNumerica = (fechaNac) => {
+    if (!fechaNac) return 0;
+    
+    const hoy = new Date();
+    const nacimiento = new Date(fechaNac);
+    
+    if (nacimiento > hoy) return 0;
+    
+    const diferenciaMs = hoy - nacimiento;
+    const años = diferenciaMs / (1000 * 60 * 60 * 24 * 365.25); // 365.25 para considerar años bisiestos
+    
+    return Math.round(años * 10) / 10; // Redondear a 1 decimal
+  };
+
+  // Calcular edad automáticamente cuando cambia la fecha de nacimiento
+  useEffect(() => {
+    const edad = calcularEdad(fechaNacimiento);
+    setEdadCalculada(edad);
+  }, [fechaNacimiento]);
 
   // Sincronizar raza seleccionada con el campo de raza
   useEffect(() => {
@@ -67,13 +131,15 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
   // Envío
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!nombre || !raza || !edad) return;
+    if (!nombre || !raza || !fechaNacimiento) return;
     
     const mascotaConId = {
       id: mascotaId, // Usar el ID generado al inicio
       nombre,
       raza: razaSeleccionada || raza,
-      edad: Number(edad),
+      fechaNacimiento, // Guardar fecha de nacimiento
+      edad: edadCalculada, // Guardar edad calculada como string legible
+      edadNumerica: calcularEdadNumerica(fechaNacimiento), // Para cálculos futuros
       color,
       fotoUrl: urlImagenMascota, // Usar la URL de la imagen subida
       contacto,
@@ -91,7 +157,8 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
     setNombre('');
     setRaza('');
     setRazaSeleccionada('');
-    setEdad('');
+    setFechaNacimiento('');
+    setEdadCalculada('');
     setColor('');
     setArchivoImagen(null);
     setUrlImagenMascota('');
@@ -155,15 +222,34 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
                 </div>
               )}
             </div>
-            <input
-              className="border rounded px-3 py-2 w-full text-base"
-              placeholder="Edad"
-              type="number"
-              min="0"
-              value={edad}
-              onChange={e => setEdad(e.target.value)}
-              required
-            />
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Fecha de nacimiento
+              </label>
+              <input
+                className="border rounded px-3 py-2 w-full text-base"
+                type="date"
+                value={fechaNacimiento}
+                onChange={e => setFechaNacimiento(e.target.value)}
+                max={new Date().toISOString().split('T')[0]} // No permitir fechas futuras
+                required
+              />
+              {edadCalculada && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-center">
+                    <svg className="h-4 w-4 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                    <div>
+                      <p className="text-xs text-blue-600 font-medium">Edad calculada:</p>
+                      <p className="text-sm font-semibold text-blue-800">
+                        {edadCalculada}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             <input
               className="border rounded px-3 py-2 w-full text-base"
               placeholder="Color"

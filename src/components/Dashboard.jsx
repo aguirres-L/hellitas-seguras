@@ -355,7 +355,7 @@ const handleCancelarCita = async (cita) => {
                       <h4 className="font-bold text-lg text-gray-900 group-hover:text-orange-600 transition-colors">
                         {mascota.nombre}
                       </h4>
-                      <p className="text-gray-600 text-sm">{mascota.raza} • {mascota.edad} años</p>
+                      <p className="text-gray-600 text-sm">{mascota.raza} • {mascota.edad}</p>
                     </div>
                     {mascota.fotoUrl && (
                       <img 

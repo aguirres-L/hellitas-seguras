@@ -62,10 +62,12 @@ export default function Veterinarias({clinicasVeterinarias, manejarAbrirFormular
                   </p>
                 </div>
                 <div className="mb-4">
-                  <div className="flex items-center mb-2">
+               {/* 
+                El puntaje de las estrellas de añade solo cuando el usario ya hizo una cita con la clinica o peluqueria 
+               <div className="flex items-center mb-2">
                     <span className="text-yellow-500">⭐</span>
                     <span className="ml-1 text-xs md:text-sm font-medium">{clinica.calificacion}</span>
-                  </div>
+                  </div> */}
                   <div className="flex flex-wrap gap-1">
                     {clinica.especialidades.map((especialidad, index) => (
                       <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
@@ -81,9 +83,9 @@ export default function Veterinarias({clinicasVeterinarias, manejarAbrirFormular
                   >
                     Agendar Cita
                   </button>
-                  <button className="w-full border border-blue-600 text-blue-600 py-2 px-3 md:px-4 rounded-lg hover:bg-blue-50 text-sm md:text-base">
+            {/*       <button className="w-full border border-blue-600 text-blue-600 py-2 px-3 md:px-4 rounded-lg hover:bg-blue-50 text-sm md:text-base">
                     Ver Detalles
-                  </button>
+                  </button> */}
                 </div>
               </div>
             ))}

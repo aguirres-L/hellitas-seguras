@@ -61,7 +61,9 @@ export default function Peluquerias({peluquerias, manejarAbrirFormularioPeluquer
                   </p>
                 </div>
                 <div className="mb-4">
-                  <div className="flex items-center mb-2">
+               {/* 
+                El puntaje de las estrellas de añade solo cuando el usario ya hizo una cita con la clinica o peluqueria 
+               <div className="flex items-center mb-2">
                     <span className="text-yellow-500">⭐</span>
                     <span className="ml-1 text-sm font-medium">{peluqueria.calificacion}</span>
                   </div>
@@ -80,9 +82,9 @@ export default function Peluquerias({peluquerias, manejarAbrirFormularioPeluquer
                   >
                     Reservar Cita
                   </button>
-                  <button className="w-full border border-purple-600 text-purple-600 py-2 rounded-lg hover:bg-purple-50">
+                 {/*  <button className="w-full border border-purple-600 text-purple-600 py-2 rounded-lg hover:bg-purple-50">
                     Ver Detalles
-                  </button>
+                  </button> */}
                 </div>
               </div>
             ))}
