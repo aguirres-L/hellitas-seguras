@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ImageUploader } from './ImageUploader';
 import { useAuth } from '../contexts/AuthContext';
 import BusquedaAvanzada from './uiDashboardUser/BusquedaAvanzada';
+import UiBusquedaNoDisponible from './uiDashboardUser/UiBusquedaNoDisponible';
 
 // Este componente no recibe props opcionales.
 export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
@@ -173,7 +174,7 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-md mx-auto bg-white rounded-xl shadow-lg p-2 sm:p-4 md:p-6 space-y-4"
+      className="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-2 sm:p-4 md:p-6 space-y-4"
     >
       {/* Tabs responsivos */}
       <div className="flex flex-col sm:flex-row border-b border-orange-200 mb-4">
@@ -189,7 +190,14 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
           className={tabClasses(tab === 1) + " w-full sm:w-auto"}
           onClick={() => setTab(1)}
         >
-          Busqueda avanzada
+          Razas de Perros
+        </button>
+        <button
+          type="button"
+          className={tabClasses(tab === 2) + " w-full sm:w-auto"}
+          onClick={() => setTab(2)}
+        >
+          Razas de Gatos
         </button>
       </div>
 
@@ -300,15 +308,21 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
             )}
           </div>
         )}
+
+        {tab === 2 && (
+          <UiBusquedaNoDisponible setTab={setTab} />
+        )}
       </div>
 
-      <button
-        type="submit"
-        className="bg-orange-500 text-white px-4 py-3 rounded w-full font-semibold shadow-md hover:bg-orange-600 transition-all duration-300 text-base"
-        disabled={isCargando}
-      >
-        {isCargando ? 'Agregando...' : 'Agregar Mascota'}
-      </button>
+      { tab === 0 && (
+        <button
+          type="submit"
+          className="bg-orange-500 text-white px-4 py-3 rounded w-full font-semibold shadow-md hover:bg-orange-600 transition-all duration-300 text-base"
+          disabled={isCargando}
+        >
+          {isCargando ? 'Agregando...' : 'Agregar Mascota'}
+        </button>
+      )}
 
       {/* Animación fade-in (Tailwind + CSS) */}
       <style>

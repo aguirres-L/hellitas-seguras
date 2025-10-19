@@ -13,6 +13,7 @@ import { FormularioMascota } from './FormularioMascota';
 import Tiendas from './Tiendas';
 import { useTheme } from '../contexts/ThemeContext';
 import DecoracionForm from './decoracionUi/DecoracionForm';
+import SkeletonCardPet from './uiDashboardUser/SkeletonCardPet';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -336,9 +337,12 @@ const handleCancelarCita = async (cita) => {
           <h3 className={typeTheme === 'light'?"text-xl font-bold text-gray-900 mb-4":'text-xl font-bold text-white mb-4' } >Tus Mascotas</h3>
           
           {isCargandoUsuario ? (
-            <div className="text-center py-8">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-              <p className="mt-2 text-gray-600">Cargando mascotas...</p>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Skeleton cards mientras carga */}
+              {[1, 2, 3].map((index) => (
+                <SkeletonCardPet key={index} />
+              ))}
+              
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -604,15 +608,6 @@ const handleCancelarCita = async (cita) => {
           )}
         </div>
 
-        {/* Sección de Suscripción */}
-      {/*   <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg p-6 mb-8 text-white">
-          <h3 className="font-bold text-xl mb-2">Suscripción Premium</h3>
-          <p className="mb-4 text-green-100">Desbloquea acceso para veterinarios y peluqueros por solo $5.000/mes.</p>
-          <button className="bg-white text-green-600 px-4 py-2 rounded-lg hover:bg-green-50 transition-colors duration-200 font-medium">
-            Activar
-          </button>
-        </div> */}
-
         {/* Filtro de profesionales por zona */}
         <div className="flex items-center justify-between mb-4">
           <div className={typeTheme === 'light' ? 'text-m text-gray-700' : 'text-m text-white'}>
@@ -696,7 +691,7 @@ const handleCancelarCita = async (cita) => {
       {/* Modal para agregar mascota */}
       {mostrarFormularioMascota && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-gray-900">Agregar Nueva Mascota</h3>
