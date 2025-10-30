@@ -251,6 +251,13 @@ const PetProfile = () => {
     window.location.reload();
   };
 
+  // Función para manejar la eliminación de la mascota
+  const handleEliminarMascota = () => {
+    setMostrarEdicion(false);
+    // Redirigir al dashboard después de eliminar
+    navigate('/dashboard');
+  };
+
   // Si no hay mascota, no debería llegar aquí pero por seguridad
   if (!mascota) {
     return null;
@@ -650,6 +657,7 @@ const PetProfile = () => {
                 tipoProfesional={usuario?.tipoProfesional}
                 onGuardar={handleGuardarMascota}
                 onCancelar={() => setMostrarEdicion(false)}
+                onEliminar={handleEliminarMascota}
                 isCargando={isGuardando}
               />
             </div>

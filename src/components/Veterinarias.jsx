@@ -3,6 +3,44 @@ import { useTheme } from "../contexts/ThemeContext";
 export default function Veterinarias({clinicasVeterinarias, manejarAbrirFormularioVeterinaria, isCargando = false}) {
   const { typeTheme } = useTheme();
 
+  // Función helper para convertir fecha de Firebase a Date
+  const convertirFecha = (fecha) => {
+    if (!fecha) return null;
+    // Si es un Timestamp de Firebase
+    if (fecha.seconds) {
+      return new Date(fecha.seconds * 1000);
+    }
+    // Si ya es un objeto Date
+    if (fecha instanceof Date) {
+      return fecha;
+    }
+    // Si es un string o número
+    return new Date(fecha);
+  };
+
+  // Función para filtrar descuentos que aún no han expirado
+  // Muestra descuentos si la fecha actual NO ha pasado la fecha de fin
+  const obtenerDescuentosVigentes = (descuentos) => {
+    if (!descuentos || descuentos.length === 0) return [];
+    
+    const ahora = new Date();
+    
+    return descuentos.filter(descuento => {
+      // Verificar que esté activo
+      if (descuento.isActivo === false) return false;
+      
+      // Convertir fecha de fin
+      const fechaFin = convertirFecha(descuento.fechaFin);
+      
+      if (!fechaFin) return false;
+      
+      // IMPORTANTE: Solo mostrar si la fecha actual NO ha pasado la fecha de fin
+      // Esto permite ver descuentos futuros (para anticipación) y vigentes
+      // Pero NO muestra descuentos que ya expiraron
+      return ahora <= fechaFin;
+    });
+  };
+
     return (
 
         <div className="mt-12">
@@ -25,14 +63,36 @@ export default function Veterinarias({clinicasVeterinarias, manejarAbrirFormular
         ) : (
           <div className="flex overflow-x-auto gap-4 md:gap-6 pb-4">
             {clinicasVeterinarias.map((clinica) => (
-              <div key={clinica.id} className="bg-white p-4 md:p-6 rounded-lg shadow-sm min-w-[280px] sm:min-w-[320px] md:min-w-[300px] flex-shrink-0">
+              <div key={clinica.id} className="bg-white p-4 md:p-6 rounded-lg shadow-sm min-w-[280px] sm:min-w-[320px] md:min-w-[300px] flex-shrink-0 overflow-hidden">
                 {/* Imagen del local */}
-                <div className="mb-4">
+                <div 
+                  className="mb-4 overflow-hidden rounded-lg relative" 
+                  style={{ 
+                    width: '100%', 
+                    height: '128px', 
+                    minHeight: '128px',
+                    maxHeight: '128px',
+                    flexShrink: 0
+                  }}
+                >
                   {clinica.fotoLocalUrl ? (
                     <img 
                       src={clinica.fotoLocalUrl} 
                       alt={`Local de ${clinica.nombre}`}
-                      className="w-full h-32 object-cover rounded-lg shadow-sm"
+                      className="rounded-lg shadow-sm"
+                      style={{ 
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '128px',
+                        minWidth: '100%',
+                        maxWidth: '100%',
+                        minHeight: '128px',
+                        maxHeight: '128px',
+                        objectFit: 'cover',
+                        display: 'block'
+                      }}
                     />
                   ) : (
                     <div className="w-full h-32 bg-blue-50 rounded-lg flex items-center justify-center">
@@ -76,6 +136,71 @@ export default function Veterinarias({clinicasVeterinarias, manejarAbrirFormular
                     ))}
                   </div>
                 </div>
+                
+                {/* Mostrar descuentos que aún no han expirado */}
+                {(() => {
+                  const descuentosVigentes = obtenerDescuentosVigentes(clinica.descuentos);
+                  
+                  if (descuentosVigentes.length === 0) return null;
+                  
+                  const ahora = new Date();
+                  
+                  return (
+                    <div className="mb-4">
+                      <p className="text-xs font-medium text-green-600 mb-2">💸 Descuentos disponibles:</p>
+                      <div className="space-y-1">
+                        {descuentosVigentes.map((descuento) => {
+                          const fechaFin = convertirFecha(descuento.fechaFin);
+                          const fechaInicio = convertirFecha(descuento.fechaInicio);
+                          
+                          // Verificar si el descuento ya comenzó o aún no
+                          const haComenzado = fechaInicio && ahora >= fechaInicio;
+                          const estaVigente = haComenzado && fechaFin && ahora <= fechaFin;
+                          
+                          return (
+                            <div key={descuento.id} className={`border rounded px-2 py-1.5 ${
+                              estaVigente 
+                                ? 'bg-green-50 border-green-200' 
+                                : 'bg-yellow-50 border-yellow-200'
+                            }`}>
+                              <div className="flex items-center justify-between mb-1">
+                                <p className={`text-xs font-semibold ${
+                                  estaVigente ? 'text-green-800' : 'text-yellow-800'
+                                }`}>
+                                  {descuento.nombre}
+                                </p>
+                                <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+                                  estaVigente 
+                                    ? 'text-green-700 bg-green-100' 
+                                    : 'text-yellow-700 bg-yellow-100'
+                                }`}>
+                                  {descuento.porcentaje}% OFF
+                                </span>
+                              </div>
+                              <div className="space-y-0.5">
+                                {!haComenzado && fechaInicio && (
+                                  <p className={`text-xs ${
+                                    estaVigente ? 'text-green-600' : 'text-yellow-600'
+                                  }`}>
+                                    Inicia: {fechaInicio.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                  </p>
+                                )}
+                                {fechaFin && (
+                                  <p className={`text-xs ${
+                                    estaVigente ? 'text-green-600' : 'text-yellow-600'
+                                  }`}>
+                                    Válido hasta: {fechaFin.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+                
                 <div className="space-y-2">
                   <button 
                     onClick={() => manejarAbrirFormularioVeterinaria(clinica)}

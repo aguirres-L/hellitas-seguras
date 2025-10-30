@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { actualizarMascota } from '../data/firebase/firebase';
+import { actualizarMascota, eliminarMascota } from '../data/firebase/firebase';
 
 export const EditarMascota = ({
   mascota,
   tipoProfesional,
   onGuardar,
   onCancelar,
+  onEliminar,
   isCargando
 }) => {
   const [formData, setFormData] = useState({
@@ -26,6 +27,7 @@ export const EditarMascota = ({
 
   const [nuevaVacuna, setNuevaVacuna] = useState({ nombre: '', fecha: '' });
   const [vacunas, setVacunas] = useState(mascota.vacunas || []);
+  const [mostrarConfirmacionEliminar, setMostrarConfirmacionEliminar] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -69,6 +71,16 @@ export const EditarMascota = ({
 
   const eliminarVacuna = (index) => {
     setVacunas(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleEliminarMascota = async () => {
+    try {
+      await eliminarMascota(mascota.id);
+      onEliminar();
+    } catch (error) {
+      console.error('Error al eliminar mascota:', error);
+      alert('Error al eliminar la mascota. Inténtalo de nuevo.');
+    }
   };
 
   return (
@@ -359,24 +371,83 @@ export const EditarMascota = ({
         </div>
 
         {/* Botones */}
-        <div className="flex justify-end space-x-4 pt-6">
+        <div className="flex justify-between pt-6">
+          {/* Botón de eliminar (izquierda) */}
           <button
             type="button"
-            onClick={onCancelar}
+            onClick={() => setMostrarConfirmacionEliminar(true)}
             disabled={isCargando}
-            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50"
+            className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Cancelar
+            Eliminar Mascota
           </button>
-          <button
-            type="submit"
-            disabled={isCargando}
-            className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isCargando ? 'Guardando...' : 'Guardar Cambios'}
-          </button>
+          
+          {/* Botones de acción (derecha) */}
+          <div className="flex space-x-4">
+            <button
+              type="button"
+              onClick={onCancelar}
+              disabled={isCargando}
+              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isCargando}
+              className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCargando ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+          </div>
         </div>
       </form>
+
+      {/* Modal de confirmación de eliminación */}
+      {mostrarConfirmacionEliminar && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+            <div className="flex items-center mb-4">
+              <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Confirmar Eliminación
+                </h3>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-sm text-gray-500">
+                ¿Estás seguro de que quieres eliminar a <strong>{mascota.nombre}</strong>? 
+                Esta acción no se puede deshacer y se perderán todos los datos de la mascota.
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setMostrarConfirmacionEliminar(false)}
+                disabled={isCargando}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleEliminarMascota}
+                disabled={isCargando}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCargando ? 'Eliminando...' : 'Sí, Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

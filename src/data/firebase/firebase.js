@@ -1211,6 +1211,47 @@ export const obtenerServicioPorId = async (profesionalId, servicioId) => {
 };
 
 /**
+ * Elimina una mascota específica del array de mascotas de un usuario
+ * @param {string} mascotaId - ID de la mascota a eliminar
+ * @returns {Promise<void>}
+ */
+export const eliminarMascota = async (mascotaId) => {
+  try {
+    // Obtener todos los usuarios
+    const querySnapshot = await getDocs(collection(db, "usuarios"));
+    
+    // Buscar el usuario que tiene la mascota
+    for (const doc of querySnapshot.docs) {
+      const usuario = {
+        id: doc.id,
+        ...doc.data()
+      };
+      
+      if (usuario.infoMascotas && Array.isArray(usuario.infoMascotas)) {
+        const mascotaIndex = usuario.infoMascotas.findIndex(m => m.id === mascotaId);
+        if (mascotaIndex !== -1) {
+          // Filtrar la mascota a eliminar del array
+          const mascotasActualizadas = usuario.infoMascotas.filter(m => m.id !== mascotaId);
+          
+          // Actualizar el documento del usuario
+          await updateDataCollection('usuarios', usuario.id, {
+            infoMascotas: mascotasActualizadas
+          });
+          
+          console.log(`Mascota ${mascotaId} eliminada exitosamente del usuario ${usuario.id}`);
+          return;
+        }
+      }
+    }
+    
+    throw new Error('Mascota no encontrada');
+  } catch (error) {
+    console.error('Error al eliminar mascota:', error);
+    throw error;
+  }
+};
+
+/**
  * Actualiza el estado de una chapita específica
  * @param {string} chapitaId - ID de la chapita
  * @param {string} nuevoEstado - Nuevo estado ('pendiente', 'fabricacion', 'en viaje', 'entregado')

@@ -78,14 +78,36 @@ const { typeTheme } = useTheme();
       ) : (
         <div className="flex overflow-x-auto gap-6 pb-4">
           {tiendasConDatos.map((tienda) => (
-            <div key={tienda.id} className="bg-white p-6 rounded-lg shadow-sm min-w-[300px] flex-shrink-0">
+            <div key={tienda.id} className="bg-white p-6 rounded-lg shadow-sm min-w-[300px] flex-shrink-0 overflow-hidden">
               {/* Imagen del local */}
-              <div className="mb-4">
+              <div 
+                className="mb-4 overflow-hidden rounded-lg relative" 
+                style={{ 
+                  width: '100%', 
+                  height: '128px', 
+                  minHeight: '128px',
+                  maxHeight: '128px',
+                  flexShrink: 0
+                }}
+              >
                 {tienda.fotoLocalUrl ? (
                   <img 
                     src={tienda.fotoLocalUrl} 
                     alt={`Local de ${tienda.nombre}`}
-                    className="w-full h-32 object-cover rounded-lg shadow-sm"
+                    className="rounded-lg shadow-sm"
+                    style={{ 
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '128px',
+                      minWidth: '100%',
+                      maxWidth: '100%',
+                      minHeight: '128px',
+                      maxHeight: '128px',
+                      objectFit: 'cover',
+                      display: 'block'
+                    }}
                   />
                 ) : (
                   <div className="w-full h-32 bg-green-50 rounded-lg flex items-center justify-center">

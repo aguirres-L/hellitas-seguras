@@ -23,6 +23,39 @@ export const ImageUploaderProfesional: React.FC<ImageUploaderProfesionalProps> =
   const [isSubiendo, setIsSubiendo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Función para validar dimensiones de imagen
+  const validarDimensiones = (file: File): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        img.onload = () => {
+          const MAX_WIDTH = 1920; // Máximo 1920px de ancho
+          const MAX_HEIGHT = 1080; // Máximo 1080px de alto
+          
+          if (img.width > MAX_WIDTH || img.height > MAX_HEIGHT) {
+            alert(`La imagen es muy grande. Máximo permitido: ${MAX_WIDTH}x${MAX_HEIGHT}px. Tu imagen: ${img.width}x${img.height}px`);
+            resolve(false);
+          } else {
+            resolve(true);
+          }
+        };
+        
+        img.onerror = () => {
+          alert('Error al cargar la imagen');
+          resolve(false);
+        };
+        
+        if (e.target?.result) {
+          img.src = e.target.result as string;
+        }
+      };
+      
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Función para manejar la selección de archivo
   const handleFileSelect = useCallback(async (file: File) => {
     // Validar tipo de archivo
@@ -34,6 +67,12 @@ export const ImageUploaderProfesional: React.FC<ImageUploaderProfesionalProps> =
     // Validar tamaño (máximo 5MB)
     if (file.size > 5 * 1024 * 1024) {
       alert('La imagen debe ser menor a 5MB');
+      return;
+    }
+
+    // Validar dimensiones en píxeles
+    const dimensionesValidas = await validarDimensiones(file);
+    if (!dimensionesValidas) {
       return;
     }
 
@@ -185,7 +224,7 @@ export const ImageUploaderProfesional: React.FC<ImageUploaderProfesionalProps> =
                 Arrastra y suelta una imagen aquí, o click para seleccionar
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                PNG, JPG hasta 5MB
+                PNG, JPG hasta 5MB | Máx: 1920x1080px
               </p>
             </div>
           </div>

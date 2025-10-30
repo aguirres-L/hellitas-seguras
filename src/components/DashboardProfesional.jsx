@@ -5,6 +5,7 @@ import { Navbar } from './Navbar';
 import { obtenerProfesionalPorUid, buscarMascotasPorChip, subirImagenProfesional, updateDataCollection, eliminarServicio } from '../data/firebase/firebase';
 import { SistemaCitas } from './SistemaCitas';
 import GestionTienda from './GestionTienda';
+import GestionDescuentosServicios from './GestionDescuentosServicios';
 import { ImageUploaderProfesional } from './ImageUploaderProfesional';
 import DecoracionForm from './decoracionUi/DecoracionForm';
 import AddServicesProfecional from './dashboardProfesional/AddServicesProfecional';
@@ -228,9 +229,23 @@ const DashboardProfesional = () => {
               </button>
               <button 
                 onClick={() => setPestañaActiva('servicios')}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 text-sm font-medium"
-              >
+                className={`pb-2 font-medium transition-colors duration-200 whitespace-nowrap ${
+                  pestañaActiva === 'servicios' 
+                    ? 'border-b-2 border-green-500 text-green-600' 
+                    : 'text-gray-600 hover:text-gray-800 hover:border-b-2 hover:border-gray-300'
+                }`}
+                >
                 Servicios
+              </button>
+              <button 
+                onClick={() => setPestañaActiva('descuentos')}
+                className={`pb-2 font-medium transition-colors duration-200 whitespace-nowrap ${
+                  pestañaActiva === 'descuentos' 
+                    ? 'border-b-2 border-blue-500 text-blue-600' 
+                    : 'text-gray-600 hover:text-gray-800 hover:border-b-2 hover:border-gray-300'
+                }`}
+              >
+                Descuentos
               </button>
             </div>
           </div>
@@ -338,7 +353,7 @@ const DashboardProfesional = () => {
           )}
 
 
-        {pestañaActiva === 'servicios' && (
+          {pestañaActiva === 'servicios' && (
           <div>
             {/* Header con botón de añadir servicio */}
             <div className="flex justify-between items-center mb-6">
@@ -427,9 +442,17 @@ const DashboardProfesional = () => {
                 <p className="text-sm text-gray-500 mt-1">Haz clic en "Añadir Servicio" para comenzar</p>
               </div>
             )}
+
+          
           </div>
         )}
 
+          {pestañaActiva === 'descuentos' && datosProfesional?.tipoProfesional !== 'tienda' && (
+            <div>
+              {/* Gestión de descuentos para veterinarios/peluqueros */}
+              <GestionDescuentosServicios profesionalId={usuario?.uid} datosProfesional={datosProfesional} />
+            </div>
+          )}
 
         </div>
       </>
@@ -554,26 +577,7 @@ const DashboardProfesional = () => {
         {renderContenidoEspecifico()}
 
         {/* Información adicional */}
-        {datosProfesional?.tipoProfesional === 'tienda' ? (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-6 w-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">
-                  Información para Tiendas
-                </h3>
-                <p className="text-sm text-green-700 mt-1">
-                  Gestiona tus productos y descuentos. El plan gratuito incluye hasta 7 productos. Considera actualizar tu plan para agregar más productos y acceder a funciones premium.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg className="h-6 w-6 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
@@ -581,16 +585,12 @@ const DashboardProfesional = () => {
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-blue-800">
-                 Proximamente
-                </h3>
-                <p className="text-sm text-blue-700 mt-1">
-                  Podras buscar mascotas por su número de chip y acceder a sus perfiles para actualizar información médica, vacunas, tratamientos y otros datos relevantes.
-                </p>
+                 <p className="text-sm text-blue-700 mt-1">
+                 Cada beneficio/descuento que brindes ayuda a fortalecer el ecosistema de Huellitas Seguras y apoyar a mascotas y grupos de rescate. Es una invitación, no una obligación: tu aporte marca la diferencia.
+               </p>
               </div>
             </div>
           </div>
-        )}
       </div>
 
       {/* Modal de Sistema de Citas */}

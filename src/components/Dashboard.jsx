@@ -14,6 +14,7 @@ import Tiendas from './Tiendas';
 import { useTheme } from '../contexts/ThemeContext';
 import DecoracionForm from './decoracionUi/DecoracionForm';
 import SkeletonCardPet from './uiDashboardUser/SkeletonCardPet';
+import { DashboardCitasColapsable } from './DashboardCitasColapsable';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ const Dashboard = () => {
   const [datosUsuario, setDatosUsuario] = useState(null);
   const [isCargandoUsuario, setIsCargandoUsuario] = useState(false);
   const [mostrarFormularioMascota, setMostrarFormularioMascota] = useState(false);
+  
 
   // Estados para profesionales
   const [veterinarios, setVeterinarios] = useState([]);
@@ -68,11 +70,7 @@ const Dashboard = () => {
   // Función para mapear datos de profesionales al formato esperado por los componentes
   const mapearProfesionalAVeterinaria = (profesional) => {
     const serviciosMapeados = profesional.servicios ? profesional.servicios.map(servicio => servicio.nombre) : [];
-    console.log('🔍 Debug mapeo veterinario:', {
-      profesional: profesional,
-      serviciosOriginales: profesional.servicios,
-      serviciosMapeados: serviciosMapeados
-    });
+    console.log(profesional, 'descuentos del profesional');
     
     return {
       id: profesional.id,
@@ -84,7 +82,8 @@ const Dashboard = () => {
       horario: profesional.horario || 'Horario no disponible',
       calificacion: 4.5, // Valor por defecto, se puede implementar sistema de calificaciones después
       distancia: 'Distancia no disponible', // Se puede implementar geolocalización después
-      fotoLocalUrl: profesional.fotoLocalUrl || null // Agregar URL de la imagen del local
+      fotoLocalUrl: profesional.fotoLocalUrl || null, // Agregar URL de la imagen del local
+      descuentos: profesional.descuentos || [] // Incluir descuentos del profesional
     };
   };
 
@@ -97,7 +96,8 @@ const Dashboard = () => {
     horario: profesional.horario || 'Horario no disponible',
     calificacion: 4.5, // Valor por defecto
     distancia: 'Distancia no disponible',
-    fotoLocalUrl: profesional.fotoLocalUrl || null // Agregar URL de la imagen del local
+    fotoLocalUrl: profesional.fotoLocalUrl || null, // Agregar URL de la imagen del local
+    descuentos: profesional.descuentos || [] // Incluir descuentos del profesional
   });
 
   const mapearProfesionalATienda = (profesional) => ({
@@ -120,6 +120,7 @@ const Dashboard = () => {
       const veterinariosData = await obtenerProfesionalesPorTipo('veterinario');
       setVeterinariosRaw(veterinariosData);
       const veterinariosMapeados = veterinariosData.map(mapearProfesionalAVeterinaria);
+      console.log(veterinariosMapeados, 'veterinarios mapeados');
       setVeterinarios(veterinariosMapeados);
       
       // Cargar peluqueros
@@ -293,6 +294,7 @@ const handleCancelarCita = async (cita) => {
   };
 
 
+
   
   console.log(datosUsuario,'datosUsuario');
   
@@ -446,167 +448,14 @@ const handleCancelarCita = async (cita) => {
           )}
         </div>
 
-        {/* Sección de Citas */}
-        <div className={typeTheme === 'light'
-          ? "bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8"
-          : "bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8"
-        }>
-          <h3 className={typeTheme === 'light'?"text-xl font-bold text-gray-900 mb-4":"text-xl font-bold text-white mb-4"} >Mis Citas</h3>
-          
-          {isCargandoUsuario ? (
-            <div className="text-center py-8">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-              <p className="mt-2 text-gray-600">Cargando citas...</p>
-            </div>
-          ) : (
-            <div>
-              {(datosUsuario?.citas && datosUsuario.citas.length > 0) ? (
-                <div className="space-y-4">
-                  {datosUsuario.citas.map((cita, index) => (
-                    <div key={cita.id || index} className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-4">
-                            <div className="flex-shrink-0">
-                              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                                cita.tipoProfesional === 'veterinario' 
-                                  ? 'bg-blue-100' 
-                                  : 'bg-purple-100'
-                              }`}>
-                                <svg className={`w-6 h-6 ${
-                                  cita.tipoProfesional === 'veterinario' 
-                                    ? 'text-blue-600' 
-                                    : 'text-purple-600'
-                                }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                              </div>
-                            </div>
-                            <div className="flex-1">
-                              <h5 className="font-semibold text-gray-900">
-                                {cita.mascotaNombre || 'Mascota no especificada'}
-                              </h5>
-                              <p className="text-sm text-gray-600">
-                                {cita.fecha} • {cita.hora} • {cita.duracion}min
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {cita.peluqueriaNombre || cita.veterinariaNombre || 'Profesional no especificado'}
-                              </p>
-                              {/* Detalles específicos según el tipo de cita */}
-                              <div className="mt-1">
-                                {/* Detalles de Peluquería */}
-                                {cita.tipoProfesional === 'peluquero' && (
-                                  <>
-                                    {cita.servicios && cita.servicios.length > 0 && (
-                                      <p className="text-xs text-gray-600">
-                                        Servicios: {cita.servicios.join(', ')}
-                                      </p>
-                                    )}
-                                    {cita.tipoCorte && (
-                                      <p className="text-xs text-gray-600">
-                                        Tipo: {cita.tipoCorte}
-                                      </p>
-                                    )}
-                                  </>
-                                )}
-                                
-                                {/* Detalles de Veterinaria */}
-                                {cita.tipoProfesional === 'veterinario' && (
-                                  <>
-                                    {cita.tipoConsulta && (
-                                      <p className="text-xs text-gray-600">
-                                        Consulta: {cita.tipoConsulta}
-                                      </p>
-                                    )}
-                                    {cita.sintomas && (
-                                      <p className="text-xs text-gray-600">
-                                        Síntomas: {cita.sintomas}
-                                      </p>
-                                    )}
-                                    {cita.urgencia && cita.urgencia !== 'normal' && (
-                                      <p className="text-xs text-gray-600">
-                                        Urgencia: {cita.urgencia}
-                                      </p>
-                                    )}
-                                  </>
-                                )}
-                                
-                                {/* Observaciones (comunes a ambos tipos) */}
-                                {cita.observaciones && (
-                                  <p className="text-xs text-gray-500 italic">
-                                    Obs: {cita.observaciones}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="mt-2">
-                                <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                                  cita.estado === 'confirmada' ? 'bg-green-100 text-green-800' :
-                                  cita.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                                  cita.estado === 'cancelada' ? 'bg-red-100 text-red-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {cita.estado}
-                                </span>
-                                {/* Etiquetas específicas */}
-                                {cita.esPrimeraVisita && (
-                                  <span className="inline-block px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 ml-2">
-                                    Primera visita
-                                  </span>
-                                )}
-                                
-                                {/* Etiqueta de urgencia para veterinaria */}
-                                {cita.tipoProfesional === 'veterinario' && cita.urgencia && cita.urgencia !== 'normal' && (
-                                  <span className={`inline-block px-2 py-1 text-xs rounded-full ml-2 ${
-                                    cita.urgencia === 'urgente' ? 'bg-yellow-100 text-yellow-800' :
-                                    cita.urgencia === 'emergencia' ? 'bg-red-100 text-red-800' :
-                                    'bg-gray-100 text-gray-800'
-                                  }`}>
-                                    {cita.urgencia}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex space-x-4  md:flex-row flex-col space-x-0">
-                          {cita.mascotaId && (
-                            <Link 
-                              to={`/pet-profile/${cita.mascotaId}`}
-                              className="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600 transition-colors duration-200"
-                            >
-                              Ver Mascota
-                            </Link>
-                          )}
-                          <button 
-                            className={`px-3 py-1 rounded text-xs transition-colors duration-200 ${
-                              citasCancelando.has(cita.id) 
-                                ? 'bg-gray-400 text-white cursor-not-allowed' 
-                                : 'bg-red-500 text-white hover:bg-red-600'
-                            }`}
-                            onClick={() => handleCancelarCita(cita)}
-                            disabled={citasCancelando.has(cita.id)}
-                          >
-                            {citasCancelando.has(cita.id) ? 'Cancelando...' : 'Cancelar'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-gray-400 mb-4">
-                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-600">No tienes citas programadas</p>
-                  <p className="text-sm text-gray-500 mt-1">Agenda una cita con un veterinario o peluquero</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        {/* Sección de Citas - Componente Colapsable */}
+        <DashboardCitasColapsable 
+          datosUsuario={datosUsuario}
+          isCargandoUsuario={isCargandoUsuario}
+          typeTheme={typeTheme}
+          citasCancelando={citasCancelando}
+          handleCancelarCita={handleCancelarCita}
+        />
 
         {/* Filtro de profesionales por zona */}
         <div className="flex items-center justify-between mb-4">

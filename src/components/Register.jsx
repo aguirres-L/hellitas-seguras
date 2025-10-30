@@ -47,10 +47,10 @@ const Register = () => {
       return;
     }
 
-    // Validar teléfono (mínimo 8 dígitos)
+    // Validar teléfono (exactamente 10 dígitos)
     const telefonoLimpio = formData.telefono.replace(/[^\d]/g, '');
-    if (telefonoLimpio.length < 8) {
-      setError('El teléfono debe tener al menos 8 dígitos');
+    if (telefonoLimpio.length !== 10) {
+      setError('El teléfono debe tener exactamente 10 dígitos');
       setIsCargando(false);
       return;
     }
@@ -116,7 +116,15 @@ const Register = () => {
     // Validación específica para teléfono
     if (name === 'telefono') {
       // Solo permitir números, espacios, guiones y el símbolo +
-      const telefonoLimpio = value.replace(/[^\d\s\-\+]/g, '');
+      let telefonoLimpio = value.replace(/[^\d\s\-\+]/g, '');
+      
+      // Limitar a máximo 10 dígitos (sin contar espacios, guiones, etc.)
+      const soloDigitos = telefonoLimpio.replace(/[^\d]/g, '');
+      if (soloDigitos.length > 10) {
+        // Si excede 10 dígitos, truncar
+        telefonoLimpio = telefonoLimpio.substring(0, telefonoLimpio.length - (soloDigitos.length - 10));
+      }
+      
       setFormData({
         ...formData,
         [name]: telefonoLimpio
@@ -275,7 +283,7 @@ const Register = () => {
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Zona
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, zona: 'norte' })}
@@ -287,6 +295,19 @@ const Register = () => {
                   }`}
                 >
                   Zona Norte
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, zona: 'centro' })}
+                  disabled={isCargando}
+                  className={`p-2 text-xs sm:text-sm rounded-lg border transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    formData.zona === 'centro'
+                      ? 'border-orange-500 bg-orange-50 text-orange-700'
+                      : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700'
+                  }`}
+                >
+                  Zona Centro
                 </button>
                 <button
                   type="button"
