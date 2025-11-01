@@ -265,7 +265,7 @@ export const ConsejosIA = ({
       </div>
 
       {/* Selector de Nivel de Prompt (solo para tipos con prompts jerárquicos) */}
-      {tipoConsejoSeleccionado && mascota && (
+    {/*   {tipoConsejoSeleccionado && mascota && (
         <div className="mb-6">
           <SelectorNivelPrompt
             tipoConsejo={tipoConsejoSeleccionado}
@@ -274,7 +274,7 @@ export const ConsejosIA = ({
             promptActual={promptSeleccionado}
           />
         </div>
-      )}
+      )} */}
 
       {/* Estado de carga */}
       {cargando && (

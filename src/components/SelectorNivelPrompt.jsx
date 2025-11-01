@@ -26,9 +26,9 @@ export const SelectorNivelPrompt = ({
 
   // Generar prompt cuando cambie el nivel seleccionado
   useEffect(() => {
-    if (tipoConsejo && mascota && nivelSeleccionado) {
+    if (tipoConsejo && mascota /* && nivelSeleccionado */) {
       try {
-        const prompt = obtenerPrompt(tipoConsejo, nivelSeleccionado, mascota);
+        const prompt = obtenerPrompt(tipoConsejo, 1, mascota);
         setPromptGenerado(prompt);
         onPromptSeleccionado(prompt);
       } catch (error) {
@@ -60,6 +60,7 @@ export const SelectorNivelPrompt = ({
         {nivelesDisponibles.map((nivel) => {
           const info = obtenerInfoPrompt(tipoConsejo, nivel);
           if (!info) return null;
+console.log(nivel,'ss');
 
           return (
             <button

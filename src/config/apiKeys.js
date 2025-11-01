@@ -4,6 +4,8 @@
 export const API_KEYS = {
   HUGGING_FACE_TOKEN: import.meta.env.VITE_HUGGING_FACE_TOKEN || '',
   HUGGING_FACE_TOKEN_FALLBACK: import.meta.env.VITE_HUGGING_FACE_TOKEN1 || '',
+  HUGGING_FACE_TOKEN_FALLBACK2: import.meta.env.VITE_HUGGING_FACE_TOKEN2 || '',
+
   COHERE_API_KEY:  ''
 };
 
@@ -12,6 +14,7 @@ export const verificarConfiguracionAPIs = () => {
   const configurado = {
     huggingFace: !!API_KEYS.HUGGING_FACE_TOKEN,
     huggingFaceFallback: !!API_KEYS.HUGGING_FACE_TOKEN_FALLBACK,
+    huggingFaceFallback2: !!API_KEYS.HUGGING_FACE_TOKEN_FALLBACK2,
     cohere: !!API_KEYS.COHERE_API_KEY
   };
   

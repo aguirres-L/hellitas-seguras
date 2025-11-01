@@ -275,89 +275,42 @@ class AIService {
     }
   }
 
-  // Generar prompt mejorado y más específico según el tipo de temática
+  // Generar prompt optimizado para reducir consumo de créditos
+  // Estrategia: prompt ultra-conciso (60-80 palabras vs 350 anteriores)
+  // Por qué: menos tokens = menos procesamiento = menos créditos consumidos
   generarPrompt(raza, tematica = null) {
     const razaNorm = this.normalizarRaza(raza);
     const esMestizo = razaNorm.includes('mestizo') || razaNorm.includes('criollo');
     const tema = tematica || this.generarTematica(raza);
     
-    // Determinar el tipo de temática para personalizar el prompt
-    let contextoEspecifico = '';
-    let instruccionesEspecificas = '';
-    
+    // Determinar contexto mínimo según temática (sin repeticiones)
+    let contexto = '';
     if (tema.includes('Cuidados en')) {
-      const estacion = tema.split(' ')[2]; // "Cuidados en verano" -> "verano"
-      contextoEspecifico = `cuidados específicos para la estación de ${estacion}`;
-      instruccionesEspecificas = `- Enfócate en cuidados específicos para ${estacion}
-- Menciona cambios en alimentación, ejercicio y cuidados por el clima
-- Incluye precauciones especiales para esta estación
-- Proporciona consejos para proteger a la mascota del clima`;
+      const estacion = tema.split(' ')[2];
+      contexto = `para ${estacion}`;
     } else if (tema.includes('Actividades en casa')) {
-      contextoEspecifico = 'actividades y juegos que se pueden realizar dentro del hogar';
-      instruccionesEspecificas = `- Enfócate en actividades que se pueden hacer en espacios cerrados
-- Incluye juegos, ejercicios mentales y actividades de enriquecimiento
-- Menciona juguetes y materiales necesarios
-- Proporciona ideas para mantener a la mascota activa en casa`;
+      contexto = 'en interiores';
     } else if (tema.includes('Interacción con niños')) {
-      contextoEspecifico = 'cómo interactuar de forma segura y positiva con niños';
-      instruccionesEspecificas = `- Enfócate en la interacción segura entre perros y niños
-- Incluye consejos para enseñar a los niños cómo comportarse
-- Menciona señales de estrés o incomodidad del perro
-- Proporciona actividades apropiadas para diferentes edades de niños`;
-    } else if (tema.includes('Socialización con otros perros')) {
-      contextoEspecifico = 'cómo socializar de forma segura con otros perros';
-      instruccionesEspecificas = `- Enfócate en técnicas de socialización canina
-- Incluye consejos para presentaciones seguras
-- Menciona señales de comportamiento a observar
-- Proporciona actividades de socialización progresiva`;
-    } else if (tema.includes('Actividades al aire libre')) {
-      contextoEspecifico = 'actividades y ejercicios que se pueden realizar al aire libre';
-      instruccionesEspecificas = `- Enfócate en actividades que requieren espacios abiertos
-- Incluye ejercicios, juegos y exploración
-- Menciona precauciones de seguridad
-- Proporciona ideas para aprovechar el tiempo al aire libre`;
-    } else if (tema.includes('Interacción con visitas')) {
-      contextoEspecifico = 'cómo manejar la interacción con personas que visitan el hogar';
-      instruccionesEspecificas = `- Enfócate en el comportamiento con visitas y extraños
-- Incluye consejos para presentaciones seguras
-- Menciona técnicas de manejo y control
-- Proporciona estrategias para diferentes tipos de visitas`;
-    } else {
-      // Temática general
-      contextoEspecifico = `cuidados generales específicos para ${esMestizo ? 'perros mestizos' : `la raza ${raza}`}`;
-      instruccionesEspecificas = `- Enfócate en la temática "${tema}"
-- Proporciona consejos específicos y prácticos
-- Incluye datos concretos (cantidades, frecuencias, horarios)
-- Menciona señales de alerta relevantes`;
+      contexto = 'con niños';
+    } else if (tema.includes('Socialización')) {
+      contexto = 'con otros perros';
+    } else if (tema.includes('al aire libre')) {
+      contexto = 'al aire libre';
+    } else if (tema.includes('visitas')) {
+      contexto = 'con visitas';
     }
     
-    const promptBase = `Eres un veterinario experto especializado en ${esMestizo ? 'perros mestizos' : `la raza ${raza}`}.
-
-TEMÁTICA ESPECÍFICA: ${tema}
-CONTEXTO: ${contextoEspecifico}
-
-INSTRUCCIONES:
-${instruccionesEspecificas}
-- Usa un tono profesional pero cercano
-- Proporciona 3-5 consejos específicos y prácticos
-- Incluye datos concretos (cantidades, frecuencias, horarios)
-- Menciona señales de alerta relevantes
-
-ESTRUCTURA:
-**${tema}:**
-• [Consejo específico 1 con datos concretos]
-• [Consejo específico 2 con datos concretos]
-• [Consejo específico 3 con datos concretos]
-• [Señales de alerta a vigilar]
-• [Recomendación adicional práctica]
-
-Responde SOLO sobre la temática especificada, en español, máximo 200 palabras.`;
+    // Prompt optimizado: solo lo esencial
+    // Reducción de ~350 palabras a ~60 palabras = 82% menos tokens
+    const tipoRaza = esMestizo ? 'perro mestizo' : raza;
+    const promptBase = `Veterinario. ${tema} ${contexto ? `(${contexto})` : ''} para ${tipoRaza}. 3-4 consejos prácticos con datos específicos. Español, máximo 150 palabras.`;
 
     return promptBase;
   }
 
-  // Sanea y limita el prompt para compatibilidad con modelos y evitar payloads grandes
-  sanitizarPrompt(texto, maxChars = 1800) {
+  // Sanea y limita el prompt para compatibilidad con modelos y reducir costo
+  // Optimización: límite más estricto (500 chars vs 1800) para prompts ya optimizados
+  sanitizarPrompt(texto, maxChars = 500) {
     if (!texto) return '';
     let limpio = String(texto);
     // Eliminar emojis y caracteres fuera del BMP que inflan el prompt innecesariamente
@@ -369,9 +322,10 @@ Responde SOLO sobre la temática especificada, en español, máximo 200 palabras
     }
     // Colapsar espacios en blanco excesivos
     limpio = limpio.replace(/\s{2,}/g, ' ').trim();
-    // Limitar tamaño total (los modelos pequeños no toleran prompts muy extensos)
+    // Límite más estricto: prompts optimizados no deberían superar 500 caracteres
+    // Si se excede, truncar y agregar instrucción mínima
     if (limpio.length > maxChars) {
-      limpio = `${limpio.slice(0, maxChars)}\n\n[responde de forma concisa en español]`;
+      limpio = `${limpio.slice(0, maxChars)}. Español, conciso.`;
     }
     return limpio;
   }
@@ -553,15 +507,65 @@ Responde SOLO sobre la temática especificada, en español, máximo 200 palabras
     console.log('Temática:', tematica);
     console.log('Prompt personalizado:', !!promptPersonalizado);
     
-    const tokens = [API_KEYS.HUGGING_FACE_TOKEN, API_KEYS.HUGGING_FACE_TOKEN_FALLBACK].filter(token => token);
-    console.log('🔑 Tokens disponibles:', tokens.length);
-    console.log('Token 1 configurado:', !!API_KEYS.HUGGING_FACE_TOKEN);
-    console.log('Token 2 configurado:', !!API_KEYS.HUGGING_FACE_TOKEN_FALLBACK);
-    console.log('Tokens (primeros 10 chars):', tokens.map(t => t.substring(0, 10) + '...'));
+    // Verificar configuración de API keys
+    const config = verificarConfiguracionAPIs();
+    console.log('📋 Configuración de APIs:', config);
+    
+    // Verificar cada token individualmente con detalles
+    console.log('🔍 === VERIFICACIÓN DE TOKENS ===');
+    const token1 = API_KEYS.HUGGING_FACE_TOKEN || '';
+    const token2 = API_KEYS.HUGGING_FACE_TOKEN_FALLBACK || '';
+    const token3 = API_KEYS.HUGGING_FACE_TOKEN_FALLBACK2 || '';
+    
+    console.log('📌 Token Principal (VITE_HUGGING_FACE_TOKEN):');
+    console.log('  - Configurado:', !!token1);
+    console.log('  - Longitud:', token1.length);
+    console.log('  - Primeros 8 chars:', token1.length > 0 ? `${token1.substring(0, 8)}...` : 'NO CONFIGURADO');
+    
+    console.log('📌 Token Fallback 1 (VITE_HUGGING_FACE_TOKEN1):');
+    console.log('  - Configurado:', !!token2);
+    console.log('  - Longitud:', token2.length);
+    console.log('  - Primeros 8 chars:', token2.length > 0 ? `${token2.substring(0, 8)}...` : 'NO CONFIGURADO');
+    
+    console.log('📌 Token Fallback 2 (VITE_HUGGING_FACE_TOKEN2):');
+    console.log('  - Configurado:', !!token3);
+    console.log('  - Longitud:', token3.length);
+    console.log('  - Primeros 8 chars:', token3.length > 0 ? `${token3.substring(0, 8)}...` : 'NO CONFIGURADO');
+    
+    // Obtener todos los tokens disponibles (incluyendo fallback2 si existe)
+    const tokens = [
+      token1,
+      token2,
+      token3
+    ].filter(token => token && token.trim().length > 0);
+    
+    console.log('✅ Tokens válidos encontrados:', tokens.length);
+    console.log('📊 Resumen:');
+    console.log(`  - Token principal: ${token1.length > 0 ? '✅' : '❌'}`);
+    console.log(`  - Fallback 1: ${token2.length > 0 ? '✅' : '❌'}`);
+    console.log(`  - Fallback 2: ${token3.length > 0 ? '✅' : '❌'}`);
     
     if (tokens.length === 0) {
-      throw new Error('Ningún token de Hugging Face configurado');
+      const errorMsg = '❌ CRÍTICO: Ningún token de Hugging Face configurado. Verifica tu archivo .env';
+      console.error(errorMsg);
+      console.error('💡 Variables necesarias en .env:');
+      console.error('   - VITE_HUGGING_FACE_TOKEN (requerido)');
+      console.error('   - VITE_HUGGING_FACE_TOKEN1 (opcional, fallback)');
+      console.error('   - VITE_HUGGING_FACE_TOKEN2 (opcional, fallback)');
+      throw new Error(errorMsg);
     }
+    
+    // Validar que los tokens no sean strings vacíos
+    const tokensInvalidos = tokens.filter(t => !t || t.trim().length === 0);
+    if (tokensInvalidos.length > 0) {
+      console.warn('⚠️ Algunos tokens están vacíos o inválidos');
+    }
+    
+    console.log(`🎯 Se usarán ${tokens.length} token(s) en este orden:`);
+    tokens.forEach((token, index) => {
+      const origen = index === 0 ? 'Principal' : index === 1 ? 'Fallback 1' : 'Fallback 2';
+      console.log(`   ${index + 1}. ${origen} (${token.substring(0, 8)}...)`);
+    });
 
     const prompt = promptPersonalizado || this.generarPrompt(raza, tematica);
     const promptLimpio = this.sanitizarPrompt(prompt);
@@ -570,95 +574,199 @@ Responde SOLO sobre la temática especificada, en español, máximo 200 palabras
     console.log('Primeros 200 chars:', promptLimpio.substring(0, 200));
     console.log('Últimos 200 chars:', promptLimpio.substring(Math.max(0, promptLimpio.length - 200)));
     
-    // Lista de modelos para probar en orden (modelos que SÍ funcionan actualmente)
-    const modelos = [
-      'microsoft/DialoGPT-small',
-      'facebook/blenderbot-400M-distill',
-      'microsoft/DialoGPT-medium',
-      'gpt2',
-      'distilgpt2',
-      'gpt2-medium',
-      'EleutherAI/gpt-neo-125M',
-      'EleutherAI/gpt-neo-1.3B',
-      'microsoft/DialoGPT-large',
-      'facebook/blenderbot-1B-distill'
+    // ESTRATEGIA: Usar modelos compatibles con la NUEVA API de Hugging Face
+    // NUEVA API: router.huggingface.co/v1/chat/completions (formato OpenAI)
+    // Prioridad: Modelos pequeños y baratos primero (para ahorrar créditos)
+    const modelosPrioridad = [
+      'meta-llama/Llama-3.2-1B-Instruct',   // ✅ 1B parámetros - MÁS BARATO
+      'HuggingFaceH4/zephyr-7b-beta',       // ✅ 7B pero optimizado - MODERADO
+      'mistralai/Mistral-7B-Instruct-v0.1', // ✅ 7B instructivo - MODERADO
+      'Qwen/Qwen2.5-0.5B-Instruct',        // ✅ 0.5B - MUY BARATO (si está disponible)
+      'microsoft/phi-2'                     // ✅ 2.7B - BARATO (si está disponible)
     ];
-
-    // Probar con cada token
-    for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex++) {
-      const token = tokens[tokenIndex];
-      console.log(`🔑 Usando token ${tokenIndex + 1}/${tokens.length}`);
+    
+    // NOTA: La nueva API usa formato OpenAI compatible
+    // Estos modelos están optimizados para instrucciones y son más baratos que GPT-OSS grandes
+    
+    console.log(`🎯 Probando modelos en orden: ${modelosPrioridad.join(' → ')}`);
+    console.log(`💡 Máximo de intentos: ${modelosPrioridad.length} modelos × ${tokens.length} tokens = ${modelosPrioridad.length * tokens.length}`);
+    
+    // Rastrear todos los errores para diagnóstico
+    const errores = [];
+    
+    // Intentar cada modelo con cada token
+    for (const modelo of modelosPrioridad) {
+      console.log(`\n🔄 === INTENTANDO MODELO: ${modelo} ===`);
       
-      // Probar con cada modelo usando este token
-      for (const modelo of modelos) {
-        try {
-          console.log(`🔄 Intentando con modelo: ${modelo} (token ${tokenIndex + 1})`);
-          
-          const requestBody = {
-            inputs: promptLimpio,
-            parameters: {
-              // Preferimos max_new_tokens para modelos de text-generation
-              max_new_tokens: 220,
-              temperature: 0.7,
-              do_sample: true,
-              return_full_text: false
-            },
-            options: {
-              wait_for_model: true,
-              use_cache: false
-            }
-          };
-          
-          console.log('📤 Request body:', JSON.stringify(requestBody, null, 2));
-          
-          const response = await fetch(`https://api-inference.huggingface.co/models/${modelo}`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-          });
-
-          console.log(`📡 Response status: ${response.status} ${response.statusText}`);
-          console.log(`📡 Response headers:`, Object.fromEntries(response.headers.entries()));
-
-          if (response.ok) {
-            const data = await response.json();
-            console.log(`✅ Modelo ${modelo} funcionó correctamente con token ${tokenIndex + 1}`);
-            console.log('📥 Response data:', data);
-            return this.procesarRespuestaHuggingFace(data);
-          } else {
-            const errorText = await response.text();
-            console.warn(`❌ Modelo ${modelo} falló con status: ${response.status} (token ${tokenIndex + 1})`);
-            console.warn(`❌ Error response:`, errorText);
-            
-            // Si es 404, el modelo no existe, continuar con el siguiente
-            if (response.status === 404) {
-              console.warn(`Modelo ${modelo} no está disponible, probando siguiente...`);
-              continue;
-            }
-            // Si es 401/403, el token no funciona, probar siguiente token
-            if (response.status === 401 || response.status === 403) {
-              console.warn(`Token ${tokenIndex + 1} no autorizado, probando siguiente token...`);
-              break; // Salir del loop de modelos y probar siguiente token
-            }
-            // Si es 503, el modelo está cargando
-            if (response.status === 503) {
-              console.warn(`Modelo ${modelo} está cargando, probando siguiente...`);
-              continue;
-            }
-          }
-        } catch (error) {
-          console.warn(`❌ Error con modelo ${modelo} (token ${tokenIndex + 1}):`, error.message);
-          console.warn(`❌ Error completo:`, error);
-          continue; // Intentar con el siguiente modelo
+      for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex++) {
+        const token = tokens[tokenIndex];
+        const tokenOrigen = tokenIndex === 0 ? 'Principal' : tokenIndex === 1 ? 'Fallback 1' : 'Fallback 2';
+        const tokenPreview = token.substring(0, 8) + '...';
+        
+        console.log(`   🔑 Token: ${tokenOrigen} (${tokenPreview})`);
+        
+        const resultado = await this.intentarModelo(modelo, token, promptLimpio, tokenIndex + 1, errores);
+        if (resultado) {
+          console.log(`\n✅ ¡ÉXITO! Usando ${modelo} con token ${tokenOrigen} (${tokenPreview})`);
+          return resultado;
+        }
+        
+        // Si este token falló con 404 (modelo no existe), no probar más tokens con este modelo
+        const ultimoError = errores[errores.length - 1];
+        if (ultimoError && ultimoError.status === 404) {
+          console.log(`   ⚠️ Modelo ${modelo} no existe (404) - saltando al siguiente modelo`);
+          break; // Salir del loop de tokens y probar siguiente modelo
         }
       }
     }
 
-    throw new Error('Todos los tokens y modelos de Hugging Face fallaron');
+    // Si llegamos aquí, todos los modelos y tokens fallaron
+    console.error('\n❌ === RESUMEN DE ERRORES ===');
+    console.error(`Modelos probados: ${modelosPrioridad.join(', ')}`);
+    console.error(`Total de intentos: ${errores.length}`);
+    
+    // Analizar tipos de error
+    const errores404 = errores.filter(e => e.status === 404).length;
+    const errores401 = errores.filter(e => e.status === 401 || e.status === 403).length;
+    const errores503 = errores.filter(e => e.status === 503).length;
+    const otrosErrores = errores.length - errores404 - errores401 - errores503;
+    
+    console.error(`📊 Desglose de errores:`);
+    console.error(`  - 404 (Modelo no encontrado): ${errores404}`);
+    console.error(`  - 401/403 (Tokens inválidos): ${errores401}`);
+    console.error(`  - 503 (Modelo cargando): ${errores503}`);
+    console.error(`  - Otros errores: ${otrosErrores}`);
+    
+    // Agrupar errores por modelo para mejor diagnóstico
+    const erroresPorModelo = {};
+    errores.forEach(error => {
+      if (!erroresPorModelo[error.modelo]) {
+        erroresPorModelo[error.modelo] = [];
+      }
+      erroresPorModelo[error.modelo].push(error);
+    });
+    
+    console.error(`\n📋 Errores por modelo:`);
+    Object.entries(erroresPorModelo).forEach(([modelo, errs]) => {
+      console.error(`  ${modelo}:`);
+      errs.forEach(err => {
+        const tokenOrigen = err.tokenNum === 1 ? 'Principal' : err.tokenNum === 2 ? 'Fallback 1' : 'Fallback 2';
+        console.error(`    - Token ${err.tokenNum} (${tokenOrigen}): ${err.status || 'Network'}`);
+      });
+    });
+    
+    // Mensaje de error más específico según el tipo de fallo
+    let errorMsg = '';
+    if (errores401 > 0 && errores.length === errores401) {
+      errorMsg = `Todos los tokens de Hugging Face son inválidos (401 Unauthorized). Verifica que tus tokens en .env sean correctos.`;
+    } else if (errores404 === errores.length) {
+      errorMsg = `Ninguno de los modelos probados está disponible (404). Los modelos pueden haber sido movidos o descontinuados. Intenta más tarde o actualiza la lista de modelos.`;
+    } else if (errores503 > 0) {
+      errorMsg = `Algunos modelos están cargando (503). Espera 1-2 minutos e intenta de nuevo.`;
+    } else {
+      errorMsg = `No se pudo generar consejos. Se probaron ${modelosPrioridad.length} modelos con ${tokens.length} tokens. Revisa la consola para detalles.`;
+    }
+    
+    throw new Error(errorMsg);
+  }
+
+  // Método auxiliar optimizado para intentar un modelo específico
+  // ACTUALIZADO: Usa la nueva API de Hugging Face (router.huggingface.co/v1/chat/completions)
+  // Formato OpenAI-compatible con mensajes en lugar de inputs
+  async intentarModelo(modelo, token, promptLimpio, tokenNum, errores = []) {
+    try {
+      console.log(`🔄 Intentando con modelo: ${modelo} (token ${tokenNum})`);
+      
+      // NUEVA API: Formato OpenAI-compatible
+      const requestBody = {
+        messages: [
+          {
+            role: 'user',
+            content: promptLimpio
+          }
+        ],
+        model: modelo,
+        stream: false,
+        max_tokens: 150,     // Equivalente a max_new_tokens en la API antigua
+        temperature: 0.8
+      };
+      
+      const inicioTiempo = Date.now();
+      // NUEVA URL: router.huggingface.co/v1/chat/completions
+      const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+      const tiempoTranscurrido = Date.now() - inicioTiempo;
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`✅ Modelo ${modelo} funcionó correctamente con token ${tokenNum} (${tiempoTranscurrido}ms)`);
+        console.log('📥 Respuesta completa:', data);
+        // Nueva API devuelve formato OpenAI: { choices: [{ message: { content: "..." } }] }
+        return this.procesarRespuestaHuggingFaceNueva(data);
+      } else {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch (e) {
+          errorText = 'No se pudo leer el error';
+        }
+        
+        // Registrar error para diagnóstico
+        const errorInfo = {
+          modelo,
+          tokenNum,
+          status: response.status,
+          mensaje: errorText.substring(0, 200), // Limitar longitud
+          tiempo: tiempoTranscurrido
+        };
+        errores.push(errorInfo);
+        
+        // Errores que NO consumen créditos (404, 401, 403) - continuar
+        if (response.status === 404) {
+          console.warn(`⚠️ Modelo ${modelo} no existe (404) - probando siguiente...`);
+          return null;
+        }
+        
+        if (response.status === 401 || response.status === 403) {
+          console.warn(`⚠️ Token ${tokenNum} no autorizado (${response.status}) - ${errorText.substring(0, 100)}`);
+          return null; // Continuar con siguiente token
+        }
+        
+        // Error 503: modelo cargando - NO esperar (ahorra tiempo y créditos potenciales)
+        if (response.status === 503) {
+          console.warn(`⚠️ Modelo ${modelo} está cargando (503) - saltando para ahorrar tiempo...`);
+          return null;
+        }
+        
+        // Error 429: Rate limit - esperar un poco o continuar
+        if (response.status === 429) {
+          console.warn(`⚠️ Rate limit alcanzado para ${modelo} (429) - probando siguiente...`);
+          return null;
+        }
+        
+        // Otros errores: puede haber consumido créditos parcialmente
+        console.warn(`❌ Modelo ${modelo} falló con status ${response.status} - ${errorText.substring(0, 100)}`);
+        return null;
+      }
+    } catch (error) {
+      // Registrar error de red
+      errores.push({
+        modelo,
+        tokenNum,
+        status: null,
+        mensaje: error.message,
+        tiempo: null
+      });
+      console.warn(`❌ Error de red con modelo ${modelo}:`, error.message);
+      return null; // Continuar con siguiente modelo
+    }
   }
 
   // Llamada a Cohere API (fallback)
@@ -697,9 +805,9 @@ Responde SOLO sobre la temática especificada, en español, máximo 200 palabras
     }
   }
 
-  // Procesar respuesta de Hugging Face
+  // Procesar respuesta de Hugging Face (API antigua - formato legacy)
   procesarRespuestaHuggingFace(data) {
-    console.log('🔍 === PROCESANDO RESPUESTA HUGGING FACE ===');
+    console.log('🔍 === PROCESANDO RESPUESTA HUGGING FACE (LEGACY) ===');
     console.log('📥 Data recibida:', data);
     console.log('📥 Tipo de data:', typeof data);
     console.log('📥 Es array:', Array.isArray(data));
@@ -715,6 +823,36 @@ Responde SOLO sobre la temática especificada, en español, máximo 200 palabras
     }
     
     console.log('❌ No se pudo procesar la respuesta');
+    return 'No se pudo generar consejos específicos.';
+  }
+
+  // Procesar respuesta de Hugging Face (NUEVA API - formato OpenAI-compatible)
+  procesarRespuestaHuggingFaceNueva(data) {
+    console.log('🔍 === PROCESANDO RESPUESTA HUGGING FACE (NUEVA API) ===');
+    console.log('📥 Data recibida:', data);
+    console.log('📥 Tipo de data:', typeof data);
+    
+    // Nueva API devuelve formato OpenAI:
+    // { choices: [{ message: { role: 'assistant', content: '...' } }] }
+    if (data && data.choices && Array.isArray(data.choices) && data.choices.length > 0) {
+      const primeraRespuesta = data.choices[0];
+      console.log('📥 Primera choice:', primeraRespuesta);
+      
+      if (primeraRespuesta.message && primeraRespuesta.message.content) {
+        const resultado = primeraRespuesta.message.content.trim();
+        console.log('✅ Resultado final (nueva API):', resultado);
+        return resultado;
+      }
+    }
+    
+    // Fallback: intentar otros formatos posibles
+    if (data.content) {
+      console.log('✅ Resultado encontrado en data.content');
+      return data.content.trim();
+    }
+    
+    console.log('❌ No se pudo procesar la respuesta de la nueva API');
+    console.log('📥 Estructura completa:', JSON.stringify(data, null, 2));
     return 'No se pudo generar consejos específicos.';
   }
 
