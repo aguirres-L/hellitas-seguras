@@ -25,5 +25,6 @@ export {
   agregarCita,
   obtenerCitasProfesional,
   actualizarCita,
-  eliminarCita
+  eliminarCita,
+  enviarRecuperacionContrasena
 } from './firebase'; 

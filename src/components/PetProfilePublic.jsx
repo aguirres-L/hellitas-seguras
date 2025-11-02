@@ -2,15 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { buscarMascotaPorId } from '../data/firebase/firebase';
 import DecoracionForm from './decoracionUi/DecoracionForm';
-
+import logo from '../../public/new-logo11.png';
 // Este componente no requiere autenticación y muestra información básica de mascotas
 const PetProfilePublic = () => {
-  const { id } = useParams();
+  const { id } = useParams(); 
   const [mascota, setMascota] = useState(null);
   const [isCargando, setIsCargando] = useState(true); 
   const [error, setError] = useState(null);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [modalAbierto, setModalAbierto] = useState(false);
+  
 
   // Cargar datos de la mascota específica desde todos los usuarios
   useEffect(() => {
@@ -66,15 +67,16 @@ const PetProfilePublic = () => {
 
   // Navbar simplificado sin dependencias de autenticación
   const NavbarPublic = () => (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-sm shadow-lg p-4">
-      <div className="container mx-auto flex justify-between items-center">
-        {/* Logo y título */}
+    <nav
+     className='fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-sm shadow-sm p-4 border-b border-orange-100'
+
+     >
+            <div className="container mx-auto flex justify-between items-center">
+            {/* Logo y título */}
         <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-200">
-          <div className="h-8 w-8 bg-gradient-to-r from-orange-400 to-pink-500 rounded-full flex items-center justify-center">
-            <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-            </svg>
-          </div>
+      
+        <img src={logo} className='h-14 ' alt="" />
+
           <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
             Huellitas Seguras
           </h1>
@@ -306,22 +308,11 @@ console.log(mascota,'mascota');
               </div>
             )}
 
-            {/* Alergias o Enfermedades Importantes */}
-            {(mascota.alergias || mascota.enfermedades) && (
+            {/* Notas Adicionales */}
+            {mascota.notas && (
               <div className="bg-red-50 rounded-lg p-6 mb-6">
-                <h3 className="font-bold text-lg mb-4 text-red-800">Información Médica Importante</h3>
-                {mascota.alergias && (
-                  <div className="mb-3">
-                    <p className="text-sm font-medium text-red-700">Alergias:</p>
-                    <p className="text-red-600">{mascota.alergias}</p>
-                  </div>
-                )}
-                {mascota.enfermedades && (
-                  <div>
-                    <p className="text-sm font-medium text-red-700">Enfermedades:</p>
-                    <p className="text-red-600">{mascota.enfermedades}</p>
-                  </div>
-                )}
+                <h3 className="font-bold text-lg mb-4 text-red-800">Información Importante</h3>
+                    <p className="text-red-600 whitespace-pre-wrap">{mascota.notas}</p>
               </div>
             )}
           </div>

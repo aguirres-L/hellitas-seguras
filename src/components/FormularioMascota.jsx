@@ -22,6 +22,7 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
   const [urlImagenMascota, setUrlImagenMascota] = useState('');
   const [contacto, setContacto] = useState('');
 
+
   // Detalles avanzados
   const [vacunas, setVacunas] = useState([{ nombre: '', fecha: '' }]);
   const [alergias, setAlergias] = useState('');
@@ -183,28 +184,16 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
           className={tabClasses(tab === 0) + " w-full sm:w-auto mb-2 sm:mb-0"}
           onClick={() => setTab(0)}
         >
-          Identificación
+          {tab === 1 || tab === 2 ? 'Volver' : 'Identificación'}
         </button>
-        <button
-          type="button"
-          className={tabClasses(tab === 1) + " w-full sm:w-auto"}
-          onClick={() => setTab(1)}
-        >
-          Razas de Perros
-        </button>
-        <button
-          type="button"
-          className={tabClasses(tab === 2) + " w-full sm:w-auto"}
-          onClick={() => setTab(2)}
-        >
-          Razas de Gatos
-        </button>
+      
       </div>
 
       {/* Tab content */}
       <div className="transition-all duration-500">
         {tab === 0 && (
           <div className="animate-fade-in flex flex-col gap-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
             <input
               className="border rounded px-3 py-2 w-full text-base"
               placeholder="Nombre"
@@ -213,6 +202,7 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
               required
             />
             <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Raza</label>
               <input
                 className={`border rounded px-3 py-2 w-full text-base ${
                   razaSeleccionada ? 'border-green-400 bg-green-50' : 'border-gray-300'
@@ -229,7 +219,28 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
                   </svg>
                 </div>
               )}
+
+
+              <div className="flex gap-2 justify-end mt-2">
+              <button
+                type="button"
+                className={tabClasses(tab === 1) + " w-full sm:w-auto"}
+                onClick={() => setTab(1)}
+              >
+                Razas de Perros
+              </button>
+              <button
+                type="button"
+                className={tabClasses(tab === 2) + " w-full sm:w-auto"}
+                onClick={() => setTab(2)}
+              >
+                Razas de Gatos
+              </button>
+              </div>
+
             </div>
+
+            
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Fecha de nacimiento
@@ -258,12 +269,24 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
                 </div>
               )}
             </div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
             <input
               className="border rounded px-3 py-2 w-full text-base"
               placeholder="Color"
               value={color}
               onChange={e => setColor(e.target.value)}
             />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notas Adicionales</label>
+            <textarea
+              className="border rounded px-3 py-2 w-full text-base"
+              placeholder="Ejemplo: Perro guía - Mi acompañante necesita de mí para desplazarse"
+              name  ="notas"
+              value={notas}
+              onChange={e => setNotas(e.target.value)}
+              rows={3}
+            />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Foto</label>
+
             <ImageUploader
               onImageSelect={setArchivoImagen}
               onImageUploaded={setUrlImagenMascota}
@@ -271,12 +294,6 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
               userId={usuario?.uid}
               petId={mascotaId}
             />
-         {/*    <input
-              className="border rounded px-3 py-2 w-full text-base"
-              placeholder="Contacto de emergencia"
-              value={contacto}
-              onChange={e => setContacto(e.target.value)}
-            /> */}
           </div>
         )}
 

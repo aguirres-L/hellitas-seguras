@@ -454,6 +454,13 @@ const PetProfile = () => {
                         </div>
                       </div>
                     )}
+
+                    {mascota.notas && (
+                      <div className="bg-blue-50 rounded-lg p-4">
+                        <h4 className="font-semibold text-blue-800 mb-2">Notas Adicionales</h4>
+                        <p className="text-sm text-blue-700 whitespace-pre-wrap">{mascota.notas}</p>
+                      </div>
+                    )}
                     {mascota.contacto && (
                       <div className="flex items-center">
                         <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
@@ -605,7 +612,7 @@ const PetProfile = () => {
               </div>
 
               {/* Cuidados Especiales del Usuario */}
-              {/* <div className="bg-white/60 rounded-lg p-6 shadow-sm">
+              <div className="bg-white/60 rounded-lg p-6 shadow-sm">
                 <h3 className="font-bold text-lg mb-4 text-gray-900">Cuidados Especiales Registrados</h3>
                 <div className="grid md:grid-cols-2 gap-6">
                   {mascota.alergias && (
@@ -623,7 +630,7 @@ const PetProfile = () => {
                   {mascota.notas && (
                     <div className="bg-blue-50 rounded-lg p-4">
                       <h4 className="font-semibold text-blue-800 mb-2">Notas Adicionales</h4>
-                      <p className="text-sm text-blue-700">{mascota.notas}</p>
+                      <p className="text-sm text-blue-700 whitespace-pre-wrap">{mascota.notas}</p>
                     </div>
                   )}
                   {!mascota.alergias && !mascota.enfermedades && !mascota.notas && (
@@ -632,9 +639,9 @@ const PetProfile = () => {
                     </div>
                   )}
                 </div>
-              </div> */}
+              </div>
             </div>
-          )}
+          )} 
         </div>
       </div>
 

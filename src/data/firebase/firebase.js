@@ -19,7 +19,8 @@ import {
   getDownloadURL, 
   deleteObject 
 } from "firebase/storage";
-import { db, storage } from "./firebaseConfig";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { db, storage, auth } from "./firebaseConfig";
 
 /**
  * Crea una nueva colección en Firestore
@@ -1267,6 +1268,34 @@ export const actualizarEstadoChapita = async (chapitaId, nuevoEstado) => {
   } catch (error) {
     console.error('Error al actualizar estado de chapita:', error);
     throw error;
+  }
+};
+
+// ==================== FUNCIONES DE AUTENTICACIÓN ====================
+
+/**
+ * Envía un email de recuperación de contraseña al usuario
+ * @param {string} email - Email del usuario
+ * @returns {Promise<void>}
+ */
+export const enviarRecuperacionContrasena = async (email) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    console.log(`Email de recuperación enviado a: ${email}`);
+  } catch (error) {
+    console.error('Error al enviar email de recuperación:', error);
+    
+    // Mapear errores comunes de Firebase a mensajes amigables
+    switch (error.code) {
+      case 'auth/user-not-found':
+        throw new Error('No existe una cuenta con este correo electrónico');
+      case 'auth/invalid-email':
+        throw new Error('El correo electrónico no es válido');
+      case 'auth/too-many-requests':
+        throw new Error('Demasiados intentos. Inténtalo más tarde');
+      default:
+        throw new Error('Error al enviar email de recuperación. Inténtalo de nuevo.');
+    }
   }
 };
 

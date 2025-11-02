@@ -4,6 +4,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../data/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import DecoracionForm from './decoracionUi/DecoracionForm';
+import ModalRecuperarPassword from './registers/ModalRecuperarPassword';
 import logo11 from '../assets/new-logo11.png';
 
 // Este componente no recibe props
@@ -16,6 +17,7 @@ const Login = () => {
   });
   const [isCargando, setIsCargando] = useState(false);
   const [error, setError] = useState('');
+  const [mostrarModalRecuperar, setMostrarModalRecuperar] = useState(false);
   
 
 
@@ -200,6 +202,16 @@ const Login = () => {
             </button>
           </div>
 
+              <div className="flex items-center justify-between mb-2">
+                <button
+                  type="button"
+                  onClick={() => setMostrarModalRecuperar(true)}
+                  className="text-xs sm:text-sm text-orange-600 hover:text-orange-500 font-medium transition-colors duration-200"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+
           {/* Enlace de registro - Compacto */}
           <div className="text-center pt-2">
             <p className="text-xs sm:text-sm text-gray-600">
@@ -214,6 +226,12 @@ const Login = () => {
           </div>
         </form>
       </div>
+
+      {/* Modal de recuperación de contraseña */}
+      <ModalRecuperarPassword
+        isAbierto={mostrarModalRecuperar}
+        onCerrar={() => setMostrarModalRecuperar(false)}
+      />
     </div>
   );
 };

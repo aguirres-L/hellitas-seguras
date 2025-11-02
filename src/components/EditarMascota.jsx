@@ -127,20 +127,7 @@ export const EditarMascota = ({
               />
             </div>
             
-         {/*    <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Edad (años)
-              </label>
-              <input
-                type="number"
-                name="edad"
-                value={formData.edad}
-                onChange={handleNumberChange}
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                required
-              />
-            </div> */}
+        
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -155,19 +142,7 @@ export const EditarMascota = ({
               />
             </div>
 
-       {/*      <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Número de Chip
-              </label>
-              <input
-                type="text"
-                name="numeroChip"
-                value={formData.numeroChip}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                placeholder="Número de identificación"
-              />
-            </div> */}
+    
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -184,7 +159,20 @@ export const EditarMascota = ({
             </div>
           </div>
         </div>
-
+   {/* Notas Adicionales */}
+   <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Notas Adicionales
+          </label>
+          <textarea
+            name="notas"
+            value={formData.notas}
+            onChange={handleChange}
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            placeholder="Ejemplo: Perro guía - Mi acompañante necesita de mí para desplazarse"
+          />
+        </div>
         {/* Información Veterinaria */}
         {(!tipoProfesional || tipoProfesional === 'veterinario') && (
           <div className="bg-blue-50 rounded-lg p-4">
@@ -252,41 +240,7 @@ export const EditarMascota = ({
           </div>
         )}
 
-        {/* Información de Peluquería */}
-     {/*    {(!tipoProfesional || tipoProfesional === 'peluquero') && (
-          <div className="bg-purple-50 rounded-lg p-4">
-            <h4 className="font-semibold text-purple-900 mb-4">Información de Peluquería</h4>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Comportamiento
-                </label>
-                <textarea
-                  name="comportamiento"
-                  value={formData.comportamiento}
-                  onChange={handleChange}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="Comportamiento durante el grooming..."
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Preferencias de Grooming
-                </label>
-                <textarea
-                  name="preferenciasGrooming"
-                  value={formData.preferenciasGrooming}
-                  onChange={handleChange}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="Tipo de corte, productos preferidos..."
-                />
-              </div>
-            </div>
-          </div>
-        )} */}
+  
 
         {/* Vacunas */}
         <div className="bg-green-50 rounded-lg p-4">
@@ -355,20 +309,7 @@ export const EditarMascota = ({
           </div>
         </div>
 
-        {/* Notas Adicionales */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Notas Adicionales
-          </label>
-          <textarea
-            name="notas"
-            value={formData.notas}
-            onChange={handleChange}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-            placeholder="Otras observaciones importantes..."
-          />
-        </div>
+     
 
         {/* Botones */}
         <div className="flex justify-between pt-6">

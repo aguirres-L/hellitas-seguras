@@ -5,6 +5,7 @@ import { auth, getDataById } from '../data/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import typeProfesionalStore from '../service/zustand';
 import DecoracionForm from './decoracionUi/DecoracionForm';
+import ModalRecuperarPassword from './registers/ModalRecuperarPassword';
 import logo11 from '../assets/new-logo11.png';
 
 // Este componente no recibe props
@@ -17,6 +18,7 @@ const LoginProfesional = () => {
   });
   const [isCargando, setIsCargando] = useState(false);
   const [error, setError] = useState('');
+  const [mostrarModalRecuperar, setMostrarModalRecuperar] = useState(false);
   const { setTypeProfesional } = typeProfesionalStore();
   // Redirigir si ya está autenticado
  /*  useEffect(() => {
@@ -205,6 +207,16 @@ const LoginProfesional = () => {
             </button>
           </div>
 
+          <div className="flex items-center justify-between mb-2">
+                <button
+                  type="button"
+                  onClick={() => setMostrarModalRecuperar(true)}
+                  className="text-xs sm:text-sm text-orange-600 hover:text-orange-500 font-medium transition-colors duration-200"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+
           {/* Enlaces */}
           <div className="text-center pt-4">
             <p className="text-sm text-gray-600">
@@ -244,6 +256,12 @@ const LoginProfesional = () => {
           </div>
         </form>
       </div>
+
+      {/* Modal de recuperación de contraseña */}
+      <ModalRecuperarPassword
+        isAbierto={mostrarModalRecuperar}
+        onCerrar={() => setMostrarModalRecuperar(false)}
+      />
     </div>
   );
 };

@@ -15,6 +15,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import DecoracionForm from './decoracionUi/DecoracionForm';
 import SkeletonCardPet from './uiDashboardUser/SkeletonCardPet';
 import { DashboardCitasColapsable } from './DashboardCitasColapsable';
+import ModalAlertFormularioAgregarMascota from './uiDashboardUser/ModalAlertFormulariAgregarMascota';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -31,6 +32,12 @@ const Dashboard = () => {
   const [datosUsuario, setDatosUsuario] = useState(null);
   const [isCargandoUsuario, setIsCargandoUsuario] = useState(false);
   const [mostrarFormularioMascota, setMostrarFormularioMascota] = useState(false);
+  
+  // Estados para el modal de alerta de mascota
+  const [mostrarModalAlertaMascota, setMostrarModalAlertaMascota] = useState(false);
+  const [tipoAlertaMascota, setTipoAlertaMascota] = useState('exito'); // 'exito' o 'error'
+  const [mensajeAlertaMascota, setMensajeAlertaMascota] = useState('');
+  const [nombreMascotaAlerta, setNombreMascotaAlerta] = useState('');
   
 
   // Estados para profesionales
@@ -283,12 +290,22 @@ const handleCancelarCita = async (cita) => {
       await cargarDatosUsuario();
       console.log('✅ Datos de usuario recargados');
       
-      // Cerrar el modal después de agregar exitosamente
+      // Cerrar el modal del formulario después de agregar exitosamente
       setMostrarFormularioMascota(false);
-      alert('¡Mascota agregada exitosamente!');
+      
+      // Mostrar modal de éxito
+      setNombreMascotaAlerta(mascota.nombre || '');
+      setMensajeAlertaMascota('');
+      setTipoAlertaMascota('exito');
+      setMostrarModalAlertaMascota(true);
     } catch (e) {
       console.error("❌ Error al agregar mascota:", e);
-      alert("Error al agregar mascota: " + e.message);
+      
+      // Mostrar modal de error
+      setNombreMascotaAlerta('');
+      setMensajeAlertaMascota(e.message || 'Error al agregar mascota. Inténtalo de nuevo.');
+      setTipoAlertaMascota('error');
+      setMostrarModalAlertaMascota(true);
     }
     setIsCargandoMascota(false);
   };
@@ -559,6 +576,15 @@ const handleCancelarCita = async (cita) => {
           </div>
         </div>
       )}
+
+      {/* Modal de alerta para agregar mascota */}
+      <ModalAlertFormularioAgregarMascota
+        isAbierto={mostrarModalAlertaMascota}
+        onCerrar={() => setMostrarModalAlertaMascota(false)}
+        tipo={tipoAlertaMascota}
+        mensaje={mensajeAlertaMascota}
+        nombreMascota={nombreMascotaAlerta}
+      />
     </div>
   );
 };

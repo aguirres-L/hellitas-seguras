@@ -31,7 +31,7 @@ export default function UiBusquedaNoDisponible({ setTab }) {
               </div>
               
               {/* Botón para volver a perros */}
-              <button
+              {/* <button
                 onClick={() => setTab(1)}
                 className="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200"
               >
@@ -39,7 +39,7 @@ export default function UiBusquedaNoDisponible({ setTab }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
                 Volver a Perros
-              </button>
+              </button> */}
             </div>
           </div>
     );
