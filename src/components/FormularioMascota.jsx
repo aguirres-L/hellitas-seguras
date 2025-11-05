@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ImageUploader } from './ImageUploader';
 import { useAuth } from '../contexts/AuthContext';
 import BusquedaAvanzada from './uiDashboardUser/BusquedaAvanzada';
-import UiBusquedaNoDisponible from './uiDashboardUser/UiBusquedaNoDisponible';
+import BusquedaAvanzadaGatos from './uiDashboardUser/BusquedaAvanzadaGatos';
+import BusquedaOtrosAnimales from './uiDashboardUser/BusquedaOtrosAnimales';
 
 // Este componente no recibe props opcionales.
 export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
@@ -175,18 +176,36 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-2 sm:p-4 md:p-6 space-y-4"
+      className="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-2 sm:p-4 md:p-6 "
     >
-      {/* Tabs responsivos */}
-      <div className="flex flex-col sm:flex-row border-b border-orange-200 mb-4">
+      {/* Header con Tab y Avatar */}
+      <div className="flex items-center justify-between  pb-4 gap-4">
+        {/* Tab Identificación */}
         <button
           type="button"
-          className={tabClasses(tab === 0) + " w-full sm:w-auto mb-2 sm:mb-0"}
+          className={tabClasses(tab === 0) + " flex-shrink-0"}
           onClick={() => setTab(0)}
         >
-          {tab === 1 || tab === 2 ? 'Volver' : 'Identificación'}
+          {tab === 1 || tab === 2 || tab === 3 ? 'Volver' : 'Identificación'}
         </button>
-      
+        
+        {/* Avatar de mascota - componente de imagen compacto */}
+        <div className="flex-shrink-0 flex flex-col items-center">
+          <label className="block text-xs font-medium text-gray-600 mb-2 text-center">
+            Foto de mascota
+          </label>
+          <div className="relative avatar-container" style={{ width: '80px', height: '80px' }}>
+            <ImageUploader
+              onImageSelect={setArchivoImagen}
+              onImageUploaded={setUrlImagenMascota}
+              isCargando={isCargando}
+              userId={usuario?.uid}
+              petId={mascotaId}
+              imagenActual={urlImagenMascota}
+              className="avatar-upload-compact"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Tab content */}
@@ -213,7 +232,7 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
                 required
               />
               {razaSeleccionada && (
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                   <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
@@ -221,7 +240,7 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
               )}
 
 
-              <div className="flex gap-2 justify-end mt-2">
+              <div className="flex flex-wrap gap-3 justify-end mt-2">
               <button
                 type="button"
                 className={tabClasses(tab === 1) + " w-full sm:w-auto"}
@@ -235,6 +254,13 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
                 onClick={() => setTab(2)}
               >
                 Razas de Gatos
+              </button>
+              <button
+                type="button"
+                className={tabClasses(tab === 3) + " w-full sm:w-auto"}
+                onClick={() => setTab(3)}
+              >
+                Otros Animales
               </button>
               </div>
 
@@ -278,21 +304,12 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
             />
             <label className="block text-sm font-medium text-gray-700 mb-1">Notas Adicionales</label>
             <textarea
-              className="border rounded px-3 py-2 w-full text-base"
+              className="border rounded px-3 py-2 mb-4 w-full text-base"
               placeholder="Ejemplo: Perro guía - Mi acompañante necesita de mí para desplazarse"
               name  ="notas"
               value={notas}
               onChange={e => setNotas(e.target.value)}
               rows={3}
-            />
-            <label className="block text-sm font-medium text-gray-700 mb-1">Foto</label>
-
-            <ImageUploader
-              onImageSelect={setArchivoImagen}
-              onImageUploaded={setUrlImagenMascota}
-              isCargando={isCargando}
-              userId={usuario?.uid}
-              petId={mascotaId}
             />
           </div>
         )}
@@ -327,11 +344,65 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
         )}
 
         {tab === 2 && (
-          <UiBusquedaNoDisponible setTab={setTab} />
+          <div className="space-y-4">
+            <BusquedaAvanzadaGatos 
+              onRazaSeleccionada={setRazaSeleccionada}
+              razaSeleccionada={razaSeleccionada}
+            />
+            
+            {/* Indicador de raza seleccionada */}
+            {razaSeleccionada && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <div>
+                    <p className="text-sm text-green-600 font-medium">Raza seleccionada:</p>
+                    <p className="text-lg font-semibold text-green-800 capitalize">
+                      {razaSeleccionada}
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      Esta raza se ha agregado automáticamente al formulario
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === 3 && (
+          <div className="space-y-4">
+            <BusquedaOtrosAnimales 
+              onRazaSeleccionada={setRazaSeleccionada}
+              razaSeleccionada={razaSeleccionada}
+            />
+            
+            {/* Indicador de tipo seleccionado */}
+            {razaSeleccionada && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <div>
+                    <p className="text-sm text-green-600 font-medium">Tipo seleccionado:</p>
+                    <p className="text-lg font-semibold text-green-800 capitalize">
+                      {razaSeleccionada}
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      Este tipo se ha agregado automáticamente al formulario
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      { tab === 0 && (
+      { (tab === 0 || tab === 1 || tab === 2 || tab === 3) && (
         <button
           type="submit"
           className="bg-orange-500 text-white px-4 py-3 rounded w-full font-semibold shadow-md hover:bg-orange-600 transition-all duration-300 text-base"
@@ -341,7 +412,7 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
         </button>
       )}
 
-      {/* Animación fade-in (Tailwind + CSS) */}
+      {/* Animación fade-in y estilos para avatar compacto (Tailwind + CSS) */}
       <style>
         {`
           .animate-fade-in {
@@ -350,6 +421,110 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
           @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px);}
             to { opacity: 1; transform: translateY(0);}
+          }
+          
+          /* Contenedor del avatar - tamaño fijo */
+          .avatar-container {
+            width: 80px !important;
+            height: 80px !important;
+            max-width: 80px !important;
+            max-height: 80px !important;
+            overflow: hidden !important;
+          }
+          
+          /* Estilos para avatar compacto - forzar tamaño */
+          .avatar-upload-compact {
+            width: 80px !important;
+            height: 80px !important;
+            max-width: 80px !important;
+            max-height: 80px !important;
+            overflow: hidden !important;
+          }
+          
+          /* Área de carga del ImageUploader */
+          .avatar-upload-compact > div,
+          .avatar-upload-compact .border-2,
+          .avatar-upload-compact .border-dashed {
+            width: 80px !important;
+            height: 80px !important;
+            min-width: 80px !important;
+            min-height: 80px !important;
+            max-width: 80px !important;
+            max-height: 80px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            overflow: hidden !important;
+            border-width: 2px !important;
+          }
+          
+          /* Imagen dentro del avatar */
+          .avatar-upload-compact img,
+          .avatar-upload-compact .relative img {
+            width: 80px !important;
+            height: 80px !important;
+            min-width: 80px !important;
+            min-height: 80px !important;
+            max-width: 80px !important;
+            max-height: 80px !important;
+            object-fit: cover !important;
+            border-radius: 50% !important;
+            display: block !important;
+          }
+          
+          /* Contenedor de imagen */
+          .avatar-upload-compact .relative {
+            width: 80px !important;
+            height: 80px !important;
+            max-width: 80px !important;
+            max-height: 80px !important;
+            overflow: hidden !important;
+            border-radius: 50% !important;
+          }
+          
+          /* Ocultar todos los textos y elementos innecesarios */
+          .avatar-upload-compact .space-y-3,
+          .avatar-upload-compact .text-lg,
+          .avatar-upload-compact .text-sm,
+          .avatar-upload-compact .text-xs,
+          .avatar-upload-compact p,
+          .avatar-upload-compact .mt-2 {
+            display: none !important;
+          }
+          
+          /* Botón de eliminar imagen - ajustar posición */
+          .avatar-upload-compact button[type="button"] {
+            position: absolute !important;
+            top: -4px !important;
+            right: -4px !important;
+            width: 20px !important;
+            height: 20px !important;
+            min-width: 20px !important;
+            min-height: 20px !important;
+            font-size: 14px !important;
+            line-height: 1 !important;
+            z-index: 10 !important;
+          }
+          
+          /* Icono de cámara cuando no hay imagen */
+          .avatar-upload-compact .w-16,
+          .avatar-upload-compact .h-16,
+          .avatar-upload-compact svg {
+            width: 32px !important;
+            height: 32px !important;
+            max-width: 32px !important;
+            max-height: 32px !important;
+          }
+          
+          /* Spinner de carga */
+          .avatar-upload-compact .animate-spin {
+            width: 24px !important;
+            height: 24px !important;
+            max-width: 24px !important;
+            max-height: 24px !important;
           }
         `}
       </style>
