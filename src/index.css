@@ -248,6 +248,16 @@ img[class*="cursor-pointer"]:hover {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
+/* Ocultar scrollbar pero mantener funcionalidad de scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE y Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari y Opera */
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .photo-modal-content {

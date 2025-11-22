@@ -208,21 +208,46 @@ console.log(mascota,'mascota');
       <div className="relative container mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mb-4">
-            <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
+            mascota.isPerdida ? 'bg-red-100' : 'bg-orange-100'
+          }`}>
+            {mascota.isPerdida ? (
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            ) : (
+              <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            )}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            Mascota Encontrada
-          </h1>
-          <p className="text-gray-600">
-            Esta mascota tiene un chip de identificación. Por favor, contacta a su dueño.
-          </p>
+         
         </div>
 
         {/* Contenido Principal */}
         <div className="max-w-2xl mx-auto">
+          {/* Alerta de Mascota Perdida */}
+          {mascota.isPerdida && (
+            <div className="mb-6 bg-red-50 border-2 border-red-300 rounded-lg p-4 animate-pulse">
+              <div className="flex items-center">
+                <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                  <svg className="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-red-900 mb-1">
+                    🚨 MASCOTA PERDIDA
+                  </h3>
+                  <p className="text-sm text-red-800">
+                    <strong>{mascota.nombre}</strong> busca a su familia. 
+                    Si la encuentras, por favor contacta al propietario usando la información de contacto disponible abajo.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-6">
             {/* Información de la Mascota */}
             <div className="flex flex-col md:flex-row items-start md:items-center mb-6">

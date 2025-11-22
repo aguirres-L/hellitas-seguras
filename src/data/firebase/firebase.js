@@ -1038,29 +1038,52 @@ export const eliminarCitaDeProfesional = async (profesionalId, citaId) => {
  * @returns {Promise<void>}
  */
 export const eliminarCitaCompleta = async (cita) => {
-  try {
-    const promesas = [];
-    
-    // Eliminar del usuario
-    if (cita.clienteId) {
-      promesas.push(eliminarCitaDeUsuario(cita.clienteId, cita.id));
+  const resultados = [];
+  const errores = [];
+  
+  // Eliminar del usuario (prioritario - si esto falla, lanzamos error)
+  if (cita.clienteId) {
+    try {
+      await eliminarCitaDeUsuario(cita.clienteId, cita.id);
+      resultados.push('usuario');
+    } catch (error) {
+      console.error('Error crítico al eliminar cita del usuario:', error);
+      throw error; // Si falla la eliminación del usuario, lanzamos el error
     }
-    
-    // Eliminar del profesional (veterinario o peluquero)
-    if (cita.clinicaId) {
-      promesas.push(eliminarCitaDeProfesional(cita.clinicaId, cita.id));
-    }
-    if (cita.peluqueriaId) {
-      promesas.push(eliminarCitaDeProfesional(cita.peluqueriaId, cita.id));
-    }
-    
-    // Ejecutar todas las eliminaciones en paralelo
-    await Promise.all(promesas);
-    
-    console.log(`Cita ${cita.id} eliminada completamente`);
-  } catch (error) {
-    console.error('Error al eliminar cita completa:', error);
-    throw error;
+  }
+  
+  // Eliminar del profesional (no crítico - si falla, solo lo registramos)
+  const promesasProfesional = [];
+  if (cita.clinicaId) {
+    promesasProfesional.push(
+      eliminarCitaDeProfesional(cita.clinicaId, cita.id)
+        .then(() => resultados.push('clinica'))
+        .catch(error => {
+          console.warn(`Advertencia: No se pudo eliminar cita del profesional ${cita.clinicaId}:`, error);
+          errores.push({ tipo: 'clinica', error });
+        })
+    );
+  }
+  if (cita.peluqueriaId) {
+    promesasProfesional.push(
+      eliminarCitaDeProfesional(cita.peluqueriaId, cita.id)
+        .then(() => resultados.push('peluqueria'))
+        .catch(error => {
+          console.warn(`Advertencia: No se pudo eliminar cita del profesional ${cita.peluqueriaId}:`, error);
+          errores.push({ tipo: 'peluqueria', error });
+        })
+    );
+  }
+  
+  // Esperar a que todas las eliminaciones de profesionales terminen (exitosas o no)
+  await Promise.allSettled(promesasProfesional);
+  
+  console.log(`Cita ${cita.id} eliminada. Resultados: ${resultados.join(', ')}`);
+  
+  // Si hubo errores pero la eliminación del usuario fue exitosa, no lanzamos error
+  // Solo registramos los errores para debugging
+  if (errores.length > 0) {
+    console.warn('Algunas eliminaciones secundarias fallaron, pero la cita fue eliminada del usuario:', errores);
   }
 };
 

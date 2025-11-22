@@ -188,7 +188,7 @@ const Dashboard = () => {
   const manejarEnviarCitaVeterinaria = (datosCita) => {
     console.log('Cita veterinaria enviada:', datosCita);
     // Aquí iría la lógica para enviar a la API
-    alert('¡Cita veterinaria agendada exitosamente!');
+   // alert('¡Cita veterinaria agendada exitosamente!');
     setMostrarFormularioVeterinaria(false);
     setClinicaSeleccionada(null);
    // Marcar que las citas se actualizaron
@@ -199,7 +199,7 @@ const Dashboard = () => {
   const manejarEnviarCitaPeluqueria = (datosCita) => {
     console.log('Cita peluquería enviada:', datosCita);
     // La cita ya se guardó en Firebase, solo mostrar confirmación
-    alert('¡Cita de peluquería reservada exitosamente!');
+   // alert('¡Cita de peluquería reservada exitosamente!');
     setMostrarFormularioPeluqueria(false);
     setPeluqueriaSeleccionada(null);
     // Marcar que las citas se actualizaron
@@ -258,12 +258,22 @@ const handleCancelarCita = async (cita) => {
     // Usar la nueva función que elimina la cita completamente
     await eliminarCitaCompleta(cita);
     
-    // Recargar datos del usuario para actualizar la UI
+    // Actualizar el estado local inmediatamente para mejor UX
+    // Filtrar la cita eliminada del array de citas
+    setDatosUsuario(prev => {
+      if (!prev || !prev.citas) return prev;
+      return {
+        ...prev,
+        citas: prev.citas.filter(c => c.id !== cita.id)
+      };
+    });
+    
+    // Recargar datos del usuario para asegurar sincronización completa
     await cargarDatosUsuario();
     
-    alert('Cita cancelada exitosamente');
-     // Marcar que las citas se actualizaron
-   marcarCitasActualizadas();
+   /*  alert('Cita cancelada exitosamente'); */
+    // Marcar que las citas se actualizaron
+    marcarCitasActualizadas();
   } catch (error) {
     console.error('Error al cancelar cita:', error);
     alert('Error al cancelar la cita. Inténtalo de nuevo.');

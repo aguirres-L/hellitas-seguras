@@ -22,12 +22,14 @@ export const EditarMascota = ({
     comportamiento: mascota.comportamiento || '',
     preferenciasGrooming: mascota.preferenciasGrooming || '',
     notas: mascota.notas || '',
-    contacto: mascota.contacto || ''
+    contacto: mascota.contacto || '',
+    isPerdida: mascota.isPerdida || false
   });
 
   const [nuevaVacuna, setNuevaVacuna] = useState({ nombre: '', fecha: '' });
   const [vacunas, setVacunas] = useState(mascota.vacunas || []);
   const [mostrarConfirmacionEliminar, setMostrarConfirmacionEliminar] = useState(false);
+  const [isGuardandoEstado, setIsGuardandoEstado] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -43,6 +45,38 @@ export const EditarMascota = ({
       ...prev,
       [name]: parseFloat(value) || 0
     }));
+  };
+
+  const handleCheckboxChange = async (e) => {
+    const { name, checked } = e.target;
+    
+    // Actualizar el estado local inmediatamente para mejor UX
+    setFormData(prev => ({
+      ...prev,
+      [name]: checked
+    }));
+
+    // Guardar inmediatamente en Firebase
+    setIsGuardandoEstado(true);
+    try {
+      await actualizarMascota(mascota.id, {
+        [name]: checked
+      });
+      
+      // Usar la misma lógica que "Guardar Cambios": cerrar modal y recargar datos
+      onGuardar();
+    } catch (error) {
+      console.error('Error al actualizar estado de mascota perdida:', error);
+      
+      // Revertir el cambio si falla
+      setFormData(prev => ({
+        ...prev,
+        [name]: !checked
+      }));
+      
+      alert(`Error al ${checked ? 'marcar' : 'desmarcar'} la mascota como perdida. Inténtalo de nuevo.`);
+      setIsGuardandoEstado(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -85,7 +119,9 @@ export const EditarMascota = ({
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
-      <h3 className="text-xl font-bold text-gray-900 mb-6">
+     <div className="flex justify-between items-center mb-4">
+
+     <h3 className="text-xl font-bold text-gray-900 mb-6">
         Editar Información de {mascota.nombre}
         {tipoProfesional && (
           <span className="text-sm font-normal text-gray-600 ml-2">
@@ -93,8 +129,78 @@ export const EditarMascota = ({
           </span>
         )}
       </h3>
+      <button
+                  onClick={() => setMostrarEdicion(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                >
+                  ×
+                </button>
+
+
+     </div>
       
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Estado de Mascota Perdida - Prioridad Alta */}
+        <div className={`rounded-lg p-5 border-2 shadow-sm ${
+          formData.isPerdida 
+            ? 'bg-red-50 border-red-400' 
+            : 'bg-green-50 border-green-300'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center flex-1">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center mr-4 ${
+                formData.isPerdida ? 'bg-red-100' : 'bg-green-100'
+              }`}>
+                {formData.isPerdida ? (
+                  <svg className="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                ) : (
+                  <svg className="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+              </div>
+              <div>
+                <h4 className={`text-lg font-bold ${
+                  formData.isPerdida ? 'text-red-900' : 'text-green-900'
+                }`}>
+                  {formData.isPerdida ? '🚨 MASCOTA PERDIDA' : '✅ MASCOTA EN CASA'}
+                </h4>
+                <p className={`text-sm mt-1 ${
+                  formData.isPerdida ? 'text-red-700' : 'text-green-700'
+                }`}>
+                  {formData.isPerdida 
+                    ? 'La mascota está marcada como PERDIDA. Esta información será visible en su perfil público.' 
+                    : 'La mascota está en casa y segura.'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 ml-4">
+              {isGuardandoEstado && (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
+                  <span className="ml-2 text-xs text-gray-600">Guardando...</span>
+                </div>
+              )}
+              <label className={`relative inline-flex items-center ${
+                isGuardandoEstado ? 'cursor-wait opacity-60' : 'cursor-pointer'
+              }`}>
+                <input
+                  type="checkbox"
+                  name="isPerdida"
+                  checked={formData.isPerdida}
+                  onChange={handleCheckboxChange}
+                  disabled={isGuardandoEstado}
+                  className="sr-only peer"
+                />
+                <div className={`w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all ${
+                  formData.isPerdida ? 'peer-checked:bg-red-500' : 'peer-checked:bg-green-500'
+                } ${isGuardandoEstado ? 'opacity-60' : ''}`}></div>
+              </label>
+            </div>
+          </div>
+        </div>
         {/* Información Básica */}
         <div className="bg-gray-50 rounded-lg p-4">
           <h4 className="font-semibold text-gray-900 mb-4">Información Básica</h4>

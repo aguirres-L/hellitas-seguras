@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { useAuth } from '../contexts/AuthContext';
-import { obtenerUsuarioPorUid } from '../data/firebase/firebase';
+import { obtenerUsuarioPorUid, actualizarMascota } from '../data/firebase/firebase';
 import { SistemaCitas } from './SistemaCitas';
 import { EditarMascota } from './EditarMascota';
 import typeProfesionalStore from '../service/zustand';
@@ -13,6 +13,8 @@ import { ConsejosIA } from './ConsejosIA';
 import { useConsejosIA } from '../hooks/useConsejosIA';
 import { getChapitaFiletForUserId } from '../data/hook/getChapitaFiletForUserId';
 import { getChapitasByMascotaId } from '../data/hook/getChapitasByMascotaId';
+import QRCode from 'react-qr-code';
+import SvgAlert from './ui/svg/SvgAlert';
 
 // Este componente recibe props a través de useParams
 const PetProfile = () => {
@@ -32,6 +34,8 @@ const PetProfile = () => {
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [openMetodoPago, setOpenMetodoPago] = useState(false);
+  const [urlCopiada, setUrlCopiada] = useState(false);
+  const [isGuardandoEstadoPerdida, setIsGuardandoEstadoPerdida] = useState(false);
 
   // Hook para consejos de IA
   const {
@@ -130,6 +134,24 @@ const PetProfile = () => {
   const handleMetodoPago = () => {
     setOpenMetodoPago(!openMetodoPago);
   }
+
+  // Función para generar la URL pública del perfil
+  const obtenerUrlPublica = () => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/pet/${id}`;
+  };
+
+  // Función para copiar la URL al portapapeles
+  const copiarUrl = async () => {
+    try {
+      const url = obtenerUrlPublica();
+      await navigator.clipboard.writeText(url);
+      setUrlCopiada(true);
+      setTimeout(() => setUrlCopiada(false), 3000);
+    } catch (error) {
+      console.error('Error al copiar URL:', error);
+    }
+  };
 
   // Función para obtener el color y texto del estado de la chapita
   const obtenerEstiloEstado = (estado) => {
@@ -251,6 +273,43 @@ const PetProfile = () => {
     window.location.reload();
   };
 
+  // Función para cambiar el estado de mascota perdida inmediatamente
+  const handleCambiarEstadoPerdida = async (nuevoEstado) => {
+    if (!mascota || !usuario) return;
+    
+    // Guardar el estado anterior por si necesitamos revertir
+    const estadoAnterior = mascota.isPerdida;
+    
+    // Actualizar el estado local inmediatamente para mejor UX
+    setMascota(prev => ({
+      ...prev,
+      isPerdida: nuevoEstado
+    }));
+
+    setIsGuardandoEstadoPerdida(true);
+    try {
+      // Guardar inmediatamente en Firebase
+      await actualizarMascota(mascota.id, {
+        isPerdida: nuevoEstado
+      });
+      
+      // No recargamos la página, el estado ya está actualizado
+      // La UI se actualizará automáticamente gracias al estado de React
+    } catch (error) {
+      console.error('Error al actualizar estado de mascota perdida:', error);
+      
+      // Revertir el cambio si falla
+      setMascota(prev => ({
+        ...prev,
+        isPerdida: estadoAnterior
+      }));
+      
+      alert(`Error al ${nuevoEstado ? 'marcar' : 'desmarcar'} la mascota como perdida. Inténtalo de nuevo.`);
+    } finally {
+      setIsGuardandoEstadoPerdida(false);
+    }
+  };
+
   // Función para manejar la eliminación de la mascota
   const handleEliminarMascota = () => {
     setMostrarEdicion(false);
@@ -330,18 +389,83 @@ const PetProfile = () => {
 
         {/* Contenido Principal */}
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6">
+          {/* Alerta de Mascota Perdida */}
+          {mascota.isPerdida && (
+            <div className="mb-6 bg-red-50 border-2 border-red-300 rounded-lg p-4 animate-pulse">
+              <div className="flex items-center">
+                <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                 <SvgAlert />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-bold text-red-900 mb-1">
+                      MASCOTA PERDIDA
+                  </h3>
+                {/*   <p className="text-sm text-red-800">
+                    <strong>{mascota.nombre}</strong> está marcada como perdida. 
+                    Si la encuentras, por favor contacta al propietario usando la información de contacto disponible.
+                  </p> */}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Encabezado */}
           <div className="flex flex-col md:flex-row items-start md:items-center ">
-            <div className="relative">
-              <img 
-                src={mascota.fotoUrl || "/dog-avatar.png"} 
-                alt={mascota.nombre} 
-                onClick={abrirModal}
-                className="w-24 h-24 rounded-full mr-6 mb-4 md:mb-0 border-4 border-orange-100 shadow-lg object-cover" 
-              />
+            <div className=" mb-4 md:mb-0">
+            
+            {/* Foto de la mascota */}
+              <div className="flex items-center justify-center">
+                <img 
+                  src={mascota.fotoUrl || "/dog-avatar.png"} 
+                  alt={mascota.nombre} 
+                  onClick={abrirModal}
+                  className="w-24 h-24 rounded-full mr-6 border-4 border-orange-100 shadow-lg object-cover cursor-pointer" 
+                />
+                {/* Switch de Mascota Perdida - Acceso Rápido - Posicionado sobre la foto */}
+                {usuario && (
+                  <div className={`absolute -top-2 -right-2 flex flex-col items-center gap-1 ${
+                    mascota.isPerdida ? 'bg-red-500' : 'bg-green-500'
+                  } rounded-full p-2 shadow-lg border-2 border-white`}>
+                    {isGuardandoEstadoPerdida ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      </div>
+                    ) : (
+                      <>
+                        <label className={`relative inline-flex items-center cursor-pointer ${
+                          isGuardandoEstadoPerdida ? 'opacity-60 cursor-wait' : ''
+                        }`}>
+                          <input
+                            type="checkbox"
+                            checked={mascota.isPerdida || false}
+                            onChange={(e) => handleCambiarEstadoPerdida(e.target.checked)}
+                            disabled={isGuardandoEstadoPerdida}
+                            className="sr-only peer"
+                          />
+                          <div className={`w-10 h-5 bg-white/30 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-white rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${
+                            mascota.isPerdida ? 'peer-checked:bg-red-600' : 'peer-checked:bg-green-600'
+                          }`}></div>
+                        </label>
+                       {/*  <span className="text-xs font-bold text-white text-center leading-tight">
+                          {mascota.isPerdida ? '🚨' : '✅'}
+                        </span> */}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+
             </div>
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{mascota.nombre}</h2>
+              <div className="flex items-center gap-3 mb-2">
+                <h2 className="text-2xl font-bold text-gray-900">{mascota.nombre}</h2>
+                {usuario && mascota.isPerdida && (
+                  <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-bold animate-pulse">
+                    PERDIDA
+                  </span>
+                )}
+              </div>
               <p className="text-gray-600 mb-3">{mascota.raza} • {mascota.edad}</p>
               <div className="flex space-x-2">
                 {usuario && (
@@ -479,14 +603,79 @@ const PetProfile = () => {
 
                 {/* QR */}
                 <div className="flex flex-col items-center bg-white/60 rounded-lg p-6 shadow-sm">
-                  <div className="p-4 mb-4">
+                  <div className="p-4 mb-4 flex flex-col md:flex-row items-center justify-center gap-4">
                     <img src={mascota.fotoUrl} style={{borderRadius:'50% '}} alt="QR" className="w-48 h-48 object-cover  " />
+                   {/*  <h3 className="font-bold text-lg mb-4 text-gray-900 text-center">
+                    Compartir Perfil de {mascota.nombre}
+                  </h3> */}
+                  
+                  {/* Contenedor del QR con fondo blanco */}
+                  <div className="bg-white p-4 rounded-lg shadow-md mb-4 border-2 border-orange-100 w-full md:w-auto flex items-center justify-center">
+                    <QRCode
+                      value={obtenerUrlPublica()}
+                      size={200}
+                      level="H"
+                      style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                      fgColor="#1f2937"
+                      bgColor="#ffffff"
+                    />
+                    </div>
                   </div>
-                  <button onClick={handleMetodoPago} className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-6 py-3 rounded-lg hover:from-orange-600 hover:to-pink-600 transition-all duration-200 font-medium shadow-lg transform hover:scale-105">
-                    Quiero una chapita para  {mascota.nombre}
+              
+                  {/* Botón para solicitar chapita */}
+                  <button
+                    onClick={handleMetodoPago}
+                    className="w-full mb-4 bg-gradient-to-r from-orange-500 to-pink-500 text-white px-6 py-3 rounded-lg hover:from-orange-600 hover:to-pink-600 transition-all duration-200 font-medium shadow-lg transform hover:scale-105"
+                  >
+                    Quiero una chapita para {mascota.nombre}
                   </button>
+
+
+                  {/* URL pública con botón de copiar */}
+                  <div className="w-full mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
+                      URL Pública del Perfil
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={obtenerUrlPublica()}
+                        readOnly
+                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                      <button
+                        onClick={copiarUrl}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                          urlCopiada
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                        title="Copiar URL"
+                      >
+                        {urlCopiada ? (
+                          <span className="flex items-center gap-1">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            ¡Copiado!
+                          </span>
+                        ) : (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                
+                  
                   <p className="text-sm text-gray-500 mt-3 text-center">
-                    {mascota.estadoChapita === true ? 'La chapita para ' + mascota.nombre + '  esta en produccion' : ' Contactanos para obtener la chapita para ' + mascota.nombre}</p>
+                    {mascota.estadoChapita === true 
+                      ? `La chapita para ${mascota.nombre} está en producción` 
+                      : `Contactanos para obtener la chapita para ${mascota.nombre}`
+                    }
+                  </p>
                 </div>
               </div>
 
@@ -650,15 +839,7 @@ const PetProfile = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-gray-900">Editar Perfil de {mascota.nombre}</h3>
-                <button
-                  onClick={() => setMostrarEdicion(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
-                >
-                  ×
-                </button>
-              </div>
+              
               <EditarMascota 
                 mascota={mascota}
                 tipoProfesional={usuario?.tipoProfesional}
