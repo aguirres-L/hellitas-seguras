@@ -17,7 +17,6 @@ export default function DetailPagoChapita({ obtenerColorEstado, pagosChapitas, t
     const manejarCambioEstado = async (chapitaId, nuevoEstado) => {
         try {
             await actualizarEstadoChapita(chapitaId, nuevoEstado);
-            console.log(`Estado de chapita ${chapitaId} actualizado a: ${nuevoEstado}`);
             
             // Notificar al componente padre para refrescar los datos
             if (onEstadoActualizado) {
@@ -79,7 +78,6 @@ export default function DetailPagoChapita({ obtenerColorEstado, pagosChapitas, t
 
     // Función para mostrar la imagen en grande
     const mostrarImagenGrande = (pago) => {
-      console.log(pago,'pago');
         setImagenSeleccionada({
             url: pago.fotoMascota,
             nombreMascota: pago.mascotaNombre || 'Mascota',
@@ -333,7 +331,6 @@ export default function DetailPagoChapita({ obtenerColorEstado, pagosChapitas, t
       )}
 
       {/* Modal de imagen ampliada */}
-      {console.log(imagenSeleccionada,'imagenSeleccionada')}
       {mostrarModalImagen && imagenSeleccionada && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
           <div className={`relative max-w-4xl max-h-[90vh] w-full mx-4 rounded-lg overflow-hidden ${

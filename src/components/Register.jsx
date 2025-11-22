@@ -85,7 +85,6 @@ const Register = () => {
         fechaRegistro: new Date()
       });
 
-      console.log('Usuario registrado exitosamente:', userCredential.user);
       navigate('/dashboard'); // Redirigir al dashboard
       
     } catch (error) {

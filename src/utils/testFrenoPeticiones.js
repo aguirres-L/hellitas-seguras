@@ -6,16 +6,13 @@ import { aiService } from '../services/aiService';
 export const testFrenoPeticiones = {
   // Simular múltiples peticiones para probar el freno
   async simularPeticiones(userId, mascotaId, raza = 'labrador', cantidad = 5) {
-    console.log(`🧪 Simulando ${cantidad} peticiones para usuario ${userId}, mascota ${mascotaId}`);
     
     const resultados = [];
     
     for (let i = 1; i <= cantidad; i++) {
-      console.log(`\n--- Petición ${i}/${cantidad} ---`);
       
       // Verificar estado antes de la petición
       const estadoAntes = aiService.verificarFrenoPeticiones(userId, mascotaId);
-      console.log('Estado antes:', estadoAntes);
       
       if (!estadoAntes.puedeHacerPeticion) {
         console.log('❌ Frenado: No se puede hacer más peticiones');
@@ -109,14 +106,9 @@ export const testFrenoPeticiones = {
         
         if (Array.isArray(parsed) && parsed.length > 0) {
           const primeraEntrada = parsed[0];
-          console.log('Primera entrada:', primeraEntrada);
           
           if (primeraEntrada && primeraEntrada[1] && primeraEntrada[1].data) {
             const data = primeraEntrada[1].data;
-            console.log(`Tipo de data: ${Array.isArray(data) ? 'Array' : typeof data}`);
-            if (Array.isArray(data)) {
-              console.log(`Consejos en array: ${data.length}`);
-            }
           }
         }
       }
@@ -127,7 +119,6 @@ export const testFrenoPeticiones = {
 
   // Test completo: limpiar, simular peticiones, verificar estructura
   async testCompleto(userId, mascotaId, raza = 'labrador') {
-    console.log('🚀 === TEST COMPLETO DEL FRENO DE PETICIONES ===');
     
     // 1. Limpiar peticiones del día
     this.limpiarPeticionesDelDia(userId, mascotaId);
@@ -139,20 +130,10 @@ export const testFrenoPeticiones = {
     this.verificarEstructuraCache(userId, mascotaId);
     
     // 4. Resumen final
-    console.log('\n📋 === RESUMEN FINAL ===');
     const exitosos = resultados.filter(r => r.estado === 'exitoso').length;
     const frenados = resultados.filter(r => r.estado === 'frenado').length;
     const errores = resultados.filter(r => r.estado === 'error').length;
     
-    console.log(`✅ Peticiones exitosas: ${exitosos}`);
-    console.log(`🔒 Peticiones frenadas: ${frenados}`);
-    console.log(`❌ Peticiones con error: ${errores}`);
-    
-    if (frenados > 0) {
-      console.log('🎯 ¡El freno está funcionando correctamente!');
-    } else {
-      console.log('⚠️ El freno no se activó - revisar configuración');
-    }
     
     return resultados;
   }
@@ -161,10 +142,4 @@ export const testFrenoPeticiones = {
 // Función global para usar en la consola del navegador
 if (typeof window !== 'undefined') {
   window.testFreno = testFrenoPeticiones;
-  console.log('🧪 Test de freno disponible como window.testFreno');
-  console.log('Comandos disponibles:');
-  console.log('- testFreno.testCompleto(userId, mascotaId) - Test completo');
-  console.log('- testFreno.simularPeticiones(userId, mascotaId, raza, cantidad) - Simular peticiones');
-  console.log('- testFreno.limpiarPeticionesDelDia(userId, mascotaId) - Limpiar peticiones');
-  console.log('- testFreno.verificarEstructuraCache(userId, mascotaId) - Verificar estructura');
 }

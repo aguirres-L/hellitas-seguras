@@ -73,12 +73,10 @@ const DashboardProfesional = () => {
   };
 
   const handleVerMascota = (datosCita) => {
-    console.log(datosCita, 'datosCita handleVerMascota');
     setDatosMascotaSeleccionada(datosCita);
     setMostrarModalMascota(true);
   };
 
-  console.log(datosProfesional, 'datosProfesional');
   
   // Función para actualizar datos de la tienda
   const handleActualizarTienda = async (datosActualizados) => {
@@ -87,7 +85,6 @@ const DashboardProfesional = () => {
       // Aquí deberías implementar la función para actualizar en Firebase
       // await actualizarProfesional(usuario.uid, datosActualizados);
       setDatosProfesional(datosActualizados);
-      console.log('Tienda actualizada:', datosActualizados);
     } catch (error) {
       console.error('Error al actualizar tienda:', error);
       alert('Error al actualizar la tienda');
@@ -105,9 +102,7 @@ const DashboardProfesional = () => {
 
     setIsSubiendoImagen(true);
     try {
-      console.log('🔄 Subiendo nueva imagen del local...');
       const nuevaUrlImagen = await subirImagenProfesional(usuario.uid, archivoImagen);
-      console.log('✅ Nueva imagen subida:', nuevaUrlImagen);
 
       // Actualizar en Firestore
       await updateDataCollection('profesionales', usuario.uid, {
@@ -251,7 +246,6 @@ const DashboardProfesional = () => {
           </div>
 
           {/* Contenido de Pestañas */}
-{console.log(datosProfesional.citas, 'datosProfesional.citas')}
           {pestañaActiva === 'historial' && (
             <div>
            {/*    <h3 className="text-lg font-bold text-gray-900 mb-4">Historial de Citas</h3> */}
@@ -327,8 +321,7 @@ const DashboardProfesional = () => {
                           <button 
                             className="bg-orange-500 text-white px-3 py-1 rounded text-xs hover:bg-orange-600 transition-colors duration-200"
                             onClick={() => {
-                              // Aquí puedes agregar lógica para editar la cita
-                              console.log('Editar cita:', cita);
+                              // Aquí puedes agregar lógica para editar la cita 
                             }}
                           >
                             Editar

@@ -35,7 +35,6 @@ export const createCollectionFirebase = async (nombreColeccion, datos) => {
       fechaCreacion: new Date(),
       fechaActualizacion: new Date()
     });
-    console.log(`Colección ${nombreColeccion} creada con ID: ${docRef.id}`);
     return docRef.id;
   } catch (error) {
     console.error("Error al crear la colección:", error);
@@ -56,11 +55,8 @@ export const addDataCollection = async (nombreColeccion, datos) => {
       fechaCreacion: new Date(),
       fechaActualizacion: new Date()
     });
-    console.log(`Documento añadido a ${nombreColeccion} con ID: ${docRef.id}`);
     return docRef.id;
   } catch (error) {
-    console.log(error,'error');
-    
     console.error("Error al añadir datos:", error);
     throw error;
   }
@@ -75,7 +71,6 @@ export const addDataCollection = async (nombreColeccion, datos) => {
 export const deleteDataCollection = async (nombreColeccion, idFirestore) => {
   try {
     await deleteDoc(doc(db, nombreColeccion, idFirestore));
-    console.log(`Documento ${idFirestore} eliminado de ${nombreColeccion}`);
   } catch (error) {
     console.error("Error al eliminar datos:", error);
     throw error;
@@ -96,7 +91,6 @@ export const updateDataCollection = async (nombreColeccion, idFirestore, datosAc
       ...datosActualizados,
       fechaActualizacion: new Date()
     });
-    console.log(`Documento ${idFirestore} actualizado en ${nombreColeccion}`);
   } catch (error) {
     console.error("Error al actualizar datos:", error);
     throw error;
@@ -142,7 +136,6 @@ export const getDataById = async (nombreColeccion, idFirestore) => {
         ...docSnap.data()
       };
     } else {
-      console.log("No se encontró el documento");
       return null;
     }
   } catch (error) {
@@ -221,7 +214,6 @@ export const addDataWithCustomId = async (nombreColeccion, idPersonalizado, dato
       fechaCreacion: new Date(),
       fechaActualizacion: new Date()
     });
-    console.log(`Documento añadido a ${nombreColeccion} con ID personalizado: ${idPersonalizado}`);
   } catch (error) {
     console.error("Error al añadir datos con ID personalizado:", error);
     throw error;
@@ -252,7 +244,6 @@ export const obtenerUsuarioPorUid = async (uid) => {
         ...usuarioSnap.data()
       };
     } else {
-      console.log("No se encontró el usuario con UID:", uid);
       return null;
     }
   } catch (error) {
@@ -401,7 +392,6 @@ export const actualizarMascota = async (mascotaId, datosActualizados) => {
             infoMascotas: mascotasActualizadas
           });
           
-          console.log(`Mascota ${mascotaId} actualizada exitosamente`);
           return;
         }
       }
@@ -458,7 +448,6 @@ export const agregarCitaAProfesional = async (profesionalId, cita) => {
         estado: 'pendiente'
       })
     });
-    console.log(`Cita agregada al profesional ${profesionalId}`);
   } catch (error) {
     console.error('Error al agregar cita al profesional:', error);
     throw error;
@@ -482,7 +471,6 @@ export const agregarCitaAUsuario = async (usuarioId, cita) => {
         estado: 'pendiente'
       })
     });
-    console.log(`Cita agregada al usuario ${usuarioId}`);
   } catch (error) {
     console.error('Error al agregar cita al usuario:', error);
     throw error;
@@ -515,7 +503,6 @@ export const agregarCita = async (cita) => {
       ...cita,
       fechaCreacion: new Date()
     });
-    console.log(`Cita creada con ID: ${docRef.id}`);
     return docRef.id;
   } catch (error) {
     console.error('Error al crear cita:', error);
@@ -562,7 +549,6 @@ export const actualizarCita = async (citaId, datosActualizados) => {
       ...datosActualizados,
       fechaActualizacion: new Date()
     });
-    console.log(`Cita ${citaId} actualizada exitosamente`);
   } catch (error) {
     console.error('Error al actualizar cita:', error);
     throw error;
@@ -577,7 +563,6 @@ export const actualizarCita = async (citaId, datosActualizados) => {
 export const eliminarCita = async (citaId) => {
   try {
     await deleteDataCollection('citas', citaId);
-    console.log(`Cita ${citaId} eliminada exitosamente`);
   } catch (error) {
     console.error('Error al eliminar cita:', error);
     throw error;
@@ -609,7 +594,6 @@ export const agregarProducto = async (profesionalId, producto) => {
       productos: arrayUnion(productoCompleto)
     });
     
-    console.log(`Producto creado con ID: ${productoId} en profesional ${profesionalId}`);
     return productoId;
   } catch (error) {
     console.error('Error al crear producto:', error);
@@ -645,7 +629,6 @@ export const actualizarProducto = async (profesionalId, productoId, datosActuali
       productos: productosActualizados
     });
     
-    console.log(`Producto ${productoId} actualizado exitosamente`);
   } catch (error) {
     console.error('Error al actualizar producto:', error);
     throw error;
@@ -675,7 +658,6 @@ export const eliminarProducto = async (profesionalId, productoId) => {
       productos: productosActualizados
     });
     
-    console.log(`Producto ${productoId} eliminado exitosamente`);
   } catch (error) {
     console.error('Error al eliminar producto:', error);
     throw error;
@@ -754,7 +736,6 @@ export const agregarDescuento = async (profesionalId, descuento) => {
       descuentos: arrayUnion(descuentoCompleto)
     });
     
-    console.log(`Descuento creado con ID: ${descuentoId} en profesional ${profesionalId}`);
     return descuentoId;
   } catch (error) {
     console.error('Error al crear descuento:', error);
@@ -790,7 +771,6 @@ export const actualizarDescuento = async (profesionalId, descuentoId, datosActua
       descuentos: descuentosActualizados
     });
     
-    console.log(`Descuento ${descuentoId} actualizado exitosamente`);
   } catch (error) {
     console.error('Error al actualizar descuento:', error);
     throw error;
@@ -820,7 +800,6 @@ export const eliminarDescuento = async (profesionalId, descuentoId) => {
       descuentos: descuentosActualizados
     });
     
-    console.log(`Descuento ${descuentoId} eliminado exitosamente`);
   } catch (error) {
     console.error('Error al eliminar descuento:', error);
     throw error;
@@ -896,7 +875,6 @@ export const subirArchivo = async (archivo, ruta, nombreArchivo) => {
     // Obtener URL de descarga
     const downloadURL = await getDownloadURL(snapshot.ref);
     
-    console.log(`Archivo subido exitosamente: ${downloadURL}`);
     return downloadURL;
   } catch (error) {
     console.error('Error al subir archivo:', error);
@@ -961,7 +939,6 @@ export const eliminarArchivo = async (urlArchivo) => {
     const storageRef = ref(storage, rutaArchivo);
     await deleteObject(storageRef);
     
-    console.log('Archivo eliminado exitosamente');
   } catch (error) {
     console.error('Error al eliminar archivo:', error);
     throw error;
@@ -995,7 +972,6 @@ export const eliminarCitaDeUsuario = async (usuarioId, citaId) => {
       citas: citasActualizadas
     });
     
-    console.log(`Cita ${citaId} eliminada del usuario ${usuarioId}`);
   } catch (error) {
     console.error('Error al eliminar cita del usuario:', error);
     throw error;
@@ -1025,7 +1001,6 @@ export const eliminarCitaDeProfesional = async (profesionalId, citaId) => {
       citas: citasActualizadas
     });
     
-    console.log(`Cita ${citaId} eliminada del profesional ${profesionalId}`);
   } catch (error) {
     console.error('Error al eliminar cita del profesional:', error);
     throw error;
@@ -1078,8 +1053,6 @@ export const eliminarCitaCompleta = async (cita) => {
   // Esperar a que todas las eliminaciones de profesionales terminen (exitosas o no)
   await Promise.allSettled(promesasProfesional);
   
-  console.log(`Cita ${cita.id} eliminada. Resultados: ${resultados.join(', ')}`);
-  
   // Si hubo errores pero la eliminación del usuario fue exitosa, no lanzamos error
   // Solo registramos los errores para debugging
   if (errores.length > 0) {
@@ -1114,7 +1087,6 @@ export const agregarServicio = async (profesionalId, servicio) => {
       servicios: arrayUnion(servicioCompleto)
     });
     
-    console.log(`Servicio creado con ID: ${servicioId} en profesional ${profesionalId}`);
     return servicioId;
   } catch (error) {
     console.error('Error al crear servicio:', error);
@@ -1150,7 +1122,6 @@ export const actualizarServicio = async (profesionalId, servicioId, datosActuali
       servicios: serviciosActualizados
     });
     
-    console.log(`Servicio ${servicioId} actualizado exitosamente`);
   } catch (error) {
     console.error('Error al actualizar servicio:', error);
     throw error;
@@ -1180,7 +1151,6 @@ export const eliminarServicio = async (profesionalId, servicioId) => {
       servicios: serviciosActualizados
     });
     
-    console.log(`Servicio ${servicioId} eliminado exitosamente`);
   } catch (error) {
     console.error('Error al eliminar servicio:', error);
     throw error;
@@ -1262,7 +1232,6 @@ export const eliminarMascota = async (mascotaId) => {
             infoMascotas: mascotasActualizadas
           });
           
-          console.log(`Mascota ${mascotaId} eliminada exitosamente del usuario ${usuario.id}`);
           return;
         }
       }
@@ -1287,7 +1256,6 @@ export const actualizarEstadoChapita = async (chapitaId, nuevoEstado) => {
       estado: nuevoEstado,
       fechaActualizacion: new Date()
     });
-    console.log(`Estado de chapita ${chapitaId} actualizado a: ${nuevoEstado}`);
   } catch (error) {
     console.error('Error al actualizar estado de chapita:', error);
     throw error;
@@ -1304,7 +1272,6 @@ export const actualizarEstadoChapita = async (chapitaId, nuevoEstado) => {
 export const enviarRecuperacionContrasena = async (email) => {
   try {
     await sendPasswordResetEmail(auth, email);
-    console.log(`Email de recuperación enviado a: ${email}`);
   } catch (error) {
     console.error('Error al enviar email de recuperación:', error);
     

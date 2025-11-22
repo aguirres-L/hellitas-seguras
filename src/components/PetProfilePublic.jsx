@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { buscarMascotaPorId } from '../data/firebase/firebase';
 import DecoracionForm from './decoracionUi/DecoracionForm';
 import logo from '../../public/new-logo11.png';
+import SvgAlert from './ui/svg/SvgAlert';
 // Este componente no requiere autenticación y muestra información básica de mascotas
 const PetProfilePublic = () => {
   const { id } = useParams(); 
@@ -169,8 +170,6 @@ const PetProfilePublic = () => {
     return null;
   }
 
-console.log(mascota,'mascota');
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50">
@@ -231,9 +230,7 @@ console.log(mascota,'mascota');
             <div className="mb-6 bg-red-50 border-2 border-red-300 rounded-lg p-4 animate-pulse">
               <div className="flex items-center">
                 <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
-                  <svg className="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
+                  <SvgAlert />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-red-900 mb-1">
@@ -241,7 +238,7 @@ console.log(mascota,'mascota');
                   </h3>
                   <p className="text-sm text-red-800">
                     <strong>{mascota.nombre}</strong> busca a su familia. 
-                    Si la encuentras, por favor contacta al propietario usando la información de contacto disponible abajo.
+                    Si la/o encuentras, por favor contacta al propietario usando la información de contacto disponible abajo.
                   </p>
                 </div>
               </div>

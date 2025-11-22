@@ -18,7 +18,7 @@ const AccesoBloqueado = () => {
 
 
   const handleShowMetodoDePag = () => {
-    console.log('showMetodoDePag', showMetodoDePag);
+ //   console.log('showMetodoDePag', showMetodoDePag);
     setshowMetodoDePag(true);
   };
 

@@ -50,11 +50,7 @@ const LoginProfesional = () => {
         setIsCargando(false);
         return;
       }
-      console.log(profesionalDoc.tipoProfesional,'profesionalDoc');
       setTypeProfesional(profesionalDoc.tipoProfesional)
-      console.log('tipo de profesional cargado en zustand');
-      
-      console.log('Profesional autenticado exitosamente:', userCredential.user);
       navigate('/dashboardProfesional');
       
     } catch (error) {

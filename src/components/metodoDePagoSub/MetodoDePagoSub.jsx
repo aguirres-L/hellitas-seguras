@@ -49,11 +49,9 @@ export default function MetodoDePagoSub(){
                 })
             };
 
-            console.log('Guardando suscripción en Firebase...', datosSuscripcion);
             
             const idSuscripcion = await addDataCollection('pagoSuscripciones', datosSuscripcion);
             
-            console.log('Suscripción guardada exitosamente con ID:', idSuscripcion);
             
             // Mostrar modal de éxito
             setIsModalAlert(true);
@@ -65,7 +63,6 @@ export default function MetodoDePagoSub(){
             });
             
         } catch (error) {
-            console.log(error, 'error');
             
             setIsModalAlert(true);
             setTipoAlert('error');

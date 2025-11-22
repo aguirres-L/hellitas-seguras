@@ -52,7 +52,6 @@ const DashboardSuperAdmin = () => {
     try {
       const chapitas = await getAllChapitas();
       setChapitas(chapitas);
-      console.log(chapitas,'chapitas');
     } catch (error) {
       console.error('Error al cargar chapitas:', error);
     } finally {
@@ -395,7 +394,6 @@ const DashboardSuperAdmin = () => {
       alert('❌ Error al editar usuario'); 
     }
   };
-  console.log(chapitas,'chapitas');
 
   return (
     <div className={

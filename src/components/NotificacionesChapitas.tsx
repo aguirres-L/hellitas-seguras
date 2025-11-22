@@ -48,16 +48,13 @@ export const NotificacionesChapitas: React.FC<NotificacionesChapitasProps> = ({
   // Función para cargar chapitas del usuario (reutilizada de ModalDetailUserComun)
   const getAllChapitasUsuario = async () => {
     if (!usuario?.uid) {
-      console.log('No hay usuario.uid:', usuario);
       return;
     }
     
-    console.log('Buscando pagos para usuario.uid:', usuario.uid);
     try {
       // Cargar pagos de chapitas
       
       const chapitasUsuario = await getChapitaFiletForUserId(usuario.uid);
-      console.log('Chapitas filtradas:', chapitasUsuario);
       
       // Transformar datos para el formato de notificaciones
       const notificacionesChapitas = chapitasUsuario.map(chapita => ({

@@ -27,7 +27,6 @@ export default function MetodoDePago({ mascotaNombre, mascotaFoto, mascotaId, mo
   const [isPasosTranferencia, setIsPasosTranferencia] = useState(false);
   const [isTransferenciaConfirmada, setIsTransferenciaConfirmada] = useState(false);
   // ... existing validation and formatting functions ...
-console.log(mascotaId,'mascotaId');
 
   const procesarPago = async (pago) => {
   // para cuando se use pago con tajeta , usar mercado pago   console.log(pago,'pago');
@@ -84,11 +83,9 @@ console.log(mascotaId,'mascotaId');
 
     
 
-    console.log('Guardando pago en Firebase...', datosDelPago);
     
     const idDelPago = await addDataCollection('pagoChapita', datosDelPago)
     
-    console.log('Pago guardado exitosamente con ID:', idDelPago);
     
       // Mostrar modal de éxito
       setIsModalAlert(true);
@@ -103,7 +100,6 @@ console.log(mascotaId,'mascotaId');
         onCerrar();
       }, 4000);
     } catch (error) {
-      console.log(error,'error');
       
       setIsModalAlert(true);
       setTipoAlert('error');

@@ -6,13 +6,11 @@ import { aiService } from '../services/aiService';
 export const cacheDebugger = {
   // Inspeccionar el cache actual
   inspeccionar() {
-    console.log('🔍 Inspeccionando cache de consejos IA...');
     aiService.inspeccionarCache();
   },
 
   // Detectar si el cache está corrupto
   detectarCorrupcion() {
-    console.log('🔍 Detectando corrupción del cache...');
     const corrupto = aiService.detectarCacheCorrupto();
     console.log(corrupto ? '❌ Cache corrupto detectado' : '✅ Cache en buen estado');
     return corrupto;
@@ -20,7 +18,6 @@ export const cacheDebugger = {
 
   // Obtener estadísticas del cache
   estadisticas() {
-    console.log('📊 Estadísticas del cache:');
     const stats = aiService.obtenerEstadisticasCache();
     console.log(stats);
     return stats;
@@ -28,42 +25,33 @@ export const cacheDebugger = {
 
   // Limpiar cache corrupto
   limpiarCorrupto() {
-    console.log('🧹 Limpiando cache corrupto...');
     aiService.limpiarCacheCorrupto();
     console.log('✅ Cache limpiado');
   },
 
   // Migrar cache corrupto
   migrar() {
-    console.log('🔄 Migrando cache corrupto...');
     aiService.migrarCacheCorrupto();
     console.log('✅ Migración completada');
   },
 
   // Limpiar todo el cache
   limpiarTodo() {
-    console.log('🗑️ Limpiando todo el cache...');
     aiService.limpiarCache();
     console.log('✅ Cache completamente limpiado');
   },
 
   // Verificar estructura de localStorage
   verificarLocalStorage() {
-    console.log('🔍 Verificando localStorage...');
     try {
       const stored = localStorage.getItem('consejos_ia_cache');
       if (!stored) {
-        console.log('❌ No hay datos en localStorage');
         return;
       }
 
       const parsed = JSON.parse(stored);
-      console.log('Tipo de datos:', Array.isArray(parsed) ? 'Array' : typeof parsed);
-      console.log('Longitud:', Array.isArray(parsed) ? parsed.length : 'N/A');
       
       if (Array.isArray(parsed) && parsed.length > 0) {
-        console.log('Primera entrada:', parsed[0]);
-        
         // Verificar si hay anidamiento excesivo
         const primeraEntrada = parsed[0];
         if (primeraEntrada && primeraEntrada[1] && primeraEntrada[1].data && typeof primeraEntrada[1].data === 'object' && primeraEntrada[1].data.data) {

@@ -36,11 +36,7 @@ const [formData, setFormData] = useState({
   const [errores, setErrores] = useState({});
 
   const serviciosDisponibles = clinica.servicios;
-  console.log('🔍 Debug servicios veterinarios:', {
-    clinica: clinica,
-    serviciosDisponibles: serviciosDisponibles,
-    serviciosLength: serviciosDisponibles?.length
-  });
+
 
 
   const validarFormulario = () => {
@@ -221,7 +217,6 @@ const [formData, setFormData] = useState({
             {serviciosDisponibles && serviciosDisponibles.length > 0 ? (
               <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3">
                 {serviciosDisponibles.map(servicio => {
-                  console.log(servicio, 'servicio veterinario');
                   return (
                     <label key={servicio} className="flex items-center">
                       <input

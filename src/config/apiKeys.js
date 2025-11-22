@@ -16,13 +16,11 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 async function obtenerTokensDesdeFirebase() {
   // Verificar cache
   if (tokensCache && cacheTimestamp && Date.now() - cacheTimestamp < CACHE_DURATION) {
-    console.log('📦 Usando tokens desde cache');
     return tokensCache;
   }
 
   try {
     const documentos = await getAllDataCollection('tokens-ia');
-    console.log('📥 Tokens obtenidos de Firebase:'/* , documentos */);
     
     if (documentos && documentos.length > 0) {
       // Tomar el primer documento (asumiendo que solo hay uno)
@@ -41,13 +39,7 @@ async function obtenerTokensDesdeFirebase() {
       tokensCache = tokens;
       cacheTimestamp = Date.now();
       
-      console.log('✅ Tokens cargados desde Firebase:'/* , {
-        huggingFace: !!tokens.HUGGING_FACE_TOKEN,
-        fallback1: !!tokens.HUGGING_FACE_TOKEN_FALLBACK,
-        fallback2: !!tokens.HUGGING_FACE_TOKEN_FALLBACK2,
-        fallback3: !!tokens.HUGGING_FACE_TOKEN_FALLBACK3,
-        cohere: !!tokens.COHERE_API_KEY
-      } */);
+      
       
       return tokens;
     }
@@ -126,7 +118,6 @@ export async function inicializarTokensDesdeFirebase() {
   try {
     const tokens = await obtenerTokensDesdeFirebase();
     if (tokens) {
-      console.log('✅ Tokens inicializados correctamente desde Firebase');
       return true;
     }
     console.error('❌ No se encontraron tokens en Firebase');
@@ -155,7 +146,6 @@ export async function verificarConfiguracionAPIs() {
     cohere: !!API_KEYS.COHERE_API_KEY
   };
   
-  console.log('🔍 Configuración de APIs:'/* , configurado */);
   return configurado;
 }
 

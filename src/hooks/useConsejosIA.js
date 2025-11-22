@@ -64,7 +64,6 @@ export const useConsejosIA = (raza, userId = null, mascotaId = null, mascota = n
       }
     }
 
-    console.log('Generando consejos para:', { raza, tipoConsejo: tipoSeleccionado });
     setCargando(true);
     setError(null);
     setFuente(null);
@@ -80,7 +79,6 @@ export const useConsejosIA = (raza, userId = null, mascotaId = null, mascota = n
           } else {
             promptPersonalizado = obtenerPromptPorDefecto(tipoSeleccionado, mascota);
           }
-          console.log('Prompt personalizado generado:', promptPersonalizado);
         } catch (err) {
           console.warn('Error generando prompt personalizado:', err);
         }
@@ -97,7 +95,6 @@ export const useConsejosIA = (raza, userId = null, mascotaId = null, mascota = n
         
         // Si la IA no está disponible, no consumir petición mensual
         if (resultado.fuente === 'ia_no_disponible') {
-          console.log('IA no disponible - no se consume petición mensual');
           // No actualizar peticiones restantes ni historial
           return;
         }
@@ -171,9 +168,7 @@ export const useConsejosIA = (raza, userId = null, mascotaId = null, mascota = n
 
   // Función de test para validar APIs de IA
   const testAPIs = async () => {
-    console.log('🧪 Iniciando test de APIs...');
     const resultado = await aiService.testAPIs();
-    console.log('🧪 Resultado del test:', resultado);
     return resultado;
   };
 
@@ -181,13 +176,10 @@ export const useConsejosIA = (raza, userId = null, mascotaId = null, mascota = n
   const testModeloEspecifico = async (modelo) => {
     const token = API_KEYS.HUGGING_FACE_TOKEN || API_KEYS.HUGGING_FACE_TOKEN_FALLBACK;
     if (!token) {
-      console.log('❌ No hay token disponible');
       return { success: false, error: 'No hay token disponible' };
     }
     
-    console.log(`🧪 Probando modelo específico: ${modelo}`);
     const resultado = await aiService.testModeloEspecifico(modelo, token);
-    console.log('🧪 Resultado del test específico:', resultado);
     return resultado;
   };
 
@@ -217,7 +209,6 @@ export const useConsejosIA = (raza, userId = null, mascotaId = null, mascota = n
       }
     }
 
-    console.log('Regenerando consejos para:', { raza, userId, mascotaId, tipoConsejo: tipoSeleccionado });
     setCargando(true);
     setError(null);
     setFuente(null);
@@ -233,7 +224,6 @@ export const useConsejosIA = (raza, userId = null, mascotaId = null, mascota = n
           } else {
             promptPersonalizado = obtenerPromptPorDefecto(tipoSeleccionado, mascota);
           }
-          console.log('Prompt personalizado generado:', promptPersonalizado);
         } catch (err) {
           console.warn('Error generando prompt personalizado:', err);
         }
@@ -250,7 +240,6 @@ export const useConsejosIA = (raza, userId = null, mascotaId = null, mascota = n
         
         // Si la IA no está disponible, no consumir petición mensual
         if (resultado.fuente === 'ia_no_disponible') {
-          console.log('IA no disponible - no se consume petición mensual');
           // No actualizar peticiones restantes ni historial
           return;
         }

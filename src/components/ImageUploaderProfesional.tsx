@@ -90,9 +90,7 @@ export const ImageUploaderProfesional: React.FC<ImageUploaderProfesionalProps> =
     if (profesionalId && onImageUploaded && !profesionalId.includes('@')) {
       setIsSubiendo(true);
       try {
-        console.log('🔄 Subiendo imagen del local a Storage...');
         const imageUrl = await subirImagenProfesional(profesionalId, file);
-        console.log('✅ Imagen del local subida exitosamente:', imageUrl);
         
         // Notificar al componente padre con la URL
         onImageUploaded(imageUrl);

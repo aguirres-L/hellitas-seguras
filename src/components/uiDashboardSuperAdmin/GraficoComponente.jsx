@@ -1,5 +1,4 @@
 export default function GraficoComponente({ titulo, tendencia, dataDistribucion, COLORES_DISTRIBUCION, TrendingUp, ResponsiveContainer, PieChart, Pie, Cell, Tooltip}){
-  console.log(dataDistribucion,'dataDistribucion');
   
   // Función para formatear el tooltip con información detallada
   const formatearTooltip = (value, name, props) => {
@@ -51,7 +50,6 @@ export default function GraficoComponente({ titulo, tendencia, dataDistribucion,
                             label= { (entry) => `${entry.name} ${entry.value}` }
                           >
                             {dataDistribucion.map((entrada, index) => {
-                                console.log(entrada,'entrada');
                                 return (
                                     <Cell key={`cell-${entrada.name}`} fill={COLORES_DISTRIBUCION[index % COLORES_DISTRIBUCION.length]} />
                                 )

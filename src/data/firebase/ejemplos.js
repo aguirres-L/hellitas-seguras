@@ -25,7 +25,6 @@ export const ejemploCrearColeccion = async () => {
       edad: 3,
       propietario: 'usuario123'
     });
-    console.log('Colección creada con ID:', idDocumento);
   } catch (error) {
     console.error('Error:', error);
   }
@@ -42,7 +41,6 @@ export const ejemploAñadirMascota = async () => {
       raza: 'Siames',
       peso: 4.5
     });
-    console.log('Mascota añadida con ID:', idMascota);
   } catch (error) {
     console.error('Error:', error);
   }
@@ -52,7 +50,6 @@ export const ejemploAñadirMascota = async () => {
 export const ejemploObtenerTodasMascotas = async () => {
   try {
     const mascotas = await getAllDataCollection('mascotas');
-    console.log('Todas las mascotas:', mascotas);
     return mascotas;
   } catch (error) {
     console.error('Error:', error);
@@ -63,7 +60,6 @@ export const ejemploObtenerTodasMascotas = async () => {
 export const ejemploObtenerMascotaPorId = async (idMascota) => {
   try {
     const mascota = await getDataById('mascotas', idMascota);
-    console.log('Mascota encontrada:', mascota);
     return mascota;
   } catch (error) {
     console.error('Error:', error);
@@ -74,7 +70,6 @@ export const ejemploObtenerMascotaPorId = async (idMascota) => {
 export const ejemploBuscarMascotasPorPropietario = async (propietario) => {
   try {
     const mascotas = await searchDataByField('mascotas', 'propietario', propietario);
-    console.log(`Mascotas de ${propietario}:`, mascotas);
     return mascotas;
   } catch (error) {
     console.error('Error:', error);
@@ -89,7 +84,6 @@ export const ejemploActualizarMascota = async (idMascota, nuevosDatos) => {
       peso: nuevosDatos.peso,
       ultimaVisita: new Date()
     });
-    console.log('Mascota actualizada correctamente');
   } catch (error) {
     console.error('Error:', error);
   }
@@ -99,7 +93,6 @@ export const ejemploActualizarMascota = async (idMascota, nuevosDatos) => {
 export const ejemploEliminarMascota = async (idMascota) => {
   try {
     await deleteDataCollection('mascotas', idMascota);
-    console.log('Mascota eliminada correctamente');
   } catch (error) {
     console.error('Error:', error);
   }
@@ -109,7 +102,6 @@ export const ejemploEliminarMascota = async (idMascota) => {
 export const ejemploObtenerMascotasOrdenadas = async () => {
   try {
     const mascotas = await getDataOrdered('mascotas', 'fechaCreacion', 'desc', 5);
-    console.log('Últimas 5 mascotas registradas:', mascotas);
     return mascotas;
   } catch (error) {
     console.error('Error:', error);
@@ -147,11 +139,9 @@ export const ejemploGestionCitasProfesionales = async () => {
     };
 
     await agregarCitaAProfesional('peluquero123', citaPeluqueria);
-    console.log('Cita de peluquería agregada exitosamente');
 
     // 2. Obtener todas las citas de un profesional
     const citasProfesional = await obtenerCitasDeProfesional('peluquero123');
-    console.log('Citas del profesional:', citasProfesional);
 
     // 3. Ejemplo de estructura de datos en Firestore
     const estructuraProfesional = {
@@ -195,7 +185,6 @@ export const ejemploGestionCitasProfesionales = async () => {
       ]
     };
 
-    console.log('Estructura de datos del profesional:', estructuraProfesional);
 
   } catch (error) {
     console.error('Error en gestión de citas con profesionales:', error);
@@ -219,7 +208,6 @@ export const ejemploGestionCitas = async () => {
 
     // 2. Buscar citas de una mascota específica
     const citasMascota = await searchDataByField('citas', 'mascotaId', 'mascota123');
-    console.log('Citas de la mascota:', citasMascota);
 
     // 3. Actualizar estado de la cita
     await updateDataCollection('citas', idCita, {
@@ -229,7 +217,6 @@ export const ejemploGestionCitas = async () => {
 
     // 4. Obtener citas ordenadas por fecha
     const citasOrdenadas = await getDataOrdered('citas', 'fecha', 'asc', 10);
-    console.log('Próximas 10 citas:', citasOrdenadas);
 
   } catch (error) {
     console.error('Error en gestión de citas:', error);
@@ -252,7 +239,6 @@ export const ejemploConValidaciones = async (datosMascota) => {
 
     // Guardar datos
     const id = await addDataCollection('mascotas', datosMascota);
-    console.log('Mascota guardada con éxito:', id);
     return id;
 
   } catch (error) {

@@ -48,7 +48,6 @@ const Login = () => {
         formData.password
       );
 
-      console.log('Usuario autenticado exitosamente:', userCredential.user);
       navigate('/dashboard'); // Redirigir al dashboard
       
     } catch (error) {

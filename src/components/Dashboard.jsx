@@ -77,7 +77,6 @@ const Dashboard = () => {
   // Función para mapear datos de profesionales al formato esperado por los componentes
   const mapearProfesionalAVeterinaria = (profesional) => {
     const serviciosMapeados = profesional.servicios ? profesional.servicios.map(servicio => servicio.nombre) : [];
-    console.log(profesional, 'descuentos del profesional');
     
     return {
       id: profesional.id,
@@ -127,7 +126,6 @@ const Dashboard = () => {
       const veterinariosData = await obtenerProfesionalesPorTipo('veterinario');
       setVeterinariosRaw(veterinariosData);
       const veterinariosMapeados = veterinariosData.map(mapearProfesionalAVeterinaria);
-      console.log(veterinariosMapeados, 'veterinarios mapeados');
       setVeterinarios(veterinariosMapeados);
       
       // Cargar peluqueros
@@ -186,7 +184,6 @@ const Dashboard = () => {
   };
 
   const manejarEnviarCitaVeterinaria = (datosCita) => {
-    console.log('Cita veterinaria enviada:', datosCita);
     // Aquí iría la lógica para enviar a la API
    // alert('¡Cita veterinaria agendada exitosamente!');
     setMostrarFormularioVeterinaria(false);
@@ -197,7 +194,6 @@ const Dashboard = () => {
   };
 
   const manejarEnviarCitaPeluqueria = (datosCita) => {
-    console.log('Cita peluquería enviada:', datosCita);
     // La cita ya se guardó en Firebase, solo mostrar confirmación
    // alert('¡Cita de peluquería reservada exitosamente!');
     setMostrarFormularioPeluqueria(false);
@@ -291,14 +287,11 @@ const handleCancelarCita = async (cita) => {
   const handleAgregarMascota = async (mascota) => {
     setIsCargandoMascota(true);
     try {
-      console.log('🔄 Guardando mascota en Firestore:', mascota);
       
       await agregarMascotaAUsuario(usuario.uid, mascota);
-      console.log('✅ Mascota guardada en Firestore');
       
       // Recargar datos del usuario después de agregar mascota
       await cargarDatosUsuario();
-      console.log('✅ Datos de usuario recargados');
       
       // Cerrar el modal del formulario después de agregar exitosamente
       setMostrarFormularioMascota(false);
@@ -309,7 +302,7 @@ const handleCancelarCita = async (cita) => {
       setTipoAlertaMascota('exito');
       setMostrarModalAlertaMascota(true);
     } catch (e) {
-      console.error("❌ Error al agregar mascota:", e);
+      console.error("Error al agregar mascota:", e);
       
       // Mostrar modal de error
       setNombreMascotaAlerta('');
@@ -323,7 +316,6 @@ const handleCancelarCita = async (cita) => {
 
 
   
-  console.log(datosUsuario,'datosUsuario');
   
 
   return (

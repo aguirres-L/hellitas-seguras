@@ -31,7 +31,6 @@ export class MensualidadController {
    */
   async cargarYActualizarEstadosUsuarios() {
     try {
-      console.log('🔄 Iniciando verificación de mensualidades...');
       
       // Obtener todos los usuarios
       const todosUsuarios = await getAllDataCollection('usuarios');
@@ -43,7 +42,6 @@ export class MensualidadController {
         usuario.rol !== 'profesional'
       );
 
-      console.log(`📊 Procesando ${usuariosComunes.length} usuarios comunes...`);
 
       // Actualizar estados de todos los usuarios
       const usuariosActualizados = usuariosComunes.map(usuario => 
@@ -62,7 +60,6 @@ export class MensualidadController {
         mensualidadesProximasVencer: this.usuariosConMensualidadProximaVencer.length
       };
 
-      console.log('✅ Verificación de mensualidades completada:', this.estadisticasMensualidades);
       
       return {
         usuariosActualizados,
@@ -86,7 +83,6 @@ export class MensualidadController {
   async actualizarUsuarioEnBaseDatos(usuarioId, datosActualizados) {
     try {
       await updateDataCollection('usuarios', usuarioId, datosActualizados);
-      console.log(`✅ Usuario ${usuarioId} actualizado en la base de datos`);
       return true;
     } catch (error) {
       console.error(`❌ Error al actualizar usuario ${usuarioId}:`, error);
@@ -100,7 +96,6 @@ export class MensualidadController {
    */
   async desactivarUsuariosConMensualidadVencida() {
     try {
-      console.log('🔒 Desactivando usuarios con mensualidades vencidas...');
       
       const resultados = [];
       
@@ -123,7 +118,6 @@ export class MensualidadController {
         });
       }
 
-      console.log(`✅ ${resultados.filter(r => r.actualizado).length} usuarios desactivados`);
       
       return {
         exitoso: true,
@@ -148,7 +142,6 @@ export class MensualidadController {
    */
   async renovarMensualidadUsuario(usuarioId) {
     try {
-      console.log(`🔄 Renovando mensualidad para usuario ${usuarioId}...`);
       
       // Obtener usuario actual
       const todosUsuarios = await getAllDataCollection('usuarios');
@@ -173,7 +166,6 @@ export class MensualidadController {
       });
 
       if (actualizado) {
-        console.log(`✅ Mensualidad renovada para usuario ${usuarioId} (1 mes)`);
         return {
           exitoso: true,
           usuario: usuarioRenovado,
@@ -225,7 +217,6 @@ export class MensualidadController {
    */
   async ejecutarVerificacionCompleta() {
     try {
-      console.log('🚀 Iniciando verificación completa del sistema de mensualidades...');
       
       // 1. Cargar y actualizar estados
       const resultadoVerificacion = await this.cargarYActualizarEstadosUsuarios();

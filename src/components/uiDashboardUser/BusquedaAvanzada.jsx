@@ -94,7 +94,6 @@ export default function BusquedaAvanzada({ onRazaSeleccionada, razaSeleccionada 
     }
   }, [mostrarCarrusel, imagenesRandom.length, obtenerImagenesRandom]);
 
-console.log(arrayCarrusel,'arrayCarrusel');
 
   return (
     <div className="space-y-6">

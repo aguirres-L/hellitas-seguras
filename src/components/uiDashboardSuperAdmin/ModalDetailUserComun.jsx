@@ -29,17 +29,13 @@ export default function ModalDetailUserComun({
 // Función para cargar pagos del usuario
 const getAllChapitasUsuario = async () => {
   if (!usuario?.id) {
-    console.log('No hay usuario.id:', usuario);
     return;
   }
   
-  console.log('Buscando pagos para usuario.id:', usuario.id);
   try {
     // Cargar pagos de chapitas
     const chapitas = await getAllDataCollection('pagoChapita');
-    console.log('Todas las chapitas:', chapitas);
     const chapitasUsuario = chapitas.filter(pago => pago.usuarioId === usuario.id);
-    console.log('Chapitas filtradas:', chapitasUsuario);
     setAllChapitaUser(chapitasUsuario);
   } catch (error) {
     console.error('Error al cargar pagos:', error);
@@ -50,7 +46,6 @@ const getAllChapitasUsuario = async () => {
     getAllChapitasUsuario();
   }, [usuario?.id]);
 
-  console.log(allChapitaUser,'allChapitaUser');
   
   // Si el modal no está abierto, no renderizar nada
   if (!isAbierto) return null;
@@ -129,7 +124,6 @@ const getAllChapitasUsuario = async () => {
 
   
   
-  console.log(usuario,'usuario');
   
 
   return (

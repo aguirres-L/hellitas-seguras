@@ -1,90 +1,153 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getAllDataCollection } from '../../data/firebase/firebase';
 
 // Este componente no recibe props
-const historiasRescate = [
-  {
-    id: 1,
-    imagen: 'https://media.a24.com/p/5ea1366ab57e090f86abf5037da6b60e/adjuntos/296/imagenes/009/462/0009462750/533x300/smart/batata-perrita-rescatadajpg.jpg',
-    titulo: 'Luna encontró su hogar después de 2 años en la calle',
-    descripcion: 'Esta hermosa perrita fue rescatada en condiciones críticas de desnutrición y abandono. Su transformación es un testimonio del poder del amor y la dedicación.',
-    nombreMascota: 'Luna',
-    edad: '3 años',
-    raza: 'Mezcla',
-    historia: 'Luna fue encontrada desnutrida y con heridas en las patas en las afueras de la ciudad. Después de 6 meses de cuidados veterinarios intensivos, rehabilitación física y mucho amor, finalmente encontró una familia que la adora. Hoy es una perrita feliz que disfruta de largos paseos y mimos interminables.',
-    fechaRescate: '15 de Marzo, 2024',
-    estado:false,
-    tiempoRescate: '6 meses'
-  },
-  {
-    id: 2,
-    imagen: 'https://estaticos.elcolombiano.com/binrepository/580x435/0c0/580d365/none/11101/BXVN/whatsapp-image-2021-05-07-at-6-11-50-pm_37681142_20210507183811.jpg',
-    titulo: 'Max: De la desesperación a la felicidad',
-    descripcion: 'Un perro abandonado en un parque industrial encontró una segunda oportunidad gracias al trabajo incansable de nuestro equipo de rescate.',
-    nombreMascota: 'Max',
-    edad: '2 años',
-    raza: 'Golden Retriever',
-    historia: 'Max fue rescatado de un parque industrial donde vivía solo, buscando comida entre la basura. Sufría de ansiedad severa y desconfiaba de los humanos. Con paciencia y técnicas de socialización, Max aprendió a confiar nuevamente. Ahora es el compañero inseparable de una familia con niños, demostrando que el amor puede curar las heridas más profundas.',
-    fechaRescate: '22 de Febrero, 2024',
-    estado:false,
-    tiempoRescate: '4 meses'
-  },
-  {
-    id: 3,
-    imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSRCt6ca2YOOyWETvQNkHid8qOO0CLcQMSgwRkIbZdH7dWasJ1NDafKyHAJhh5XFi5HSO0',
-    titulo: 'Bella: Una transformación milagrosa',
-    descripcion: 'Esta gatita demostró que el amor todo lo puede, superando problemas respiratorios graves para convertirse en una mascota saludable.',
-    nombreMascota: 'Bella',
-    edad: '1 año',
-    raza: 'Gato doméstico',
-    historia: 'Bella llegó con problemas respiratorios graves que los veterinarios consideraron críticos. Requirió cirugía de emergencia y cuidados intensivos durante semanas. Los veterinarios trabajaron incansablemente y hoy es una gatita saludable y juguetona que ronronea constantemente. Su caso inspiró a muchos a no rendirse ante las dificultades.',
-    fechaRescate: '8 de Enero, 2024',
-    estado:true,
-    tiempoRescate: '3 meses'
-  },
-  {
-    id: 4,
-    imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTLouz96v0Y9K9pbDjAg7jpusVn8aLa58YMOXsixcLv5M4gUVwNb9w5A5Ttxbj2P6RAou8',
-    titulo: 'Rocky: El guerrero que nunca se rindió',
-    descripcion: 'Con solo 3 patas, Rocky demostró que las limitaciones físicas no son obstáculo para la felicidad y el amor.',
-    nombreMascota: 'Rocky',
-    edad: '4 años',
-    raza: 'Pitbull',
-    historia: 'Rocky llegó con una pata gravemente herida que requirió amputación. A pesar del trauma, su espíritu nunca se quebró. Aprendió a moverse con agilidad y se convirtió en un ejemplo de resiliencia. Su nueva familia lo adora por su valentía y determinación.',
-    fechaRescate: '10 de Diciembre, 2023',
-    estado:true,
-    tiempoRescate: '5 meses'
-  },
-  {
-    id: 5,
-    imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTDZNEXEh1jSi3WbN00yZm2pG9iIXRN-IAMmit_R2kT382jQMSMJPTUF2wBtI34uPS5ooI',
-    titulo: 'Mia: La princesa que conquistó corazones',
-    descripcion: 'Esta pequeña gatita sorda demostró que las discapacidades no son limitaciones para encontrar amor y felicidad.',
-    nombreMascota: 'Mia',
-    edad: '2 años',
-    raza: 'Gato blanco',
-    historia: 'Mia nació sorda, pero eso nunca la detuvo. Aprendió a comunicarse a través de vibraciones y gestos. Su familia adoptiva se adaptó perfectamente a sus necesidades especiales, creando señales visuales para comunicarse. Hoy es una gatita feliz que disfruta de la vida al máximo.',
-    fechaRescate: '5 de Noviembre, 2023',
-    estado:true,
-    tiempoRescate: '2 meses'
-  },
-  {
-    id: 6,
-    imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSV_QoaS0Qf0DEr3k9Qt3BlJ0-P8ii9dkIEx3C4Xxsjcv7bAx4AesGrCavpd0FtjwrCqUE',
-    titulo: 'Thor: El gigante gentil que encontró su lugar',
-    descripcion: 'Este perro grande intimidaba por su tamaño, pero su corazón era más grande que sus miedos.',
-    nombreMascota: 'Thor',
-    edad: '5 años',
-    raza: 'Gran Danés',
-    historia: 'Thor fue abandonado por su tamaño intimidante. Muchos lo rechazaban sin conocer su naturaleza gentil. Finalmente, una familia con experiencia en perros grandes lo adoptó. Hoy es el guardián más amoroso de la casa, demostrando que el tamaño no define el corazón.',
-    fechaRescate: '20 de Octubre, 2023',
-    estado:true,
-    tiempoRescate: '7 meses'
-  }
-];
-
 export default function HistoriasRescates() {
+  const [historiasRescate, setHistoriasRescate] = useState([]);
+  const [isCargando, setIsCargando] = useState(true);
+  const [error, setError] = useState(null);
   const [noticiaSeleccionada, setNoticiaSeleccionada] = useState(null);
   const [mostrarModal, setMostrarModal] = useState(false);
+
+  // Función para formatear fecha
+  const formatearFecha = (fecha) => {
+    if (!fecha) return 'Fecha no disponible';
+    
+    try {
+      const fechaObj = fecha.seconds 
+        ? new Date(fecha.seconds * 1000)
+        : new Date(fecha);
+      
+      return fechaObj.toLocaleDateString('es-CL', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (err) {
+      return 'Fecha inválida';
+    }
+  };
+
+  // Función para calcular tiempo de rescate
+  const calcularTiempoRescate = (fechaRescate) => {
+    if (!fechaRescate) return 'No disponible';
+    
+    try {
+      const fechaObj = fechaRescate.seconds 
+        ? new Date(fechaRescate.seconds * 1000)
+        : new Date(fechaRescate);
+      
+      const ahora = new Date();
+      const diferenciaMs = ahora - fechaObj;
+      const diferenciaDias = Math.floor(diferenciaMs / (1000 * 60 * 60 * 24));
+      
+      if (diferenciaDias < 30) {
+        return `${diferenciaDias} días`;
+      } else if (diferenciaDias < 365) {
+        const meses = Math.floor(diferenciaDias / 30);
+        return `${meses} ${meses === 1 ? 'mes' : 'meses'}`;
+      } else {
+        const años = Math.floor(diferenciaDias / 365);
+        const mesesRestantes = Math.floor((diferenciaDias % 365) / 30);
+        if (mesesRestantes === 0) {
+          return `${años} ${años === 1 ? 'año' : 'años'}`;
+        }
+        return `${años} ${años === 1 ? 'año' : 'años'} y ${mesesRestantes} ${mesesRestantes === 1 ? 'mes' : 'meses'}`;
+      }
+    } catch (err) {
+      return 'No disponible';
+    }
+  };
+
+  // Función para generar título si no existe
+  const generarTitulo = (historia) => {
+    if (historia.titulo) return historia.titulo;
+    
+    const nombre = historia.nombreMascota || 'Esta mascota';
+    const estado = historia.estado === 'adoptado' 
+      ? 'encontró su hogar' 
+      : historia.estado === 'en_adopcion'
+        ? 'busca su hogar'
+        : 'fue rescatada';
+    
+    return `${nombre}: ${estado}`;
+  };
+
+  // Función para generar descripción si no existe
+  const generarDescripcion = (historia) => {
+    if (historia.descripcion) return historia.descripcion;
+    
+    const nombre = historia.nombreMascota || 'Esta mascota';
+    const especie = historia.especie === 'perro' ? 'perrito' : historia.especie === 'gato' ? 'gatito' : 'mascota';
+    
+    if (historia.estado === 'adoptado') {
+      return `${nombre} es un ${especie} que encontró una familia llena de amor después de ser rescatado. Su historia es un testimonio del poder de la esperanza y la dedicación.`;
+    } else if (historia.estado === 'en_adopcion') {
+      return `${nombre} es un ${especie} rescatado que está buscando un hogar lleno de amor y cuidado.`;
+    } else {
+      return `${nombre} es un ${especie} que fue rescatado y está en proceso de rehabilitación.`;
+    }
+  };
+
+  // Cargar historias desde Firebase
+  useEffect(() => {
+    const cargarHistorias = async () => {
+      setIsCargando(true);
+      setError(null);
+      
+      try {
+        const todasLasHistorias = await getAllDataCollection('historias-de-rescates');
+        
+        // Transformar datos de Firebase al formato esperado por el componente
+        const historiasTransformadas = todasLasHistorias.map((historia) => {
+          // Convertir estado: 'en_adopcion' -> false (disponible), 'adoptado' -> true (adoptado)
+          const estadoBooleano = historia.estado === 'adoptado';
+          
+          return {
+            id: historia.id,
+            imagen: historia.imagenUrl || 'https://via.placeholder.com/400x300?text=Sin+imagen',
+            titulo: generarTitulo(historia),
+            descripcion: generarDescripcion(historia),
+            nombreMascota: historia.nombreMascota || 'Sin nombre',
+            edad: historia.edad || 'No especificada',
+            raza: historia.raza || 'Mestizo',
+            historia: historia.historiaRescate || historia.descripcion || 'Historia completa próximamente...',
+            fechaRescate: formatearFecha(historia.fechaRescate || historia.fechaCreacion),
+            estado: estadoBooleano,
+            tiempoRescate: calcularTiempoRescate(historia.fechaRescate || historia.fechaCreacion),
+            // Mantener datos originales para el modal
+            estadoOriginal: historia.estado,
+            contacto: historia.contacto,
+            ubicacion: historia.ubicacion
+          };
+        });
+
+        // Ordenar por fecha de creación (más recientes primero)
+        historiasTransformadas.sort((a, b) => {
+          const fechaA = todasLasHistorias.find(h => h.id === a.id)?.fechaCreacion;
+          const fechaB = todasLasHistorias.find(h => h.id === b.id)?.fechaCreacion;
+          
+          const fechaAObj = fechaA?.seconds 
+            ? new Date(fechaA.seconds * 1000)
+            : new Date(fechaA || 0);
+          const fechaBObj = fechaB?.seconds 
+            ? new Date(fechaB.seconds * 1000)
+            : new Date(fechaB || 0);
+          
+          return fechaBObj - fechaAObj;
+        });
+
+        setHistoriasRescate(historiasTransformadas);
+      } catch (err) {
+        console.error('Error al cargar historias:', err);
+        setError('Error al cargar las historias de rescates. Por favor, intenta recargar la página.');
+      } finally {
+        setIsCargando(false);
+      }
+    };
+
+    cargarHistorias();
+  }, []);
 
   const abrirNoticia = (noticia) => {
     setNoticiaSeleccionada(noticia);
@@ -106,7 +169,6 @@ export default function HistoriasRescates() {
     let mensaje = '¡Hola! Estoy interesado en adoptar una mascota de Patitas que Ayudan. ';
     
     // Si hay una mascota específica, personalizar el mensaje
-    console.log(mascota,'mascota');
     if (mascota) {
       mensaje += `Me llamó especialmente la atención la historia de ${mascota.nombreMascota} (${mascota.raza}, ${mascota.edad}). `;
       mensaje += `¿Podrían darme más información sobre el proceso de adopción?`;
@@ -138,20 +200,59 @@ export default function HistoriasRescates() {
           </p>
         </div>
 
+        {/* Estado de carga */}
+        {isCargando && (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+            <p className="mt-4 text-gray-600">Cargando historias de rescates...</p>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && !isCargando && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <p className="text-red-800 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            >
+              Recargar página
+            </button>
+          </div>
+        )}
+
         {/* Grid de noticias */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {historiasRescate.map((noticia) => (
+        {!isCargando && !error && (
+          <>
+            {historiasRescate.length === 0 ? (
+              <div className="text-center py-12">
+                <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className="text-lg font-medium text-gray-900 mb-2">
+                  Aún no hay historias de rescates disponibles
+                </p>
+                <p className="text-gray-600">
+                  Las historias de rescates aparecerán aquí cuando sean creadas.
+                </p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {historiasRescate.map((noticia) => (
             <article 
               key={noticia.id} 
               className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer"
               onClick={() => abrirNoticia(noticia)}
             >
               {/* Imagen */}
-              <div className="relative h-48 overflow-hidden">
+              <div className="relative h-48 overflow-hidden bg-gray-100">
                 <img
                   src={noticia.imagen}
                   alt={noticia.titulo}
-                  className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    e.target.src = 'https://via.placeholder.com/400x300?text=Sin+imagen';
+                  }}
                 />
                 <div className="absolute top-4 right-4">
                   <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
@@ -190,8 +291,11 @@ export default function HistoriasRescates() {
                 </button>
               </div>
             </article>
-          ))}
-        </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
 
         {/* CTA de adopción y fundación */}
         <div className="mt-20">
@@ -334,15 +438,18 @@ export default function HistoriasRescates() {
                   <img
                     src={noticiaSeleccionada.imagen}
                     alt={noticiaSeleccionada.titulo}
-                    className="w-full h-80 object-contain rounded-lg"
+                    className="w-full h-80 object-cover rounded-lg bg-gray-100"
+                    onError={(e) => {
+                      e.target.src = 'https://via.placeholder.com/400x300?text=Sin+imagen';
+                    }}
                   />
                   <div className="absolute top-4 right-4">
                     <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                      noticiaSeleccionada.estado === 'Adoptada' 
+                      noticiaSeleccionada.estado === true 
                         ? 'bg-green-100 text-green-800' 
                         : 'bg-orange-100 text-orange-800'
                     }`}>
-                      {noticiaSeleccionada.estado}
+                      {noticiaSeleccionada.estado === true ? 'Adoptado' : 'Disponible'}
                     </span>
                   </div>
                 </div>

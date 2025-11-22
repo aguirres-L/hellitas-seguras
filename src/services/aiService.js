@@ -224,7 +224,6 @@ class AIService {
 
     // Obtener temáticas ya usadas
     const tematicasUsadas = this.obtenerTematicasUsadas(userId, mascotaId);
-    console.log('Temáticas ya usadas:', tematicasUsadas);
 
     // Buscar temática específica por raza
     for (const [razaKey, temas] of Object.entries(tematicas)) {
@@ -234,11 +233,9 @@ class AIService {
         
         if (temasDisponibles.length > 0) {
           const temaSeleccionado = temasDisponibles[Math.floor(Math.random() * temasDisponibles.length)];
-          console.log(`Temática seleccionada para ${raza}: ${temaSeleccionado}`);
           return temaSeleccionado;
         } else {
           // Si todas las temáticas específicas ya se usaron, usar una general
-          console.log(`Todas las temáticas específicas de ${raza} ya se usaron, usando temática general`);
           break;
         }
       }
@@ -266,11 +263,9 @@ class AIService {
     
     if (temasGeneralesDisponibles.length > 0) {
       const temaSeleccionado = temasGeneralesDisponibles[Math.floor(Math.random() * temasGeneralesDisponibles.length)];
-      console.log(`Temática general seleccionada: ${temaSeleccionado}`);
       return temaSeleccionado;
     } else {
       // Si todas las temáticas ya se usaron, reiniciar con la primera específica
-      console.log('Todas las temáticas ya se usaron, reiniciando con temática básica');
       return `Cuidados en ${estacion}`;
     }
   }
@@ -437,7 +432,6 @@ class AIService {
         }
 
         this.cache = tmpMap;
-        console.log('Cache cargado desde localStorage:', this.cache.size, 'entradas');
         if (migrado) {
           this.guardarCacheEnStorage();
         }
@@ -454,7 +448,6 @@ class AIService {
     try {
       const cacheArray = Array.from(this.cache.entries());
       localStorage.setItem(this.storageKey, JSON.stringify(cacheArray));
-      console.log('Cache guardado en localStorage');
     } catch (error) {
       console.warn('Error guardando cache en localStorage:', error);
     }
@@ -503,38 +496,17 @@ class AIService {
 
   // Llamada a Hugging Face API con múltiples modelos y tokens de fallback
   async llamarHuggingFace(raza, tematica = null, promptPersonalizado = null) {
-    console.log('🔍 === DEBUG HUGGING FACE ===');
-    console.log('Raza:', raza);
-    console.log('Temática:', tematica);
-    console.log('Prompt personalizado:', !!promptPersonalizado);
     
     // Asegurar que los tokens estén inicializados desde Firebase
     await inicializarTokensDesdeFirebase();
     
     // Verificar configuración de API keys (ahora es async)
     const config = await verificarConfiguracionAPIs();
-    console.log('📋 Configuración de APIs:', config);
     
     // Verificar cada token individualmente con detalles
-    console.log('🔍 === VERIFICACIÓN DE TOKENS ===');
     const token1 = API_KEYS.HUGGING_FACE_TOKEN || '';
     const token2 = API_KEYS.HUGGING_FACE_TOKEN_FALLBACK || '';
     const token3 = API_KEYS.HUGGING_FACE_TOKEN_FALLBACK2 || '';
-    
-    console.log('📌 Token Principal (VITE_HUGGING_FACE_TOKEN):');
-    console.log('  - Configurado:', !!token1);
-    console.log('  - Longitud:', token1.length);
-    console.log('  - Primeros 8 chars:', token1.length > 0 ? `${token1.substring(0, 8)}...` : 'NO CONFIGURADO');
-    
-    console.log('📌 Token Fallback 1 (VITE_HUGGING_FACE_TOKEN1):');
-    console.log('  - Configurado:', !!token2);
-    console.log('  - Longitud:', token2.length);
-    console.log('  - Primeros 8 chars:', token2.length > 0 ? `${token2.substring(0, 8)}...` : 'NO CONFIGURADO');
-    
-    console.log('📌 Token Fallback 2 (VITE_HUGGING_FACE_TOKEN2):');
-    console.log('  - Configurado:', !!token3);
-    console.log('  - Longitud:', token3.length);
-    console.log('  - Primeros 8 chars:', token3.length > 0 ? `${token3.substring(0, 8)}...` : 'NO CONFIGURADO');
     
     // Obtener todos los tokens disponibles (incluyendo fallback2 si existe)
     const tokens = [
@@ -542,12 +514,6 @@ class AIService {
       token2,
       token3
     ].filter(token => token && token.trim().length > 0);
-    
-    console.log('✅ Tokens válidos encontrados:', tokens.length);
-    console.log('📊 Resumen:');
-    console.log(`  - Token principal: ${token1.length > 0 ? '✅' : '❌'}`);
-    console.log(`  - Fallback 1: ${token2.length > 0 ? '✅' : '❌'}`);
-    console.log(`  - Fallback 2: ${token3.length > 0 ? '✅' : '❌'}`);
     
     if (tokens.length === 0) {
       const errorMsg = '❌ CRÍTICO: Ningún token de Hugging Face configurado. Verifica tu archivo .env';
@@ -565,18 +531,8 @@ class AIService {
       console.warn('⚠️ Algunos tokens están vacíos o inválidos');
     }
     
-    console.log(`🎯 Se usarán ${tokens.length} token(s) en este orden:`);
-    tokens.forEach((token, index) => {
-      const origen = index === 0 ? 'Principal' : index === 1 ? 'Fallback 1' : 'Fallback 2';
-      console.log(`   ${index + 1}. ${origen} (${token.substring(0, 8)}...)`);
-    });
-
     const prompt = promptPersonalizado || this.generarPrompt(raza, tematica);
     const promptLimpio = this.sanitizarPrompt(prompt);
-    console.log('📝 Prompt generado (limpio):');
-    console.log('Longitud:', promptLimpio.length);
-    console.log('Primeros 200 chars:', promptLimpio.substring(0, 200));
-    console.log('Últimos 200 chars:', promptLimpio.substring(Math.max(0, promptLimpio.length - 200)));
     
     // ESTRATEGIA: Usar modelos compatibles con la NUEVA API de Hugging Face
     // NUEVA API: router.huggingface.co/v1/chat/completions (formato OpenAI)
@@ -592,42 +548,32 @@ class AIService {
     // NOTA: La nueva API usa formato OpenAI compatible
     // Estos modelos están optimizados para instrucciones y son más baratos que GPT-OSS grandes
     
-    console.log(`🎯 Probando modelos en orden: ${modelosPrioridad.join(' → ')}`);
-    console.log(`💡 Máximo de intentos: ${modelosPrioridad.length} modelos × ${tokens.length} tokens = ${modelosPrioridad.length * tokens.length}`);
-    
     // Rastrear todos los errores para diagnóstico
     const errores = [];
     
     // Intentar cada modelo con cada token
     for (const modelo of modelosPrioridad) {
-      console.log(`\n🔄 === INTENTANDO MODELO: ${modelo} ===`);
       
       for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex++) {
         const token = tokens[tokenIndex];
         const tokenOrigen = tokenIndex === 0 ? 'Principal' : tokenIndex === 1 ? 'Fallback 1' : 'Fallback 2';
         const tokenPreview = token.substring(0, 8) + '...';
         
-        console.log(`   🔑 Token: ${tokenOrigen} (${tokenPreview})`);
         
         const resultado = await this.intentarModelo(modelo, token, promptLimpio, tokenIndex + 1, errores);
         if (resultado) {
-          console.log(`\n✅ ¡ÉXITO! Usando ${modelo} con token ${tokenOrigen} (${tokenPreview})`);
           return resultado;
         }
         
         // Si este token falló con 404 (modelo no existe), no probar más tokens con este modelo
         const ultimoError = errores[errores.length - 1];
         if (ultimoError && ultimoError.status === 404) {
-          console.log(`   ⚠️ Modelo ${modelo} no existe (404) - saltando al siguiente modelo`);
           break; // Salir del loop de tokens y probar siguiente modelo
         }
       }
     }
 
     // Si llegamos aquí, todos los modelos y tokens fallaron
-    console.error('\n❌ === RESUMEN DE ERRORES ===');
-    console.error(`Modelos probados: ${modelosPrioridad.join(', ')}`);
-    console.error(`Total de intentos: ${errores.length}`);
     
     // Analizar tipos de error
     const errores404 = errores.filter(e => e.status === 404).length;
@@ -635,11 +581,6 @@ class AIService {
     const errores503 = errores.filter(e => e.status === 503).length;
     const otrosErrores = errores.length - errores404 - errores401 - errores503;
     
-    console.error(`📊 Desglose de errores:`);
-    console.error(`  - 404 (Modelo no encontrado): ${errores404}`);
-    console.error(`  - 401/403 (Tokens inválidos): ${errores401}`);
-    console.error(`  - 503 (Modelo cargando): ${errores503}`);
-    console.error(`  - Otros errores: ${otrosErrores}`);
     
     // Agrupar errores por modelo para mejor diagnóstico
     const erroresPorModelo = {};
@@ -648,15 +589,6 @@ class AIService {
         erroresPorModelo[error.modelo] = [];
       }
       erroresPorModelo[error.modelo].push(error);
-    });
-    
-    console.error(`\n📋 Errores por modelo:`);
-    Object.entries(erroresPorModelo).forEach(([modelo, errs]) => {
-      console.error(`  ${modelo}:`);
-      errs.forEach(err => {
-        const tokenOrigen = err.tokenNum === 1 ? 'Principal' : err.tokenNum === 2 ? 'Fallback 1' : 'Fallback 2';
-        console.error(`    - Token ${err.tokenNum} (${tokenOrigen}): ${err.status || 'Network'}`);
-      });
     });
     
     // Mensaje de error más específico según el tipo de fallo
@@ -679,7 +611,6 @@ class AIService {
   // Formato OpenAI-compatible con mensajes en lugar de inputs
   async intentarModelo(modelo, token, promptLimpio, tokenNum, errores = []) {
     try {
-      console.log(`🔄 Intentando con modelo: ${modelo} (token ${tokenNum})`);
       
       // NUEVA API: Formato OpenAI-compatible
       const requestBody = {
@@ -710,8 +641,6 @@ class AIService {
 
       if (response.ok) {
         const data = await response.json();
-        console.log(`✅ Modelo ${modelo} funcionó correctamente con token ${tokenNum} (${tiempoTranscurrido}ms)`);
-        console.log('📥 Respuesta completa:', data);
         // Nueva API devuelve formato OpenAI: { choices: [{ message: { content: "..." } }] }
         return this.procesarRespuestaHuggingFaceNueva(data);
       } else {
@@ -734,12 +663,10 @@ class AIService {
         
         // Errores que NO consumen créditos (404, 401, 403) - continuar
         if (response.status === 404) {
-          console.warn(`⚠️ Modelo ${modelo} no existe (404) - probando siguiente...`);
           return null;
         }
         
         if (response.status === 401 || response.status === 403) {
-          console.warn(`⚠️ Token ${tokenNum} no autorizado (${response.status}) - ${errorText.substring(0, 100)}`);
           return null; // Continuar con siguiente token
         }
         
@@ -811,52 +738,32 @@ class AIService {
 
   // Procesar respuesta de Hugging Face (API antigua - formato legacy)
   procesarRespuestaHuggingFace(data) {
-    console.log('🔍 === PROCESANDO RESPUESTA HUGGING FACE (LEGACY) ===');
-    console.log('📥 Data recibida:', data);
-    console.log('📥 Tipo de data:', typeof data);
-    console.log('📥 Es array:', Array.isArray(data));
-    
     if (Array.isArray(data) && data.length > 0) {
-      console.log('📥 Primer elemento:', data[0]);
-      console.log('📥 generated_text:', data[0].generated_text);
-      console.log('📥 text:', data[0].text);
-      
       const resultado = data[0].generated_text || data[0].text || 'No se pudo generar consejos específicos.';
-      console.log('✅ Resultado final:', resultado);
       return resultado;
     }
     
-    console.log('❌ No se pudo procesar la respuesta');
     return 'No se pudo generar consejos específicos.';
   }
 
   // Procesar respuesta de Hugging Face (NUEVA API - formato OpenAI-compatible)
   procesarRespuestaHuggingFaceNueva(data) {
-    console.log('🔍 === PROCESANDO RESPUESTA HUGGING FACE (NUEVA API) ===');
-    console.log('📥 Data recibida:', data);
-    console.log('📥 Tipo de data:', typeof data);
-    
     // Nueva API devuelve formato OpenAI:
     // { choices: [{ message: { role: 'assistant', content: '...' } }] }
     if (data && data.choices && Array.isArray(data.choices) && data.choices.length > 0) {
       const primeraRespuesta = data.choices[0];
-      console.log('📥 Primera choice:', primeraRespuesta);
       
       if (primeraRespuesta.message && primeraRespuesta.message.content) {
         const resultado = primeraRespuesta.message.content.trim();
-        console.log('✅ Resultado final (nueva API):', resultado);
         return resultado;
       }
     }
     
     // Fallback: intentar otros formatos posibles
     if (data.content) {
-      console.log('✅ Resultado encontrado en data.content');
       return data.content.trim();
     }
     
-    console.log('❌ No se pudo procesar la respuesta de la nueva API');
-    console.log('📥 Estructura completa:', JSON.stringify(data, null, 2));
     return 'No se pudo generar consejos específicos.';
   }
 
@@ -877,7 +784,6 @@ class AIService {
     if (!forzarRegeneracion) {
       const cached = this.getFromCache(raza, userId, mascotaId);
       if (cached) {
-        console.log('Consejos obtenidos desde caché para:', { raza, userId, mascotaId, tematica: tema });
         return { ...cached, tematica: tema };
       }
     }
@@ -886,10 +792,8 @@ class AIService {
     if (userId && mascotaId && !forzarRegeneracion) {
       const tematicasUsadas = this.obtenerTematicasUsadas(userId, mascotaId);
       if (tematicasUsadas.includes(tema)) {
-        console.log(`⚠️ Ya existe un consejo con temática "${tema}", generando nueva temática...`);
         const nuevaTematica = this.generarTematica(raza, userId, mascotaId);
         if (nuevaTematica !== tema) {
-          console.log(`Nueva temática generada: ${nuevaTematica}`);
           return await this.obtenerConsejosRaza(raza, false, userId, mascotaId, nuevaTematica);
         }
       }
@@ -909,10 +813,8 @@ class AIService {
       const resultado = { consejos, tematica: tema, fuente: 'huggingface' };
       this.setCache(raza, resultado, userId, mascotaId);
       this.registrarPeticion(userId, mascotaId);
-      console.log('Consejos generados por Hugging Face para:', { raza, userId, mascotaId, tematica: tema });
       return resultado;
     } catch (huggingFaceError) {
-      console.warn('Hugging Face falló, intentando Cohere:', huggingFaceError);
       
       try {
         // Fallback a Cohere
@@ -920,7 +822,6 @@ class AIService {
         const resultado = { consejos, tematica: tema, fuente: 'cohere' };
         this.setCache(raza, resultado, userId, mascotaId);
         this.registrarPeticion(userId, mascotaId);
-        console.log('Consejos generados por Cohere para:', { raza, userId, mascotaId, tematica: tema });
         return resultado;
       } catch (cohereError) {
         console.error('Ambas APIs fallaron:', cohereError);
@@ -954,7 +855,6 @@ class AIService {
         };
         
         // No guardar en cache cuando hay error de IA
-        console.log('IA no disponible para:', { raza, userId, mascotaId, tematica: tema });
         return resultado;
       }
     }
@@ -962,7 +862,6 @@ class AIService {
 
   // Regenerar consejos (forzar nueva generación)
   async regenerarConsejos(raza, userId = null, mascotaId = null, tipoConsejo = null, promptPersonalizado = null) {
-    console.log('Regenerando consejos para:', { raza, userId, mascotaId, tipoConsejo });
     return await this.obtenerConsejosRaza(raza, true, userId, mascotaId, tipoConsejo, promptPersonalizado);
   }
 
@@ -970,12 +869,10 @@ class AIService {
   limpiarCache() {
     this.cache.clear();
     localStorage.removeItem(this.storageKey);
-    console.log('Cache limpiado');
   }
 
   // Limpiar cache corrupto y reiniciar
   limpiarCacheCorrupto() {
-    console.warn('Limpiando cache corrupto...');
     this.limpiarCache();
     // Reinicializar con estructura limpia
     this.cache = new Map();
@@ -1037,7 +934,6 @@ class AIService {
       this.cache = tmpMap;
       if (migrado) {
         this.guardarCacheEnStorage();
-        console.log('Cache migrado exitosamente');
       }
     } catch (error) {
       console.error('Error en migración de cache:', error);
@@ -1061,28 +957,12 @@ class AIService {
 
   // Inspeccionar estructura del cache para debugging
   inspeccionarCache() {
-    console.log('=== INSPECCIÓN DEL CACHE ===');
-    console.log('Total de entradas:', this.cache.size);
-    
-    for (const [key, value] of this.cache.entries()) {
-      console.log(`\nClave: ${key}`);
-      console.log('Valor:', value);
-      console.log('Tipo de data:', typeof value.data);
-      console.log('Tiene userId:', !!value.userId);
-      console.log('Tiene mascotaId:', !!value.mascotaId);
-    }
     
     // Inspeccionar localStorage también
     try {
       const stored = localStorage.getItem(this.storageKey);
       if (stored) {
         const parsed = JSON.parse(stored);
-        console.log('\n=== ESTRUCTURA EN LOCALSTORAGE ===');
-        console.log('Tipo:', Array.isArray(parsed) ? 'Array' : typeof parsed);
-        console.log('Longitud:', Array.isArray(parsed) ? parsed.length : 'N/A');
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          console.log('Primera entrada:', parsed[0]);
-        }
       }
     } catch (error) {
       console.error('Error inspeccionando localStorage:', error);
@@ -1184,7 +1064,6 @@ class AIService {
     
     clavesAEliminar.forEach(key => this.cache.delete(key));
     this.guardarCacheEnStorage();
-    console.log(`Historial limpiado para usuario ${userId}, mascota ${mascotaId}: ${clavesAEliminar.length} entradas eliminadas`);
   }
 
   // Obtener estadísticas de temáticas para un usuario/mascota
@@ -1256,13 +1135,6 @@ class AIService {
       const peticionesRestantes = Math.max(0, this.maxPeticionesPorMes - consejosEsteMes);
       const puedeHacerPeticion = consejosEsteMes < this.maxPeticionesPorMes;
       
-      console.log(`Verificación de límites para ${userId}/${mascotaId}:`, {
-        año,
-        mes,
-        consejosEsteMes,
-        peticionesRestantes,
-        puedeHacerPeticion
-      });
       
       return {
         puedeHacerPeticion,
@@ -1743,23 +1615,18 @@ class AIService {
 
   // Función de test para validar APIs de IA
   async testAPIs() {
-    console.log('🧪 === TEST DE APIs DE IA ===');
     
     // Asegurar que los tokens estén inicializados desde Firebase
     await inicializarTokensDesdeFirebase();
     
     // Test 1: Verificar configuración
-    console.log('1️⃣ Verificando configuración...');
     const config = await verificarConfiguracionAPIs();
-    console.log('Configuración:', config);
     
     if (!config.huggingFace && !config.huggingFaceFallback) {
-      console.log('❌ No hay tokens de Hugging Face configurados');
       return { success: false, error: 'No hay tokens configurados' };
     }
     
     // Test 2: Probar múltiples modelos
-    console.log('2️⃣ Probando múltiples modelos de Hugging Face...');
     const tokens = [API_KEYS.HUGGING_FACE_TOKEN, API_KEYS.HUGGING_FACE_TOKEN_FALLBACK].filter(token => token);
     const modelosTest = [
       'microsoft/DialoGPT-small',
@@ -1770,15 +1637,12 @@ class AIService {
     ];
     
     const promptTest = 'Eres un veterinario. Responde en español: ¿Cuáles son los cuidados básicos para un perro?';
-    console.log('Prompt de test:', promptTest);
     
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i];
-      console.log(`🔑 Probando token ${i + 1}/${tokens.length}`);
       
       for (const modelo of modelosTest) {
         try {
-          console.log(`🔄 Probando modelo: ${modelo}`);
           
           const response = await fetch(`https://api-inference.huggingface.co/models/${modelo}`, {
             method: 'POST',
@@ -1796,11 +1660,9 @@ class AIService {
             })
           });
           
-          console.log(`📡 ${modelo} - Status: ${response.status} ${response.statusText}`);
           
           if (response.ok) {
             const data = await response.json();
-            console.log(`✅ ${modelo} funcionó! Respuesta:`, data);
             return { 
               success: true, 
               data, 
@@ -1810,10 +1672,9 @@ class AIService {
             };
           } else {
             const errorText = await response.text();
-            console.log(`❌ ${modelo} falló ${response.status}:`, errorText);
           }
         } catch (error) {
-          console.log(`❌ Error con ${modelo}:`, error.message);
+          console.error(`❌ Error con ${modelo}:`, error.message);
         }
       }
     }
@@ -1823,7 +1684,6 @@ class AIService {
 
   // Función para probar un modelo específico
   async testModeloEspecifico(modelo, token) {
-    console.log(`🧪 Probando modelo específico: ${modelo}`);
     
     const promptTest = 'Eres un veterinario. Responde en español: ¿Cuáles son los cuidados básicos para un perro?';
     
@@ -1844,15 +1704,12 @@ class AIService {
         })
       });
       
-      console.log(`📡 Status: ${response.status} ${response.statusText}`);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Respuesta exitosa:', data);
         return { success: true, data, modelo };
       } else {
         const errorText = await response.text();
-        console.log(`❌ Error ${response.status}:`, errorText);
         return { success: false, error: errorText, modelo };
       }
     } catch (error) {
@@ -1869,19 +1726,11 @@ class AIService {
     const año = ahora.getFullYear();
     const mes = ahora.getMonth() + 1;
     
-    console.log('=== DEBUG LÍMITES MENSUALES ===');
-    console.log('Usuario:', userId);
-    console.log('Mascota:', mascotaId);
-    console.log('Año/Mes actual:', año, mes);
-    
     const historial = this.obtenerHistorialConsejos(userId, mascotaId);
-    console.log('Historial total:', historial.length);
     
     const consejosEsteMes = this.contarConsejosPorMes(userId, mascotaId, año, mes);
-    console.log('Consejos este mes:', consejosEsteMes);
     
     const estadoFreno = this.verificarFrenoPeticiones(userId, mascotaId);
-    console.log('Estado del freno:', estadoFreno);
     
     // Mostrar fechas de consejos del mes actual
     const consejosDelMes = historial.filter(consejo => {
@@ -1890,12 +1739,6 @@ class AIService {
       return fechaConsejo.getFullYear() === año && fechaConsejo.getMonth() + 1 === mes;
     });
     
-    console.log('Consejos del mes actual:');
-    consejosDelMes.forEach((consejo, index) => {
-      console.log(`${index + 1}. ${consejo.tematica} - ${consejo.fechaCreacion}`);
-    });
-    
-    console.log('===============================');
   }
 
   // Consejos generales con variaciones para evitar repetición

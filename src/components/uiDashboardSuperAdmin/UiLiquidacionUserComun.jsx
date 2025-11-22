@@ -50,23 +50,18 @@ export default function UiLiquidacionesUserComun({ setIsShowLiquidaciones, usuar
     }
   };
 
-  console.log(usuario.id,'usuario.id');
   
   // Función para cargar pagos del usuario
   const cargarPagosUsuario = async () => {
     if (!usuario?.id) {
-      console.log('No hay usuario.id:', usuario);
       return;
     }
     
-    console.log('Buscando pagos para usuario.id:', usuario.id);
     setIsCargandoPagos(true);
     try {
       // Cargar pagos de suscripciones
       const suscripciones = await getAllDataCollection('pagoSuscripciones');
-      console.log('Todas las suscripciones:', suscripciones);
       const suscripcionesUsuario = suscripciones.filter(pago => pago.usuarioId === usuario.id);
-      console.log('Suscripciones filtradas:', suscripcionesUsuario);
       setPagosSuscripciones(suscripcionesUsuario);
 
       // Cargar pagos de chapitas
@@ -82,7 +77,6 @@ export default function UiLiquidacionesUserComun({ setIsShowLiquidaciones, usuar
 
   // Función para manejar la actualización del estado de chapita
   const manejarActualizacionEstado = () => {
-    console.log('Estado de chapita actualizado, recargando datos...');
     cargarPagosUsuario();
   };
 

@@ -9,7 +9,6 @@ export const FormularioCitaPeluqueria = ({
   onEnviar
 }) => {
   const { usuario, datosUsuario } = useAuth();
-  console.log(peluqueria,'peluqueria');
   
   const [formData, setFormData] = useState({
     peluqueriaId: peluqueria.id,
@@ -66,7 +65,6 @@ export const FormularioCitaPeluqueria = ({
     try {
       // Obtener datos de la mascota seleccionada
       const mascotaSeleccionada = mascotas.find(m => m.id == formData.mascotaId);
-      console.log(mascotaSeleccionada,'mascotaSeleccionada');
       
       // Preparar datos de la cita
       const datosCita = {
@@ -223,7 +221,6 @@ export const FormularioCitaPeluqueria = ({
             {serviciosDisponibles && serviciosDisponibles.length > 0 ? (
               <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3">
                 {serviciosDisponibles.map(servicio => {
-                  console.log(servicio, 'servicio');
                   return (
                     <label key={servicio} className="flex items-center">
                       <input

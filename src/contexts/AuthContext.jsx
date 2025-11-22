@@ -37,7 +37,6 @@ const limpiarAuthAnterior = () => {
     }
     sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
 
-    console.log('Datos de autenticación anteriores limpiados');
   } catch (error) {
     console.error('Error al limpiar datos de auth:', error);
   }
@@ -58,7 +57,6 @@ export const AuthProvider = ({ children }) => {
       await signOut(auth);
       // Limpiar datos locales después del logout
       limpiarAuthAnterior();
-      console.log('Usuario cerró sesión exitosamente');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
       throw error;

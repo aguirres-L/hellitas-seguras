@@ -60,7 +60,6 @@ export const SelectorNivelPrompt = ({
         {nivelesDisponibles.map((nivel) => {
           const info = obtenerInfoPrompt(tipoConsejo, nivel);
           if (!info) return null;
-console.log(nivel,'ss');
 
           return (
             <button

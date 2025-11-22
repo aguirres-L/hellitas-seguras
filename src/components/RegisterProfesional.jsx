@@ -123,9 +123,8 @@ const RegisterProfesional = () => {
           setIsSubiendoImagen(true);
           const { subirImagenProfesional } = await import('../data/firebase/firebase');
           urlImagenFinal = await subirImagenProfesional(userCredential.user.uid, archivoImagen);
-          console.log('✅ Imagen del local subida exitosamente:', urlImagenFinal);
         } catch (error) {
-          console.error('❌ Error al subir imagen del local:', error);
+          console.error('Error al subir imagen del local:', error);
           // Continuar sin imagen si hay error
         } finally {
           setIsSubiendoImagen(false);
@@ -154,7 +153,6 @@ const RegisterProfesional = () => {
         estado: 'activo'
       });
 
-      console.log('Profesional registrado exitosamente:', userCredential.user);
       // La navegación se manejará automáticamente por el useEffect cuando se actualice el estado
       navigate('/dashboardProfesional');
       

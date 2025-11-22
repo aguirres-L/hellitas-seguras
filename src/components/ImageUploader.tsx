@@ -53,14 +53,12 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     if (userId && petId && onImageUploaded) {
       setIsSubiendo(true);
       try {
-        console.log('🔄 Subiendo imagen a Storage...');
         const imageUrl = await subirImagenMascota(userId, petId, file);
-        console.log('✅ Imagen subida exitosamente:', imageUrl);
         
         // Notificar al componente padre con la URL
         onImageUploaded(imageUrl);
       } catch (error) {
-        console.error('❌ Error al subir imagen:', error);
+        console.error('Error al subir imagen:', error);
         alert('Error al subir imagen: ' + error.message);
       } finally {
         setIsSubiendo(false);

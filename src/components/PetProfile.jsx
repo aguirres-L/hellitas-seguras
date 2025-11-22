@@ -61,11 +61,9 @@ const PetProfile = () => {
 
   // Cargar datos de la mascota específica
   useEffect(() => {
-    console.log(usuario,'usuario');
     
     const tipoProfesional = getTipoProfesional(); 
 
-    console.log(tipoProfesional,'tipoProfesional');
     
     const cargarMascota = async () => {
       if ( !tipoProfesional || tipoProfesional === 'tienda' ) {
@@ -81,7 +79,6 @@ const PetProfile = () => {
         const datosUsuario = await obtenerUsuarioPorUid(usuario.uid);
         const chapitasUsuario = await getChapitaFiletForUserId(usuario.uid);
         
-        console.log(chapitasUsuario,'chapitasUsuario');
         
         // Obtener chapitas específicas de esta mascota usando la función helper
         const chapitasDeEstaMascota = await getChapitasByMascotaId(id);
@@ -89,18 +86,7 @@ const PetProfile = () => {
         // Guardar en el estado para usar en la UI
         setChapitasDeEstaMascota(chapitasDeEstaMascota);
         
-        console.log('Chapitas filtradas por ID de mascota:', {
-          mascotaId: id,
-          mascotaNombre: datosUsuario?.infoMascotas?.find(m => m.id === id)?.nombre,
-          chapitasEncontradas: chapitasDeEstaMascota,
-          totalChapitas: chapitasDeEstaMascota.length,
-          estados: chapitasDeEstaMascota.map(c => ({
-            id: c.id,
-            estado: c.estado,
-            fechaCreacion: c.fechaCreacion,
-            fechaActualizacion: c.fechaActualizacion
-          }))
-        });
+
         if(tipoProfesional === 'tienda'){
           if (!datosUsuario?.infoMascotas) {
             setError('No se encontraron mascotas');
