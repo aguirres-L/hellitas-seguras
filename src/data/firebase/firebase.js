@@ -1289,4 +1289,62 @@ export const enviarRecuperacionContrasena = async (email) => {
   }
 };
 
+// ==================== FUNCIONES DE DETALLE DE ONG ====================
+
+/**
+ * Obtiene la información de la ONG
+ * @returns {Promise<Object|null>} - Datos de la ONG o null si no existe
+ */
+export const obtenerDetalleOng = async () => {
+  try {
+    // Usamos un documento único con ID fijo "principal"
+    const detalleOng = await getDataById('detail_ong', 'principal');
+    return detalleOng;
+  } catch (error) {
+    console.error('Error al obtener detalle de ONG:', error);
+    throw error;
+  }
+};
+
+/**
+ * Guarda o actualiza la información de la ONG
+ * @param {Object} datosOng - Datos de la ONG a guardar
+ * @returns {Promise<void>}
+ */
+export const guardarDetalleOng = async (datosOng) => {
+  try {
+    // Verificar si ya existe el documento
+    const detalleExistente = await getDataById('detail_ong', 'principal');
+    
+    if (detalleExistente) {
+      // Actualizar documento existente
+      await updateDataCollection('detail_ong', 'principal', datosOng);
+    } else {
+      // Crear nuevo documento con ID fijo
+      await addDataWithCustomId('detail_ong', 'principal', datosOng);
+    }
+  } catch (error) {
+    console.error('Error al guardar detalle de ONG:', error);
+    throw error;
+  }
+};
+
+/**
+ * Sube el logo de la ONG a Firebase Storage
+ * @param {File} archivo - Archivo de imagen del logo
+ * @returns {Promise<string>} - URL del logo subido
+ */
+export const subirLogoOng = async (archivo) => {
+  try {
+    const ruta = 'detail_ong/logos';
+    const nombreArchivo = 'logo_principal';
+    
+    const imageUrl = await subirArchivo(archivo, ruta, nombreArchivo);
+    return imageUrl;
+  } catch (error) {
+    console.error('Error al subir logo de ONG:', error);
+    throw error;
+  }
+};
+
 // ... existing code ...

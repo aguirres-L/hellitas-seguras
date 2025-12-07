@@ -8,6 +8,7 @@ import DecoracionForm from './decoracionUi/DecoracionForm';
 import { obtenerEstadoMensualidad } from '../utils/mensualidadUtils';
 import AllHistorias from './uiDashboardSuperAdmin/historias_macotas/AllHistorias';
 import NewHistoria from './uiDashboardSuperAdmin/historias_macotas/NewHistoria';
+import InformationOfOng from './uiDashboardSuperAdmin/data_of_ong/InformationOfOng';
 
 // Constantes financieras configurables
 const VALOR_MENSUALIDAD = 3000; // CLP
@@ -451,6 +452,7 @@ const DashboardAdmin = () => {
               >
                 Gestión de Usuarios
               </button>
+
               <button 
                 onClick={() => setPestañaActiva('estadisticas')}
                 className={`pb-2 font-medium transition-colors duration-200 whitespace-nowrap ${
@@ -463,6 +465,21 @@ const DashboardAdmin = () => {
               >
                 Estadísticas Generales
               </button>
+
+
+            <button 
+                onClick={() => setPestañaActiva('information_of_ong')}
+                className={`pb-2 font-medium transition-colors duration-200 whitespace-nowrap ${
+                  pestañaActiva === 'information_of_ong' 
+                    ? 'border-b-2 border-purple-500 text-purple-600' 
+                    : typeTheme === 'light'
+                      ? 'text-gray-600 hover:text-gray-800 hover:border-b-2 hover:border-gray-300'
+                      : 'text-gray-400 hover:text-gray-300 hover:border-b-2 hover:border-gray-600'
+                }`}
+              >
+                Información de la Organización
+              </button>
+
             </div>
           </div>
 
@@ -1051,6 +1068,15 @@ const DashboardAdmin = () => {
                   onHistoriaCreada={() => setSubPestañaHistorias('ver')}
                 />
               )}
+            </div>
+          )}
+
+
+          {/* Contenido de Información de la Organización */}
+          {pestañaActiva === 'information_of_ong' && (
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Información de la Organización</h3>
+              <InformationOfOng />
             </div>
           )}
         </div>

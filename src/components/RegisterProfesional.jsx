@@ -8,7 +8,7 @@ import { auth, addDataWithCustomId } from '../data/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import DecoracionForm from './decoracionUi/DecoracionForm';
 import { ImageUploaderProfesional } from './ImageUploaderProfesional';
-import logo11 from '../assets/new-logo11.png';
+import logo11 from '../assets/modeloMilo1.png';
 
 // Este componente no recibe props
 

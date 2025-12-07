@@ -47,11 +47,24 @@ import perro3 from '../../../assets/perros_3.png'
 import perro4 from '../../../assets/perros_4.png'
 // video chapita
 import videoChapita from '../../../assets/chapita-v.mp4'
+
+// import pets para el slider
+import pet from '../../../assets/pets/slider.png'
+import pet1 from '../../../assets/pets/slider1.png'
+import pet2 from '../../../assets/pets/slider2.png'
+import pet3 from '../../../assets/pets/slider3.png'
+import pet4 from '../../../assets/pets/slider4.png'
+import pet5 from '../../../assets/pets/slider5.png'
+import pet6 from '../../../assets/pets/slider6.png'
+import pet8 from '../../../assets/pets/slider8.png'
+import Familia from './Familia';
+
+
 // Importar imagenes
 const urlImages = [uno, cinco, dos, seis, tres, siete, cuatro, ocho, /* nueve */]
 /* const urlImages2 = [perro ,perroQr1, perro2,perroQr3, perro4 ,perroQr2] */
 const urlImages2 = videoChapita;
-const urlImages3= [plataforma1, plataforma2, plataforma3, plataforma4, plataforma41, plataforma42, plataforma5, plataforma6, plataforma7, plataforma8, plataforma9]
+const urlImages3= [pet,pet1, pet2, pet3, pet4, pet5, pet6, pet8]
 const urlImages4= [rescate1,rescate2,rescate3]
 
 
@@ -218,8 +231,45 @@ function ImageSlider({ imagenes, imagenAlt, isVideo }) {
   );
 }
 
+// Componente Modal para "Conoce nuestra familia"
+function ModalFamilia({ isAbierto, onCerrar }) {
+  // Cerrar modal con tecla Escape
+  useEffect(() => {
+    const manejarEscape = (e) => {
+      if (e.key === 'Escape' && isAbierto) {
+        onCerrar();
+      }
+    };
+
+    if (isAbierto) {
+      document.addEventListener('keydown', manejarEscape);
+      // Prevenir scroll del body cuando el modal está abierto
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', manejarEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isAbierto, onCerrar]);
+
+  const manejarClickFondo = (e) => {
+    // Cerrar solo si se hace click en el fondo (no en el contenido del modal)
+    if (e.target === e.currentTarget) {
+      onCerrar();
+    }
+  };
+
+  if (!isAbierto) return null;
+
+  return (
+   <Familia onCerrar={onCerrar} manejarClickFondo={manejarClickFondo} />
+  );
+}
+
 export default function SliderHome() {
   const [slideActual, setSlideActual] = useState(0);
+  const [isModalFamiliaAbierto, setIsModalFamiliaAbierto] = useState(false);
 
   const irASlide = (indice) => {
     setSlideActual(indice);
@@ -236,6 +286,7 @@ export default function SliderHome() {
   };
 
   const slideActualData = datosSlides[slideActual];
+  const esSlideFamilia = slideActualData?.id === 3; // Mostrar botón solo en el slide con id 3
 
   return (
     <section className="relative md:py-16 sm:py-6 lg:py-8">
@@ -307,6 +358,18 @@ export default function SliderHome() {
                           </li>
                         ))}
                       </ul>
+
+                      {/* Botón "Conoce nuestra familia" - Solo en slide 3 */}
+                      {esSlideFamilia && (
+                        <div className="pt-4">
+                          <button
+                            onClick={() => setIsModalFamiliaAbierto(true)}
+                            className="w-full px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                          >
+                            Conoce nuestra familia
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -401,6 +464,18 @@ export default function SliderHome() {
                       </li>
                     ))}
                   </ul>
+
+                  {/* Botón "Conoce nuestra familia" - Solo en slide 3 */}
+                  {esSlideFamilia && (
+                    <div className="pt-4">
+                      <button
+                        onClick={() => setIsModalFamiliaAbierto(true)}
+                        className="w-full px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                      >
+                        Conoce nuestra familia
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -463,6 +538,12 @@ export default function SliderHome() {
 
         </div>
       </div>
+
+      {/* Modal "Conoce nuestra familia" */}
+      <ModalFamilia 
+        isAbierto={isModalFamiliaAbierto}
+        onCerrar={() => setIsModalFamiliaAbierto(false)}
+      />
     </section>
   );
 }

@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import typeProfesionalStore from '../service/zustand';
 import DecoracionForm from './decoracionUi/DecoracionForm';
 import ModalRecuperarPassword from './registers/ModalRecuperarPassword';
-import logo11 from '../assets/new-logo11.png';
+import logo11 from '../assets/modeloMilo1.png';
 
 // Este componente no recibe props
 const LoginProfesional = () => {

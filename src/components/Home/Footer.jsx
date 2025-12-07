@@ -1,4 +1,4 @@
-import logo11 from '../../assets/new-logo11.png';
+import logo11 from '../../assets/modeloMilo1.png';
 export default function Footer(){
     return(
         <footer className="relative bg-gray-800 text-white py-12 px-4">

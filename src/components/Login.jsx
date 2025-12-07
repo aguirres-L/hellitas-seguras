@@ -5,7 +5,7 @@ import { auth } from '../data/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import DecoracionForm from './decoracionUi/DecoracionForm';
 import ModalRecuperarPassword from './registers/ModalRecuperarPassword';
-import logo11 from '../assets/new-logo11.png';
+import logo11 from '../assets/modeloMilo1.png';
 
 // Este componente no recibe props
 const Login = () => {

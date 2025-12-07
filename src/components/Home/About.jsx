@@ -1,5 +1,5 @@
 import React from 'react';
-import logo11 from '../../assets/new-logo11.png';
+import logo11 from '../../assets/modeloMilo1.png';
 import { useNavigate } from 'react-router-dom';
 
 // Este componente no recibe props

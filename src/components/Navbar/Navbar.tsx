@@ -9,7 +9,7 @@ import { SvgLunaDark } from '../ui/svg/SvgLunaDark';
 import Campana from '../ui/svg/Campana';
 import { NotificacionesChapitas } from '../NotificacionesChapitas';
 // Usar ruta absoluta desde public/
-const logo = '/new-logo11.png';
+const logo = '/milo2modelo (1).png';
 
 export interface NavbarProps {
   tipo: 'home' | 'dashboard';
