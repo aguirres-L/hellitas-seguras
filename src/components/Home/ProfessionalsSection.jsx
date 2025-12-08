@@ -1,12 +1,14 @@
 import React from "react";
+import UseFrameMotion from "../hook_ui_components/UseFrameMotion";
 
 // Este componente no recibe props
 export default function ProfessionalsSection() {
     return (
         <section aria-label="Sección para profesionales" className="relative mt-20 mb-16">
             {/* Separador decorativo superior */}
+          <UseFrameMotion tipoAnimacion="scale" duracion={1} delay={0.5} waitForUserView={true}>
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-pink-500 to-orange-500" />
-            
+            </UseFrameMotion>
             {/* Fondo contrastante para separar visualmente la sección */}
             <div className="absolute inset-0 -z-10 bg-gradient-to-b from-gray-50 via-blue-50/30 to-white" />
             
@@ -29,6 +31,8 @@ export default function ProfessionalsSection() {
 
                 {/* Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+                    <UseFrameMotion tipoAnimacion="slideRight" duracion={1} delay={0.5} waitForUserView={true}>
                     {/* Veterinarios */}
                     <article className="group relative bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-blue-100">
                         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
@@ -49,7 +53,9 @@ export default function ProfessionalsSection() {
                             </a>
                         </div>
                     </article>
+                    </UseFrameMotion>
 
+                    <UseFrameMotion tipoAnimacion="slideDown" duracion={1} delay={0.5} waitForUserView={true}>
                     {/* Peluqueros */}
                     <article className="group relative bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-purple-100">
                         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
@@ -70,7 +76,9 @@ export default function ProfessionalsSection() {
                             </a>
                         </div>
                     </article>
+                    </UseFrameMotion>
 
+                    <UseFrameMotion tipoAnimacion="slideLeft" duracion={1} delay={0.5} waitForUserView={true}>
                     {/* Tiendas */}
                     <article className="group relative bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-green-100">
                         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
@@ -91,9 +99,13 @@ export default function ProfessionalsSection() {
                             </a>
                         </div>
                     </article>
+                    </UseFrameMotion>
+
+
                 </div>
 
                 {/* Acceso existente */}
+                <UseFrameMotion tipoAnimacion="slideUp" duracion={1} delay={1} waitForUserView={true}>
                 <div className="text-center mt-16">
                     <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-gray-100 max-w-md mx-auto">
                         <p className="text-gray-600 mb-4 text-lg">¿Ya tienes cuenta?</p>
@@ -108,6 +120,8 @@ export default function ProfessionalsSection() {
                         </a>
                     </div>
                 </div>
+                </UseFrameMotion>
+
             </div>
         </section>
     );

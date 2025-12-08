@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SvgSol } from '../ui/svg/SvgSol';
@@ -8,7 +9,11 @@ import { SvgSolDark } from '../ui/svg/SvgSolDark';
 import { SvgLunaDark } from '../ui/svg/SvgLunaDark';
 import Campana from '../ui/svg/Campana';
 import { NotificacionesChapitas } from '../NotificacionesChapitas';
-// Usar ruta absoluta desde public/
+import UseFrameMotion from '../hook_ui_components/UseFrameMotion';
+// Importar video como módulo desde src/assets (Vite lo procesará correctamente)
+// @ts-ignore - Vite procesa archivos .mp4 y devuelve la URL como string
+import videoLogo from '../../assets/pets/milovideo.mp4';
+// Usar ruta absoluta desde public/ para la imagen
 const logo = '/milo2modelo (1).png';
 
 export interface NavbarProps {
@@ -39,6 +44,36 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const { typeTheme, toggleTheme } = useTheme();
   
+  // Estado para controlar si mostramos el video o la imagen
+  const [mostrarVideo, setMostrarVideo] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Efecto para cambiar a imagen después de 7 segundos (fallback por si el video no termina)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMostrarVideo(false);
+    }, 7000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handler cuando el video termina de cargar
+  const handleVideoLoaded = () => {
+    console.log('Video cargado correctamente');
+  };
+
+  // Handler cuando el video termina de reproducirse (onEnded)
+  const handleVideoEnded = () => {
+    console.log('Video terminado, iniciando animación de salida');
+    // AnimatePresence manejará automáticamente la animación de salida
+    setMostrarVideo(false);
+  };
+
+  // Handler si el video falla al cargar
+  const handleVideoError = () => {
+    console.error('Error al cargar el video, mostrando imagen');
+    setMostrarVideo(false);
+  };
 
   // Función por defecto para cerrar sesión si no se proporciona
   const handleCerrarSesion = async () => {
@@ -71,14 +106,80 @@ export const Navbar: React.FC<NavbarProps> = ({
       <nav className="fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-sm shadow-lg p-4">
         <div className="container mx-auto flex justify-between items-center">
           {/* Logo y título */}
-          <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-200">
-            <div className="h-8 w-8 rounded-full flex items-center justify-center">
-              <img src={logo} alt="" />
-            </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
-              {titulo}
-            </h1>
-          </Link>
+          <div className="flex items-center space-x-2">
+            {/* Logo con animación */}
+            <UseFrameMotion 
+              tipoAnimacion="scale" 
+              duracion={0.8} 
+              delay={0.2} 
+              waitForUserView={true}
+              propsAdicionales={{}}
+            >
+              <Link 
+                to="/" 
+                className=" w-8  flex items-center justify-center hover:opacity-80 transition-opacity duration-200"
+              >
+                <AnimatePresence mode="wait">
+                  {mostrarVideo ? (
+                    <motion.div
+                      key="video"
+                      initial={{ opacity: 0, x: -50 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 50 }}
+                      transition={{ 
+                        duration: 0.8, 
+                        delay: 0.2,
+                        ease: 'easeOut' 
+                      }}
+                    >
+                      <video 
+                        ref={videoRef}
+                        src={videoLogo} 
+                        autoPlay 
+                        muted 
+                        playsInline 
+                        className="h-11 w-8  object-cover transition-opacity duration-300" 
+                        onLoadedData={handleVideoLoaded}
+                        onEnded={handleVideoEnded}
+                        onError={handleVideoError}
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="imagen"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                    >
+                      <img 
+                        src={logo} 
+                        alt="Logo" 
+                        className=" w-8  object-cover transition-opacity duration-300"
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Link>
+            </UseFrameMotion>
+
+            {/* Título con animación */}
+            <UseFrameMotion 
+              tipoAnimacion="slideLeft" 
+              duracion={3} 
+              delay={0.5} 
+              waitForUserView={true}
+              propsAdicionales={{}}
+            >
+              <Link 
+                to="/" 
+                className="hover:opacity-80 transition-opacity duration-200"
+              >
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
+                  {titulo}
+                </h1>
+              </Link>
+            </UseFrameMotion>
+          </div>
           {/* Botón hamburguesa */}
           <button
             className="sm:hidden flex items-center px-3 py-2 border rounded text-orange-600 border-orange-400"

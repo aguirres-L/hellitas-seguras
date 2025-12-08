@@ -4,10 +4,12 @@ import ImpactoSocial from "./ImpactoSocial.jsx";
 import HowItWorks from "./HowItWorks.jsx";
 import Planes from "./Planes.jsx";
 import ProfessionalsSection from "./ProfessionalsSection.jsx";
+import UseFrameMotion from "../hook_ui_components/UseFrameMotion.jsx";
 
 export default function Hero(){
     return(
         <section className="relative container mx-auto md:py-20 py-12 mt-6 px-4 text-center">
+     <UseFrameMotion tipoAnimacion="slideLeft" duracion={1} delay={0.5}>
         <div className="max-w-5xl mx-auto">
 
           <h1 className="text-4xl mb-6 md:text-5xl font-bold text-gray-800 leading-tight">
@@ -22,33 +24,36 @@ export default function Hero(){
           </h1>
        
         </div>
-        
+        </UseFrameMotion>
       
          
         <div className="max-w-5xl mx-auto">
+
+          <UseFrameMotion tipoAnimacion="scale" duracion={1} delay={0.8}>
           <SliderHome/>
+          </UseFrameMotion>
 
           <HowItWorks/>
               {/* Planes y precios */}
       <Planes />
+
   {/* ImpactoSocial fuera del contenedor para que ocupe todo el ancho */}
   <div className="w-screen mb-10 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
           <ImpactoSocial/>
         </div>
 
-          <div className="flex flex-col mt-10 sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6 mb-8">
+        
+          <div className="hidden sm:flex flex-col mt-10 sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6 mb-8">
+            <UseFrameMotion tipoAnimacion="slideUp" duracion={1} delay={0.5} waitForUserView={true}>
             <a 
               href="/register" 
-              className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-8 py-4 rounded-lg hover:from-orange-600 hover:to-pink-600 transition-all duration-200 transform hover:scale-105 shadow-lg font-semibold text-lg"
+              className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-4 py-3 sm:px-8 sm:py-4 rounded-lg hover:from-orange-600 hover:to-pink-600 transition-all duration-200 transform hover:scale-105 shadow-lg font-semibold text-sm sm:text-base md:text-lg text-center w-full sm:w-auto"
             >
-              Registrate y crea el perfil digital de tu mascota
+              <span className="block sm:inline">Registrate y crea el perfil digital</span>
+              <span className="block sm:inline sm:ml-1">de tu mascota</span>
             </a>
-          {/*   <a 
-              href="#how-it-works" 
-              className="border-2 border-orange-500 text-orange-600 px-8 py-4 rounded-lg hover:bg-orange-50 transition-all duration-200 transform hover:scale-105 font-semibold text-lg"
-            >
-              Ver cómo funciona
-            </a> */}
+            </UseFrameMotion>
+         
           </div>
 
        

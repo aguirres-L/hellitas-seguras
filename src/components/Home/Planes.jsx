@@ -1,3 +1,5 @@
+import UseFrameMotion from "../hook_ui_components/UseFrameMotion";
+
 export default function Planes(){
   return(
       <section id="planes" className="relative container mx-auto py-16 px-4">
@@ -10,6 +12,8 @@ export default function Planes(){
         </p>
         
         <div className="grid md:grid-cols-2 gap-8">
+         
+         <UseFrameMotion tipoAnimacion="slideRight" duracion={1} delay={0.5} waitForUserView={true}>
           <div className="bg-white rounded-2xl p-8 shadow-xl border-2 border-orange-200">
             <h3 className="text-2xl font-bold text-gray-800 mb-4">Plaquita QR</h3>
             <div className="text-4xl font-bold text-orange-600 mb-2">$7.000</div>
@@ -40,7 +44,10 @@ export default function Planes(){
               Comenzar ahora
             </a>
           </div>
+          </UseFrameMotion>
           
+
+          <UseFrameMotion tipoAnimacion="slideLeft" duracion={1} delay={0.5} waitForUserView={true}>
           <div className="bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-2xl p-8 shadow-xl relative">
             <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
               <span className="bg-yellow-400 text-gray-800 px-4 py-1 rounded-full text-sm font-bold">Más popular</span>
@@ -79,6 +86,8 @@ export default function Planes(){
               Elegir Plan Mensual
             </a>
           </div>
+          </UseFrameMotion>
+
         </div>
       </div>
     </section>
