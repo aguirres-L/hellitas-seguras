@@ -15,6 +15,7 @@ import { getChapitaFiletForUserId } from '../data/hook/getChapitaFiletForUserId'
 import { getChapitasByMascotaId } from '../data/hook/getChapitasByMascotaId';
 import QRCode from 'react-qr-code';
 import SvgAlert from './ui/svg/SvgAlert';
+import UseFrameMotion from './hook_frame_motion/UseFrameMotion';
 
 // Este componente recibe props a través de useParams
 const PetProfile = () => {
@@ -512,7 +513,13 @@ const PetProfile = () => {
 
           {/* Contenido de Pestañas */}
           {pestañaActiva === 'informacion' && (
-            <>
+            <UseFrameMotion
+              tipoAnimacion="slideUp"
+              duracion={0.6}
+              delay={0.1}
+              waitForUserView={true}
+              propsAdicionales={{}}
+            >
               <div className="grid md:grid-cols-2 gap-8">
                 {/* Datos Básicos */}
                 <div className="bg-white/60 rounded-lg p-6 shadow-sm">
@@ -738,7 +745,7 @@ const PetProfile = () => {
                   </div>
                 </div>
               )}
-            </>
+            </UseFrameMotion>
           )}
 
           {pestañaActiva === 'historial' && (
@@ -760,10 +767,17 @@ const PetProfile = () => {
           )}
 
           {pestañaActiva === 'cuidados' && (
-            <div className="space-y-6">
-              {/* Consejos de IA */}
-              <div className="bg-white/60 rounded-lg p-6 shadow-sm">
-                <ConsejosIA 
+            <UseFrameMotion
+              tipoAnimacion="slideUp"
+              duracion={0.6}
+              delay={0.1}
+              waitForUserView={true}
+              propsAdicionales={{}}
+            >
+              <div className="space-y-6">
+                {/* Consejos de IA */}
+                <div className="bg-white/60 rounded-lg p-6 shadow-sm">
+                  <ConsejosIA 
                   consejos={consejos}
                   cargando={cargandoConsejos}
                   error={errorConsejos}
@@ -815,7 +829,8 @@ const PetProfile = () => {
                   )}
                 </div>
               </div>
-            </div>
+              </div>
+            </UseFrameMotion>
           )} 
         </div>
       </div>

@@ -12,7 +12,7 @@ import { NotificacionesChapitas } from '../NotificacionesChapitas';
 import UseFrameMotion from '../hook_frame_motion/UseFrameMotion';
 // Importar video como módulo desde src/assets (Vite lo procesará correctamente)
 // @ts-ignore - Vite procesa archivos .mp4 y devuelve la URL como string
-import videoLogo from '../../assets/pets/jjj.mp4';
+import videoLogo from '../../assets/pets/milo9.mp4';
 // Usar ruta absoluta desde public/ para la imagen
 const logo = '/milo2modelo (1).png';
 
@@ -108,30 +108,20 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Logo y título */}
           <div className="flex items-center space-x-2">
             {/* Logo con animación */}
-            <UseFrameMotion 
+          {/*   <UseFrameMotion 
               tipoAnimacion="scale" 
               duracion={0.8} 
               delay={0.2} 
               waitForUserView={true}
               propsAdicionales={{}}
-            >
+            > */}
               <Link 
                 to="/" 
                 className=" w-8  flex items-center justify-center hover:opacity-80 transition-opacity duration-200"
               >
                 <AnimatePresence mode="wait">
                   {mostrarVideo ? (
-                    <motion.div
-                      key="video"
-                      initial={{ opacity: 0, x: -50 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 50 }}
-                      transition={{ 
-                        duration: 0.8, 
-                        delay: 0.2,
-                        ease: 'easeOut' 
-                      }}
-                    >
+                    <div key="video">
                       <video 
                         ref={videoRef}
                         src={videoLogo} 
@@ -143,12 +133,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                         onEnded={handleVideoEnded}
                         onError={handleVideoError}
                       />
-                    </motion.div>
+                    </div>
                   ) : (
                     <UseFrameMotion
                       key="imagen"
                       tipoAnimacion="slideLeft"
-                      duracion={0.6}
+                      duracion={0.5}
                       delay={0}
                       waitForUserView={false}
                       className="h-11 w-8 flex items-center justify-center"
@@ -163,7 +153,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   )}
                 </AnimatePresence>
               </Link>
-            </UseFrameMotion>
+            {/* </UseFrameMotion> */}
 
             {/* Título con animación */}
             <UseFrameMotion 
