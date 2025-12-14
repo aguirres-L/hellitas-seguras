@@ -1,4 +1,4 @@
-import UseFrameMotion from "../hook_ui_components/UseFrameMotion";
+import UseFrameMotion from "../hook_frame_motion/UseFrameMotion";
 
 export default function HowItWorks(){
   return(

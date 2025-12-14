@@ -8,6 +8,7 @@ import { auth, addDataWithCustomId } from '../data/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import DecoracionForm from './decoracionUi/DecoracionForm';
 import { ImageUploaderProfesional } from './ImageUploaderProfesional';
+import UseFrameMotion from './hook_frame_motion/UseFrameMotion';
 import logo11 from '../assets/modeloMilo1.png';
 
 // Este componente no recibe props
@@ -220,40 +221,90 @@ const RegisterProfesional = () => {
       <div className="relative w-full max-w-md lg:max-w-lg">
         {/* Logo y título */}
         <div className="text-center mb-6">
-             <div onClick={() => navigate('/')} className="mx-auto cursor-pointer  h-16 w-16 bg-gradient-to-r from-orange-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg mb-4">
-                      <img src={logo11} alt="" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Huellitas Seguras
-          </h1>
-          <p className="text-gray-600 mb-2">
-            Para profesionales veterinarios y peluqueros
-          </p>
-          <h2 className="text-xl font-semibold text-gray-800">
-            Registro Profesional
-          </h2>
+          <UseFrameMotion
+            tipoAnimacion="scale"
+            duracion={0.6}
+            delay={0.1}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div onClick={() => navigate('/')} className="mx-auto cursor-pointer  h-16 w-16 bg-gradient-to-r from-orange-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg mb-4">
+              <img src={logo11} alt="" />
+            </div>
+          </UseFrameMotion>
+          
+          <UseFrameMotion
+            tipoAnimacion="slideDown"
+            duracion={0.6}
+            delay={0.2}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Huellitas Seguras
+            </h1>
+          </UseFrameMotion>
+          
+          <UseFrameMotion
+            tipoAnimacion="fade"
+            duracion={0.5}
+            delay={0.4}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <p className="text-gray-600 mb-2">
+              Para profesionales veterinarios y peluqueros
+            </p>
+          </UseFrameMotion>
+          
+          <UseFrameMotion
+            tipoAnimacion="slideUp"
+            duracion={0.6}
+            delay={0.5}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <h2 className="text-xl font-semibold text-gray-800">
+              Registro Profesional
+            </h2>
+          </UseFrameMotion>
         </div>
         
         {/* Mensaje de error */}
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md shadow-sm mb-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
+          <UseFrameMotion
+            tipoAnimacion="slideDown"
+            duracion={0.4}
+            delay={0}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md shadow-sm mb-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
               </div>
             </div>
-          </div>
+          </UseFrameMotion>
         )}
 
         {/* Formulario */}
         <form className="space-y-1" onSubmit={handleSubmit}>
           {/* Tipo de Profesional - Botones personalizados */}
-          <div>
+          <UseFrameMotion
+            tipoAnimacion="scale"
+            duracion={0.6}
+            delay={0.7}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Tipo de Usuario
             </label>
@@ -328,10 +379,18 @@ const RegisterProfesional = () => {
                 </button>
               ))}
             </div>
-          </div>
+            </div>
+          </UseFrameMotion>
 
           {/* Nombre */}
-          <div>
+          <UseFrameMotion
+            tipoAnimacion="slideRight"
+            duracion={0.6}
+            delay={0.8}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div>
             <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-2">
               Nombre completo
             </label>
@@ -353,10 +412,18 @@ const RegisterProfesional = () => {
                 disabled={isRegistrando}
               />
             </div>
-          </div>
+            </div>
+          </UseFrameMotion>
 
           {/* Email */}
-          <div>
+          <UseFrameMotion
+            tipoAnimacion="slideRight"
+            duracion={0.6}
+            delay={0.9}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
               Correo electrónico
             </label>
@@ -378,10 +445,18 @@ const RegisterProfesional = () => {
                 disabled={isRegistrando}
               />
             </div>
-          </div>
+            </div>
+          </UseFrameMotion>
 
           {/* Teléfono */}
-          <div>
+          <UseFrameMotion
+            tipoAnimacion="slideRight"
+            duracion={0.6}
+            delay={1.0}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div>
             <label htmlFor="telefono" className="block text-sm font-medium text-gray-700 mb-2">
               Teléfono
             </label>
@@ -403,10 +478,18 @@ const RegisterProfesional = () => {
                 disabled={isRegistrando}
               />
             </div>
-          </div>
+            </div>
+          </UseFrameMotion>
 
           {/* Especialidad */}
-          <div>
+          <UseFrameMotion
+            tipoAnimacion="slideRight"
+            duracion={0.6}
+            delay={1.1}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div>
             <label htmlFor="especialidad" className="block text-sm font-medium text-gray-700 mb-2">
               Especialidad
             </label>
@@ -421,10 +504,18 @@ const RegisterProfesional = () => {
               onChange={handleChange}
               disabled={isRegistrando}
             />
-          </div>
+            </div>
+          </UseFrameMotion>
 
           {/* Dirección */}
-          <div>
+          <UseFrameMotion
+            tipoAnimacion="slideRight"
+            duracion={0.6}
+            delay={1.2}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div>
             <label htmlFor="direccion" className="block text-sm font-medium text-gray-700 mb-2">
               Dirección del establecimiento
             </label>
@@ -439,10 +530,18 @@ const RegisterProfesional = () => {
               onChange={handleChange}
               disabled={isRegistrando}
             />
-          </div>
+            </div>
+          </UseFrameMotion>
 
           {/* Zona */}
-          <div>
+          <UseFrameMotion
+            tipoAnimacion="fade"
+            duracion={0.5}
+            delay={1.3}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Zona
             </label>
@@ -486,10 +585,18 @@ const RegisterProfesional = () => {
                 Zona Sur
               </button>
             </div>
-          </div>
+            </div>
+          </UseFrameMotion>
 
           {/* Barrio */}
-          <div>
+          <UseFrameMotion
+            tipoAnimacion="slideRight"
+            duracion={0.6}
+            delay={1.4}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div>
             <label htmlFor="barrio" className="block text-sm font-medium text-gray-700 mb-2">
               Barrio
             </label>
@@ -504,10 +611,18 @@ const RegisterProfesional = () => {
               onChange={handleChange}
               disabled={isRegistrando}
             />
-          </div>
+            </div>
+          </UseFrameMotion>
 
           {/* Horario */}
-          <div>
+          <UseFrameMotion
+            tipoAnimacion="fade"
+            duracion={0.5}
+            delay={1.5}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Horario de atención
             </label>
@@ -564,10 +679,18 @@ const RegisterProfesional = () => {
                 </p>
               </div>
             </div>
-          </div>
+            </div>
+          </UseFrameMotion>
 
           {/* Años de experiencia */}
-          <div>
+          <UseFrameMotion
+            tipoAnimacion="slideRight"
+            duracion={0.6}
+            delay={1.6}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div>
             <label htmlFor="experiencia" className="block text-sm font-medium text-gray-700 mb-2">
               Años de experiencia
             </label>
@@ -583,11 +706,19 @@ const RegisterProfesional = () => {
               onChange={handleChange}
               disabled={isRegistrando}
             />
-          </div>
+            </div>
+          </UseFrameMotion>
 
           {/* Número de licencia */}
           {formData.tipoProfesional === 'veterinario' && (
-          <div>
+          <UseFrameMotion
+            tipoAnimacion="slideRight"
+            duracion={0.6}
+            delay={1.7}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div>
             <label htmlFor="licencia" className="block text-sm font-medium text-gray-700 mb-2">
               Número de licencia profesional
             </label>
@@ -602,11 +733,19 @@ const RegisterProfesional = () => {
               onChange={handleChange}
               disabled={isRegistrando}
             />
-          </div>
+            </div>
+          </UseFrameMotion>
           )}
 
           {/* Foto del local */}
-          <div>
+          <UseFrameMotion
+            tipoAnimacion="fade"
+            duracion={0.5}
+            delay={1.8}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Foto del local (opcional)
             </label>
@@ -619,9 +758,17 @@ const RegisterProfesional = () => {
             <p className="text-xs text-gray-500 mt-1">
               Sube una foto de tu local para generar confianza en los usuarios
             </p>
-          </div>
+            </div>
+          </UseFrameMotion>
           {/* Contraseña */}
-          <div>
+          <UseFrameMotion
+            tipoAnimacion="slideRight"
+            duracion={0.6}
+            delay={1.9}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
               Contraseña
             </label>
@@ -643,10 +790,18 @@ const RegisterProfesional = () => {
                 disabled={isRegistrando}
               />
             </div>
-          </div>
+            </div>
+          </UseFrameMotion>
 
           {/* Confirmar Contraseña */}
-          <div>
+          <UseFrameMotion
+            tipoAnimacion="slideRight"
+            duracion={0.6}
+            delay={2.0}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
               Confirmar contraseña
             </label>
@@ -668,10 +823,18 @@ const RegisterProfesional = () => {
                 disabled={isRegistrando}
               />
             </div>
-          </div>
+            </div>
+          </UseFrameMotion>
 
           {/* Botón de registro */}
-          <div className="pt-4">
+          <UseFrameMotion
+            tipoAnimacion="scale"
+            duracion={0.5}
+            delay={2.1}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div className="pt-4">
             <button
               type="submit"
               disabled={isRegistrando}
@@ -694,10 +857,18 @@ const RegisterProfesional = () => {
                 </div>
               )}
             </button>
-          </div>
+            </div>
+          </UseFrameMotion>
 
           {/* Enlaces */}
-          <div className="text-center pt-4">
+          <UseFrameMotion
+            tipoAnimacion="fade"
+            duracion={0.5}
+            delay={2.2}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div className="text-center pt-4">
             <p className="text-sm text-gray-600">
               ¿Ya tienes cuenta profesional?{' '}
               <Link 
@@ -716,10 +887,18 @@ const RegisterProfesional = () => {
                 Regístrate aquí
               </Link>
             </p>
-          </div>
+            </div>
+          </UseFrameMotion>
 
           {/* Información adicional */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <UseFrameMotion
+            tipoAnimacion="fade"
+            duracion={0.5}
+            delay={2.3}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
@@ -732,7 +911,8 @@ const RegisterProfesional = () => {
                 </p>
               </div>
             </div>
-          </div>
+            </div>
+          </UseFrameMotion>
         </form>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import UseFrameMotion from "../hook_ui_components/UseFrameMotion";
+import UseFrameMotion from "../hook_frame_motion/UseFrameMotion";
 
 // Este componente no recibe props
 export default function ProfessionalsSection() {

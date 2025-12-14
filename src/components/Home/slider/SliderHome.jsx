@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import SliderUseFrameMotion from '../../hook_frame_motion/SliderUseFrameMotion';
 
 // imagenes macotas 
 import uno from "../../../assets/7.png"
@@ -175,7 +176,7 @@ function ImageSlider({ imagenes, imagenAlt, isVideo }) {
         {contenidoArray.map((imagen, index) => (
           <div 
             key={index}
-            className="flex-shrink-0 w-full snap-start h-full relative"
+            className="flex-shrink-0 w-full snap-start  h-full relative bg-white"
             style={{ minWidth: '100%' }}
           >
             {isVideo ? (
@@ -185,14 +186,14 @@ function ImageSlider({ imagenes, imagenAlt, isVideo }) {
                 loop 
                 muted 
                 playsInline
-                className="w-full h-full object-cover"
+                className="w-full md:h-[600px] rounded-xl h-[300px] object-contain  "
                 aria-label={`${imagenAlt} - Video`}
               />
             ) : (
               <img
                 src={imagen}
                 alt={`${imagenAlt} ${index + 1}`}
-                className="w-full h-full object-contain"
+                className="w-full md:h-[600px] rounded-xl h-[300px] object-contain"
               />
             )}
             
@@ -269,9 +270,11 @@ function ModalFamilia({ isAbierto, onCerrar }) {
 
 export default function SliderHome() {
   const [slideActual, setSlideActual] = useState(0);
+  const [indiceSlideAnterior, setIndiceSlideAnterior] = useState(0);
   const [isModalFamiliaAbierto, setIsModalFamiliaAbierto] = useState(false);
 
   const irASlide = (indice) => {
+    setIndiceSlideAnterior(slideActual);
     setSlideActual(indice);
   };
 
@@ -301,81 +304,95 @@ export default function SliderHome() {
             <div className="lg:hidden"> 
 
               {/* Card del slider */}
-              <div className="bg-white rounded-xl shadow-xl overflow-hidden">
-                <div className="flex flex-col min-h-[650px]">
+              <div className="bg-white rounded-xl  overflow-hidden">
+                <div className="flex flex-col min-h-[650px] sm:min-h-[700px]">
                   {/* Imagen */}
-                  <div className="h-[350px] sm:h-[400px] relative overflow-hidden">
-                    <ImageSlider 
-                      imagenes={datosSlides[slideActual].imagenUrl} 
-                      imagenAlt={datosSlides[slideActual].imagenAlt}
-                      isVideo={datosSlides[slideActual].isVideo}
-                    />
+                  <div className="h-[350px] sm:h-[400px] relative overflow-hidden  flex-shrink-0">
+                    <SliderUseFrameMotion 
+                      slideActual={slideActual} 
+                      slideAnterior={indiceSlideAnterior}
+                      tipoAnimacion="fade"
+                      duracion={0.3}
+                    >
+                      <ImageSlider 
+                        imagenes={datosSlides[slideActual].imagenUrl} 
+                        imagenAlt={datosSlides[slideActual].imagenAlt}
+                        isVideo={datosSlides[slideActual].isVideo}
+                      />
+                    </SliderUseFrameMotion>
                   </div>
 
                   {/* Contenido */}
-                  <div className="p-10 sm:p-14 flex flex-col justify-center flex-1">
-                    <div className="space-y-4 sm:space-y-6">
-                      {/* Header con número y indicadores */}
-                      <div className="flex flex-row items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xl sm:text-2xl font-bold text-orange-500">
-                            {String(slideActual + 1).padStart(2, '0')}
-                          </span>
-                          <span className="text-gray-400 text-sm sm:text-base">/ {String(datosSlides.length).padStart(2, '0')}</span>
-                        </div>
-                        
-                        {/* Indicador de progreso */}
-                        <div className="flex items-center space-x-2">
-                          <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-orange-500 rounded-full transition-all duration-500 ease-out"
-                              style={{ 
-                                width: `${((slideActual + 1) / datosSlides.length) * 100}%`
-                              }}
-                            />
+                  <div className="p-6 sm:p-10 flex flex-col flex-1">
+                    <SliderUseFrameMotion 
+                      slideActual={slideActual} 
+                      slideAnterior={indiceSlideAnterior}
+                      tipoAnimacion="slide"
+                      duracion={0.4}
+                    >
+                      <div className="space-y-3 sm:space-y-4">
+                        {/* Header con número y indicadores */}
+                        <div className="flex flex-row items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xl sm:text-2xl font-bold text-orange-500">
+                              {String(slideActual + 1).padStart(2, '0')}
+                            </span>
+                            <span className="text-gray-400 text-sm sm:text-base">/ {String(datosSlides.length).padStart(2, '0')}</span>
+                          </div>
+                          
+                          {/* Indicador de progreso */}
+                          <div className="flex items-center space-x-2">
+                            <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-orange-500 rounded-full transition-all duration-500 ease-out"
+                                style={{ 
+                                  width: `${((slideActual + 1) / datosSlides.length) * 100}%`
+                                }}
+                              />
+                            </div>
                           </div>
                         </div>
+
+                        {/* Título */}
+                        <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 leading-tight">
+                          {datosSlides[slideActual].titulo}
+                        </h3>
+
+                        {/* Descripción */}
+                        <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
+                          {datosSlides[slideActual].descripcion}
+                        </p>
+
+                        {/* Características */}
+                        <ul className="space-y-2 sm:space-y-3">
+                          {datosSlides[slideActual].caracteristicas.map((caracteristica, idx) => (
+                            <li key={idx} className="flex items-start space-x-2 sm:space-x-3">
+                              <span className="text-orange-500 text-base sm:text-lg mt-0.5 flex-shrink-0">
+                                {idx === 0 ? '✨' : idx === 1 ? '✅' : idx === 2 ? '🩺' : '🤝'}
+                              </span>
+                              <span className="text-sm sm:text-base text-gray-700 leading-relaxed">{caracteristica}</span>
+                            </li>
+                          ))}
+                        </ul>
+
+                        {/* Botón "Conoce nuestra familia" - Solo en slide 3 */}
+                        {esSlideFamilia && (
+                          <div className="pt-4">
+                            <button
+                              onClick={() => setIsModalFamiliaAbierto(true)}
+                              className="w-full px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                            >
+                              Conoce nuestra familia
+                            </button>
+                          </div>
+                        )}
                       </div>
-
-                      {/* Título */}
-                      <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 leading-tight">
-                        {datosSlides[slideActual].titulo}
-                      </h3>
-
-                      {/* Descripción */}
-                      <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
-                        {datosSlides[slideActual].descripcion}
-                      </p>
-
-                      {/* Características */}
-                      <ul className="space-y-2 sm:space-y-3">
-                        {datosSlides[slideActual].caracteristicas.map((caracteristica, idx) => (
-                          <li key={idx} className="flex items-start space-x-2 sm:space-x-3">
-                            <span className="text-orange-500 text-base sm:text-lg mt-0.5 flex-shrink-0">
-                              {idx === 0 ? '✨' : idx === 1 ? '✅' : idx === 2 ? '🩺' : '🤝'}
-                            </span>
-                            <span className="text-sm sm:text-base text-gray-700 leading-relaxed">{caracteristica}</span>
-                          </li>
-                        ))}
-                      </ul>
-
-                      {/* Botón "Conoce nuestra familia" - Solo en slide 3 */}
-                      {esSlideFamilia && (
-                        <div className="pt-4">
-                          <button
-                            onClick={() => setIsModalFamiliaAbierto(true)}
-                            className="w-full px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
-                          >
-                            Conoce nuestra familia
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    </SliderUseFrameMotion>
                   </div>
                 </div>
 
                 {/* Indicadores de puntos móvil */}
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-3">
+              {/*   <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-3">
                   {datosSlides.map((_, index) => (
                     <button
                       key={index}
@@ -388,7 +405,7 @@ export default function SliderHome() {
                       aria-label={`Ir al slide ${index + 1}`}
                     />
                   ))}
-                </div>
+                </div> */}
               </div>
             </div>
 
@@ -423,60 +440,74 @@ export default function SliderHome() {
             <div className="hidden lg:flex flex-row h-[600px] bg-white rounded-xl shadow-xl overflow-hidden">
               {/* Imagen (izquierda en desktop) */}
               <div className="w-1/2 h-full relative overflow-hidden">
-                <ImageSlider 
-                  imagenes={slideActualData.imagenUrl} 
-                  imagenAlt={slideActualData.imagenAlt}
-                  isVideo={slideActualData.isVideo}
-                />
+                <SliderUseFrameMotion 
+                  slideActual={slideActual} 
+                  slideAnterior={indiceSlideAnterior}
+                  tipoAnimacion="fade"
+                  duracion={0.3}
+                >
+                  <ImageSlider 
+                    imagenes={slideActualData.imagenUrl} 
+                    imagenAlt={slideActualData.imagenAlt}
+                    isVideo={slideActualData.isVideo}
+                  />
+                </SliderUseFrameMotion>
               </div>
 
               {/* Contenido (derecha en desktop) */}
               <div className="w-1/2 p-8 xl:p-12 flex flex-col justify-center h-full">
-                <div className="space-y-6 h-full flex flex-col justify-center">
-                  <div className="flex flex-row">
-                    {/* Número de slide */}
-                    <div className="flex items-center space-x-2">
-                      <span className="text-2xl font-bold text-orange-500">
-                        {String(slideActual + 1).padStart(2, '0')}
-                      </span>
-                      <span className="text-gray-400 text-base">/ {String(datosSlides.length).padStart(2, '0')}</span>
-                    </div>
-                  </div>
-
-                  {/* Título */}
-                  <h3 className="text-3xl font-bold z-10 text-gray-800 leading-tight">
-                    {slideActualData.titulo}
-                  </h3>
-
-                  {/* Descripción */}
-                  <p className="text-lg text-gray-600 leading-relaxed">
-                    {slideActualData.descripcion}
-                  </p>
-
-                  {/* Características */}
-                  <ul className="space-y-3 flex-1">
-                    {slideActualData.caracteristicas.map((caracteristica, index) => (
-                      <li key={index} className="flex items-start space-x-3">
-                        <span className="text-orange-500 text-lg mt-0.5 flex-shrink-0">
-                          {index === 0 ? '✨' : index === 1 ? '✅' : index === 2 ? '🩺' : '🤝'}
+                <SliderUseFrameMotion 
+                  slideActual={slideActual} 
+                  slideAnterior={slideAnterior}
+                  tipoAnimacion="slide"
+                  duracion={0.4}
+                >
+                  <div className="space-y-6 h-full flex flex-col justify-center">
+                    <div className="flex flex-row">
+                      {/* Número de slide */}
+                      <div className="flex items-center space-x-2">
+                        <span className="text-2xl font-bold text-orange-500">
+                          {String(slideActual + 1).padStart(2, '0')}
                         </span>
-                        <span className="text-base text-gray-700 leading-relaxed">{caracteristica}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {/* Botón "Conoce nuestra familia" - Solo en slide 3 */}
-                  {esSlideFamilia && (
-                    <div className="pt-4">
-                      <button
-                        onClick={() => setIsModalFamiliaAbierto(true)}
-                        className="w-full px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
-                      >
-                        Conoce nuestra familia
-                      </button>
+                        <span className="text-gray-400 text-base">/ {String(datosSlides.length).padStart(2, '0')}</span>
+                      </div>
                     </div>
-                  )}
-                </div>
+
+                    {/* Título */}
+                    <h3 className="text-3xl font-bold z-10 text-gray-800 leading-tight">
+                      {slideActualData.titulo}
+                    </h3>
+
+                    {/* Descripción */}
+                    <p className="text-lg text-gray-600 leading-relaxed">
+                      {slideActualData.descripcion}
+                    </p>
+
+                    {/* Características */}
+                    <ul className="space-y-3 flex-1">
+                      {slideActualData.caracteristicas.map((caracteristica, index) => (
+                        <li key={index} className="flex items-start space-x-3">
+                          <span className="text-orange-500 text-lg mt-0.5 flex-shrink-0">
+                            {index === 0 ? '✨' : index === 1 ? '✅' : index === 2 ? '🩺' : '🤝'}
+                          </span>
+                          <span className="text-base text-gray-700 leading-relaxed">{caracteristica}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* Botón "Conoce nuestra familia" - Solo en slide 3 */}
+                    {esSlideFamilia && (
+                      <div className="pt-4">
+                        <button
+                          onClick={() => setIsModalFamiliaAbierto(true)}
+                          className="w-full px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                        >
+                          Conoce nuestra familia
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </SliderUseFrameMotion>
               </div>
 
               {/* Botones de navegación desktop */}

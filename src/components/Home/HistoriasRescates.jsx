@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAllDataCollection, obtenerDetalleOng } from '../../data/firebase/firebase';
-import UseFrameMotion from '../hook_ui_components/UseFrameMotion';
+import UseFrameMotion from '../hook_frame_motion/UseFrameMotion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Este componente no recibe props
 export default function HistoriasRescates() {
@@ -584,9 +585,24 @@ export default function HistoriasRescates() {
       </div>
 
       {/* Modal de noticia completa */}
-      {mostrarModal && noticiaSeleccionada && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <AnimatePresence>
+        {mostrarModal && noticiaSeleccionada && (
+          <motion.div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            onClick={cerrarModal}
+          >
+            <motion.div
+              className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              onClick={(e) => e.stopPropagation()}
+            >
             {/* Header del modal */}
             <div className="p-6 border-b border-gray-200 flex justify-between items-start">
               <div>
@@ -671,9 +687,10 @@ export default function HistoriasRescates() {
             )}
 
             </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

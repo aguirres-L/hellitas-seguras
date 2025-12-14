@@ -9,10 +9,10 @@ import { SvgSolDark } from '../ui/svg/SvgSolDark';
 import { SvgLunaDark } from '../ui/svg/SvgLunaDark';
 import Campana from '../ui/svg/Campana';
 import { NotificacionesChapitas } from '../NotificacionesChapitas';
-import UseFrameMotion from '../hook_ui_components/UseFrameMotion';
+import UseFrameMotion from '../hook_frame_motion/UseFrameMotion';
 // Importar video como módulo desde src/assets (Vite lo procesará correctamente)
 // @ts-ignore - Vite procesa archivos .mp4 y devuelve la URL como string
-import videoLogo from '../../assets/pets/milovideo.mp4';
+import videoLogo from '../../assets/pets/jjj.mp4';
 // Usar ruta absoluta desde public/ para la imagen
 const logo = '/milo2modelo (1).png';
 
@@ -138,25 +138,28 @@ export const Navbar: React.FC<NavbarProps> = ({
                         autoPlay 
                         muted 
                         playsInline 
-                        className="h-11 w-8  object-cover transition-opacity duration-300" 
+                        className="h-11 w-8 object-cover transition-opacity duration-300" 
                         onLoadedData={handleVideoLoaded}
                         onEnded={handleVideoEnded}
                         onError={handleVideoError}
                       />
                     </motion.div>
                   ) : (
-                    <motion.div
+                    <UseFrameMotion
                       key="imagen"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                      tipoAnimacion="slideLeft"
+                      duracion={0.6}
+                      delay={0}
+                      waitForUserView={false}
+                      className="h-11 w-8 flex items-center justify-center"
+                      propsAdicionales={{}}
                     >
                       <img 
                         src={logo} 
                         alt="Logo" 
-                        className=" w-8  object-cover transition-opacity duration-300"
+                        className="h-11 w-8 object-cover transition-opacity duration-300"
                       />
-                    </motion.div>
+                    </UseFrameMotion>
                   )}
                 </AnimatePresence>
               </Link>

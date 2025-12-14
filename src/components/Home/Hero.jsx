@@ -4,15 +4,15 @@ import ImpactoSocial from "./ImpactoSocial.jsx";
 import HowItWorks from "./HowItWorks.jsx";
 import Planes from "./Planes.jsx";
 import ProfessionalsSection from "./ProfessionalsSection.jsx";
-import UseFrameMotion from "../hook_ui_components/UseFrameMotion.jsx";
+import UseFrameMotion from "../hook_frame_motion/UseFrameMotion.jsx";
 
 export default function Hero(){
     return(
-        <section className="relative container mx-auto md:py-20 py-12 mt-6 px-4 text-center">
+        <section className="relative container mx-auto md:py-20 py-16 mt-6 px-4 text-center">
      <UseFrameMotion tipoAnimacion="slideLeft" duracion={1} delay={0.5}>
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
 
-          <h1 className="text-4xl mb-6 md:text-5xl font-bold text-gray-800 leading-tight">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-6 font-bold text-gray-800 leading-tight sm:leading-snug md:leading-tight break-words hyphens-auto">
             <span className="bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
               Chapitas QR
             </span>{' '}

@@ -7,7 +7,7 @@ import {
 import { auth, addDataWithCustomId } from '../data/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import DecoracionForm from './decoracionUi/DecoracionForm';
-
+import UseFrameMotion from './hook_frame_motion/UseFrameMotion';
 import logo11 from '../assets/modeloMilo1.png';
 
 // Este componente no recibe props
@@ -143,41 +143,91 @@ const Register = () => {
       <div className="relative w-full max-w-sm sm:max-w-md lg:max-w-lg h-full flex flex-col justify-center">
         {/* Logo y título - Compacto */}
         <div className="text-center mb-4 sm:mb-6">
-             <div onClick={() => navigate('/')} className="mx-auto cursor-pointer  h-16 w-16 bg-gradient-to-r from-orange-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg mb-4">
-                      <img src={logo11} alt="" />
-          </div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
-            Huellitas Seguras
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-600 mb-2">
-            Cuidando a tus mejores amigos
-          </p>
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
-            Crear Cuenta
-          </h2>
+          <UseFrameMotion
+            tipoAnimacion="scale"
+            duracion={0.6}
+            delay={0.1}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div onClick={() => navigate('/')} className="mx-auto cursor-pointer  h-16 w-16 bg-gradient-to-r from-orange-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg mb-4">
+              <img src={logo11} alt="" />
+            </div>
+          </UseFrameMotion>
+          
+          <UseFrameMotion
+            tipoAnimacion="slideDown"
+            duracion={0.6}
+            delay={0.2}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
+              Huellitas Seguras
+            </h1>
+          </UseFrameMotion>
+          
+          <UseFrameMotion
+            tipoAnimacion="fade"
+            duracion={0.5}
+            delay={0.4}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <p className="text-xs sm:text-sm text-gray-600 mb-2">
+              Cuidando a tus mejores amigos
+            </p>
+          </UseFrameMotion>
+          
+          <UseFrameMotion
+            tipoAnimacion="slideUp"
+            duracion={0.6}
+            delay={0.5}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
+              Crear Cuenta
+            </h2>
+          </UseFrameMotion>
         </div>
         
         {/* Mensaje de error - Compacto */}
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-400 p-2 sm:p-3 rounded-md shadow-sm mb-3">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-4 w-4 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-2">
-                <p className="text-xs sm:text-sm text-red-700">{error}</p>
+          <UseFrameMotion
+            tipoAnimacion="slideDown"
+            duracion={0.4}
+            delay={0}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div className="bg-red-50 border-l-4 border-red-400 p-2 sm:p-3 rounded-md shadow-sm mb-3">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-4 w-4 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-2">
+                  <p className="text-xs sm:text-sm text-red-700">{error}</p>
+                </div>
               </div>
             </div>
-          </div>
+          </UseFrameMotion>
         )}
 
         {/* Formulario - Compacto */}
         <form className="space-y-2 sm:space-y-1" onSubmit={handleSubmit}>
           <div className="space-y-2 sm:space-y-3">
             {/* Campo Nombre */}
-            <div className="relative">
+            <UseFrameMotion
+              tipoAnimacion="slideRight"
+              duracion={0.6}
+              delay={0.7}
+              waitForUserView={false}
+              propsAdicionales={{}}
+            >
+              <div className="relative">
               <label htmlFor="nombre" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Nombre completo
               </label>
@@ -199,10 +249,18 @@ const Register = () => {
                   disabled={isCargando}
                 />
               </div>
-            </div>
+              </div>
+            </UseFrameMotion>
 
             {/* Campo Email */}
-            <div className="relative">
+            <UseFrameMotion
+              tipoAnimacion="slideRight"
+              duracion={0.6}
+              delay={0.8}
+              waitForUserView={false}
+              propsAdicionales={{}}
+            >
+              <div className="relative">
               <label htmlFor="email" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Correo electrónico
               </label>
@@ -224,10 +282,18 @@ const Register = () => {
                   disabled={isCargando}
                 />
               </div>
-            </div>
+              </div>
+            </UseFrameMotion>
 
             {/* Campo Teléfono */}
-            <div className="relative">
+            <UseFrameMotion
+              tipoAnimacion="slideRight"
+              duracion={0.6}
+              delay={0.9}
+              waitForUserView={false}
+              propsAdicionales={{}}
+            >
+              <div className="relative">
               <label htmlFor="telefono" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Teléfono
               </label>
@@ -249,10 +315,18 @@ const Register = () => {
                   disabled={isCargando}
                 />
               </div>
-            </div>
+              </div>
+            </UseFrameMotion>
 
             {/* Campo Dirección */}
-            <div className="relative">
+            <UseFrameMotion
+              tipoAnimacion="slideRight"
+              duracion={0.6}
+              delay={1.0}
+              waitForUserView={false}
+              propsAdicionales={{}}
+            >
+              <div className="relative">
               <label htmlFor="direccion" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Dirección
               </label>
@@ -276,9 +350,17 @@ const Register = () => {
                 />
               </div>
               </div>
+            </UseFrameMotion>
 
             {/* Campo Zona */}
-            <div className="relative">
+            <UseFrameMotion
+              tipoAnimacion="fade"
+              duracion={0.5}
+              delay={1.1}
+              waitForUserView={false}
+              propsAdicionales={{}}
+            >
+              <div className="relative">
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Zona
               </label>
@@ -321,10 +403,18 @@ const Register = () => {
                   Zona Sur
                 </button>
               </div>
-            </div>
+              </div>
+            </UseFrameMotion>
 
             {/* Campo Barrio */}
-            <div className="relative">
+            <UseFrameMotion
+              tipoAnimacion="slideRight"
+              duracion={0.6}
+              delay={1.2}
+              waitForUserView={false}
+              propsAdicionales={{}}
+            >
+              <div className="relative">
               <label htmlFor="barrio" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Barrio
               </label>
@@ -346,11 +436,19 @@ const Register = () => {
                   disabled={isCargando}
                 />
               </div>
-            </div>
+              </div>
+            </UseFrameMotion>
 
             
             {/* Campo Contraseña */}
-            <div className="relative">
+            <UseFrameMotion
+              tipoAnimacion="slideRight"
+              duracion={0.6}
+              delay={1.3}
+              waitForUserView={false}
+              propsAdicionales={{}}
+            >
+              <div className="relative">
               <label htmlFor="password" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Contraseña
               </label>
@@ -372,10 +470,18 @@ const Register = () => {
                   disabled={isCargando}
                 />
               </div>
-            </div>
+              </div>
+            </UseFrameMotion>
 
             {/* Campo Confirmar Contraseña */}
-            <div className="relative">
+            <UseFrameMotion
+              tipoAnimacion="slideRight"
+              duracion={0.6}
+              delay={1.4}
+              waitForUserView={false}
+              propsAdicionales={{}}
+            >
+              <div className="relative">
               <label htmlFor="confirmPassword" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Confirmar contraseña
               </label>
@@ -397,11 +503,19 @@ const Register = () => {
                   disabled={isCargando}
                 />
               </div>
-            </div>
+              </div>
+            </UseFrameMotion>
           </div>
 
           {/* Botón de registro - Compacto */}
-          <div className="pt-2">
+          <UseFrameMotion
+            tipoAnimacion="scale"
+            duracion={0.5}
+            delay={1.5}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div className="pt-2">
             <button
               type="submit"
               disabled={isCargando}
@@ -424,10 +538,18 @@ const Register = () => {
                 </div>
               )}
             </button>
-          </div>
+            </div>
+          </UseFrameMotion>
 
           {/* Enlace de login - Compacto */}
-          <div className="text-center pt-2">
+          <UseFrameMotion
+            tipoAnimacion="fade"
+            duracion={0.5}
+            delay={1.6}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div className="text-center pt-2">
             <p className="text-xs sm:text-sm text-gray-600">
               ¿Ya tienes cuenta?{' '}
               <Link 
@@ -437,10 +559,18 @@ const Register = () => {
                 Inicia sesión aquí
               </Link>
             </p>
-          </div>
+            </div>
+          </UseFrameMotion>
 
            {/* Enlaces */}
-           <div className="text-center pt-4">
+           <UseFrameMotion
+             tipoAnimacion="fade"
+             duracion={0.5}
+             delay={1.7}
+             waitForUserView={false}
+             propsAdicionales={{}}
+           >
+             <div className="text-center pt-4">
           
             <p className="text-sm text-gray-600 mt-2">
               ¿Eres usuario que busca servicios?{' '}
@@ -451,10 +581,18 @@ const Register = () => {
                 Regístrate aquí
               </Link>
             </p>
-          </div>
+             </div>
+           </UseFrameMotion>
 
           {/* Información adicional - Compacto y condicional */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3">
+          <UseFrameMotion
+            tipoAnimacion="fade"
+            duracion={0.5}
+            delay={1.8}
+            waitForUserView={false}
+            propsAdicionales={{}}
+          >
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg className="h-4 w-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
@@ -467,7 +605,8 @@ const Register = () => {
                 </p>
               </div>
             </div>
-          </div>
+            </div>
+          </UseFrameMotion>
         </form>
       </div>
 
