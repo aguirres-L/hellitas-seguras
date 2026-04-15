@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SvgSol } from '../ui/svg/SvgSol';
@@ -8,8 +8,11 @@ import { SvgLuna } from '../ui/svg/SvgLuna';
 import { SvgSolDark } from '../ui/svg/SvgSolDark';
 import { SvgLunaDark } from '../ui/svg/SvgLunaDark';
 import Campana from '../ui/svg/Campana';
+import { OpenMenu } from '../ui/svg/OpenMenu';
+import { CloseMenu } from '../ui/svg/CloseMenu';
 import { NotificacionesChapitas } from '../NotificacionesChapitas';
 import UseFrameMotion from '../hook_frame_motion/UseFrameMotion';
+import { MobileMenuDrawer } from './MobileMenuDrawer';
 // Importar video como módulo desde src/assets (Vite lo procesará correctamente)
 // @ts-ignore - Vite procesa archivos .mp4 y devuelve la URL como string
 import videoLogo from '../../assets/pets/milo9.mp4';
@@ -102,6 +105,42 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   // Navbar para home
   if (tipo === 'home') {
+
+    const contenidoMenuHome = (
+      <>
+        {mostrarNavegacionInterna && (
+          <>
+            <button
+              onClick={() => scrollToSection('how-it-works')}
+              className="text-gray-700 hover:text-orange-600 transition-colors duration-200 font-medium px-4 py-2 text-sm border-b border-gray-100 sm:border-b-0"
+            >
+              Cómo Funciona
+            </button>
+            <button
+              onClick={() => scrollToSection('planes')}
+              className="text-gray-700 hover:text-orange-600 transition-colors duration-200 font-medium px-4 py-2 text-sm border-b border-gray-100 sm:border-b-0"
+            >
+              Planes
+            </button>
+          </>
+        )}
+        <Link
+          to="/login"
+          className="text-gray-700 hover:text-orange-600 transition-colors duration-200 font-medium px-4 py-2 border border-orange-300 hover:border-orange-500 rounded-lg hover:bg-orange-50"
+          onClick={() => setMenuAbierto(false)}
+        >
+          Iniciar Sesión
+        </Link>
+        <Link
+          to="/register"
+          className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-orange-600 hover:to-pink-600 transition-all duration-200 transform hover:scale-105 shadow-lg border border-orange-400"
+          onClick={() => setMenuAbierto(false)}
+        >
+          Registrarse
+        </Link>
+      </>
+    );
+
     return (
       <nav className="fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-sm shadow-lg p-4">
         <div className="container mx-auto flex justify-between items-center">
@@ -175,72 +214,141 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           {/* Botón hamburguesa */}
           <button
-            className="sm:hidden flex items-center px-3 py-2 border rounded text-orange-600 border-orange-400"
+            type="button"
+            className="sm:hidden flex items-center justify-center px-3 py-2 border rounded text-orange-600 border-orange-400"
             onClick={() => setMenuAbierto(!menuAbierto)}
-            aria-label="Abrir menú"
+            aria-expanded={menuAbierto}
+            aria-label={menuAbierto ? 'Cerrar menú' : 'Abrir menú'}
           >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+            <span className="h-6 w-6 flex items-center justify-center [&_svg]:block" aria-hidden>
+              {menuAbierto ? <CloseMenu /> : <OpenMenu />}
+            </span>
           </button>
-          {/* Menú links */}
-          <div className={`flex-col sm:flex-row sm:flex space-y-2 sm:space-y-0 sm:space-x-4 absolute sm:static top-16 left-0 w-full sm:w-auto bg-white/95 sm:bg-transparent shadow-lg sm:shadow-none z-[9999] transition-all duration-300 ${menuAbierto ? 'flex' : 'hidden sm:flex'}`}>
-            {/* Navegación interna - solo visible en home */}
-            {mostrarNavegacionInterna && (
-              <>
-                <button 
-                  onClick={() => scrollToSection('how-it-works')}
-                  className="text-gray-700 hover:text-orange-600 transition-colors duration-200 font-medium px-4 py-2 text-sm border-b border-gray-100 sm:border-b-0"
-                >
-                  Cómo Funciona
-                </button>
-              {/*   <button 
-                  onClick={() => scrollToSection('impacto-social')}
-                  className="text-gray-700 hover:text-orange-600 transition-colors duration-200 font-medium px-4 py-2 text-sm border-b border-gray-100 sm:border-b-0"
-                >
-                  Impacto Social
-                </button> */}
-              {/*   <button 
-                  onClick={() => scrollToSection('beneficios')}
-                  className="text-gray-700 hover:text-orange-600 transition-colors duration-200 font-medium px-4 py-2 text-sm border-b border-gray-100 sm:border-b-0"
-                >
-                  Beneficios
-                </button> */}
-                <button 
-                  onClick={() => scrollToSection('planes')}
-                  className="text-gray-700 hover:text-orange-600 transition-colors duration-200 font-medium px-4 py-2 text-sm border-b border-gray-100 sm:border-b-0"
-                >
-                  Planes
-                </button>
-              </>
-            )}
-                     <Link 
-              to="/login" 
-              className="text-gray-700 hover:text-orange-600 transition-colors duration-200 font-medium px-4 py-2 border border-orange-300 hover:border-orange-500 rounded-lg hover:bg-orange-50"
-              onClick={() => setMenuAbierto(false)}
+          {/* Menú links: desktop siempre visible; móvil monta/desmonta con mismas variantes que UseFrameMotion + AnimatePresence */}
+          <div className="hidden sm:flex flex-row items-center space-y-0 space-x-4 static w-auto bg-transparent shadow-none z-[9999]">
+            {contenidoMenuHome}
+          </div>
+          <div className="sm:hidden" aria-hidden={!menuAbierto}>
+            <MobileMenuDrawer
+              isAbierto={menuAbierto}
+              onCerrar={() => {
+                setMenuAbierto(false);
+                setNotificacionesAbiertas(false);
+              }}
+              offsetTopClass="top-16"
+              typeTheme="light"
             >
-              Iniciar Sesión
-            </Link>
-
-         {/*    <Link 
-              to="/login-profesional" 
-              className="bg-gradient-to-r from-blue-500 to-blue-700 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-lg border border-blue-400"
-              onClick={() => setMenuAbierto(false)}
-            >
-              Iniciar Sesión de Servicios
-            </Link> */}
-            <Link 
-              to="/register" 
-              className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-orange-600 hover:to-pink-600 transition-all duration-200 transform hover:scale-105 shadow-lg border border-orange-400"
-              onClick={() => setMenuAbierto(false)}
-            >
-              Registrarse
-            </Link>
+              {contenidoMenuHome}
+            </MobileMenuDrawer>
           </div>
         </div>
       </nav>
     );
   }
+
+  const construirContenidoMenuDashboard = (isNotificacionesInline: boolean) => (
+    <>
+      {datosUsuario?.rol === 'admin' && (
+        <Link
+          to="/dashboard-admin"
+          className={
+            typeTheme === 'dark'
+              ? 'text-purple-400 hover:text-purple-300 transition-colors duration-200 text-sm gap-2'
+              : 'text-purple-600 hover:text-purple-700 transition-colors duration-200 text-sm gap-2'
+          }
+          onClick={() => setMenuAbierto(false)}
+        >
+          <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            />
+          </svg>
+          Admin
+        </Link>
+      )}
+
+      {mostrarConfiguracion && (
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className={
+            typeTheme === 'dark'
+              ? 'text-gray-200 hover:text-orange-400 transition-colors duration-200 text-sm gap-2'
+              : 'text-gray-600 hover:text-orange-600 transition-colors duration-200 text-sm gap-2'
+          }
+          aria-label="Cambiar tema"
+        >
+          <span className="shrink-0">{typeTheme === 'light' ? <SvgLunaDark /> : <SvgSol />}</span>
+          <span>{typeTheme === 'light' ? 'Modo oscuro' : 'Modo claro'}</span>
+        </button>
+      )}
+
+      {mostrarConfiguracion && usuario && (
+        <div className="relative w-full min-w-0">
+          <button
+            type="button"
+            onClick={() => setNotificacionesAbiertas(!notificacionesAbiertas)}
+            className={
+              typeTheme === 'dark'
+                ? 'text-gray-200 hover:text-orange-400 transition-colors duration-200 text-sm gap-2'
+                : 'text-gray-600 hover:text-orange-600 transition-colors duration-200 text-sm gap-2'
+            }
+            aria-label="Notificaciones de las chapitas"
+            aria-expanded={notificacionesAbiertas}
+          >
+            <Campana />
+            <span>Chapitas</span>
+          </button>
+
+          <NotificacionesChapitas
+            isAbierto={notificacionesAbiertas}
+            onCerrar={() => setNotificacionesAbiertas(false)}
+            typeTheme={typeTheme}
+            isModoInline={isNotificacionesInline}
+          />
+        </div>
+      )}
+
+      {mostrarCerrarSesion && (
+        <button
+          type="button"
+          onClick={handleCerrarSesion}
+          disabled={isCargandoLogout}
+          className={
+            typeTheme === 'dark'
+              ? 'text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors duration-200'
+              : 'text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors duration-200'
+          }
+        >
+          {isCargandoLogout ? (
+            <>
+              <svg
+                className="animate-spin -ml-1 mr-2 h-4 w-4 shrink-0 text-red-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              Cerrando...
+            </>
+          ) : (
+            'Cerrar Sesión'
+          )}
+        </button>
+      )}
+    </>
+  );
+
+  const contenidoMenuDashboard = construirContenidoMenuDashboard(false);
 
   // Navbar para dashboard (usuario autenticado)
   return (
@@ -258,7 +366,13 @@ export const Navbar: React.FC<NavbarProps> = ({
         </Link>
 
           {mostrarUsuario && (
-            <span className={typeTheme === 'dark' ? 'text-lg text-gray-200 px-4 py-3sm:block' : 'text-lg text-gray-600 px-4 py-3sm:block'}>
+            <span
+              className={
+                typeTheme === 'dark'
+                  ? 'hidden min-[400px]:inline text-lg text-gray-200 px-2 sm:px-4'
+                  : 'hidden min-[400px]:inline text-lg text-gray-600 px-2 sm:px-4'
+              }
+            >
               Hola, {usuario?.displayName || usuario?.email}
             </span>
           )}
@@ -266,90 +380,34 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Botón hamburguesa */}
         <button
+          type="button"
           className={typeTheme === 'dark'
-            ? 'sm:hidden flex items-center px-3 py-2 border rounded text-orange-200 border-orange-400'
-            : 'sm:hidden flex items-center px-3 py-2 border rounded text-orange-600 border-orange-400'}
+            ? 'sm:hidden flex items-center justify-center px-3 py-2 border rounded text-orange-200 border-orange-400'
+            : 'sm:hidden flex items-center justify-center px-3 py-2 border rounded text-orange-600 border-orange-400'}
           onClick={() => setMenuAbierto(!menuAbierto)}
-          aria-label="Abrir menú"
+          aria-expanded={menuAbierto}
+          aria-label={menuAbierto ? 'Cerrar menú' : 'Abrir menú'}
         >
-          <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+          <span className="h-6 w-6 flex items-center justify-center [&_svg]:block" aria-hidden>
+            {menuAbierto ? <CloseMenu /> : <OpenMenu />}
+          </span>
         </button>
-        {/* Menú links */}
-        <div className={`flex-col sm:flex-row sm:flex sm:space-y-0 sm:space-x-4 absolute sm:static top-20 left-0 w-full sm:w-auto ${typeTheme === 'dark' ? 'bg-gray-900/95 sm:bg-transparent' : 'bg-white/95 sm:bg-transparent'}  shadow-lg sm:shadow-none z-[9999] duration-300 ${menuAbierto ? 'flex' : 'hidden sm:flex'}`}>
-                                                                                                                                                                                                                                                                                                                                                
-          {/* Enlace al dashboard admin para usuarios admin */}
-          {datosUsuario?.rol === 'admin' && (
-            <Link 
-              to="/dashboard-admin" 
-              className={typeTheme === 'dark'
-                ? 'text-purple-400 hover:text-purple-300 transition-colors duration-200 text-sm px-4 py-2 flex items-center gap-2'
-                : 'text-purple-600 hover:text-purple-700 transition-colors duration-200 text-sm px-4 py-2 flex items-center gap-2'}
-              onClick={() => setMenuAbierto(false)}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              Admin
-            </Link>
-          )}
-         
-          {mostrarConfiguracion && (
-            <button
-              onClick={toggleTheme}
-              className={typeTheme === 'dark'
-                ? 'text-gray-200 hover:text-orange-400 transition-colors duration-200 text-sm px-4 py-2 flex items-center gap-2'
-                : 'text-gray-600 hover:text-orange-600 transition-colors duration-200 text-sm px-4 py-2 flex items-center gap-2'}
-              aria-label="Cambiar tema"
-            >
-              {typeTheme === 'light' ? <SvgLunaDark /> : <SvgSol/>}
-            </button>
-          )}
-          
-          {/* apartado para las notificaciones de las chapitas */}
-          {mostrarConfiguracion && usuario && (
-            <div className="relative">
-              <button
-                onClick={() => setNotificacionesAbiertas(!notificacionesAbiertas)}
-                className={typeTheme === 'dark'
-                  ? 'text-gray-200 hover:text-orange-400 transition-colors duration-200 text-sm px-4 py-2 flex items-center gap-2'
-                  : 'text-gray-600 hover:text-orange-600 transition-colors duration-200 text-sm px-4 py-2 flex items-center gap-2'}
-                aria-label="Notificaciones de las chapitas"
-              >
-                <Campana/>
-              </button>
-              
-              {/* Dropdown de notificaciones */}
-              <NotificacionesChapitas
-                isAbierto={notificacionesAbiertas}
-                onCerrar={() => setNotificacionesAbiertas(false)}
-                typeTheme={typeTheme}
-              />
-            </div>
-          )}
-
-          {mostrarCerrarSesion && (
-            <button 
-              onClick={handleCerrarSesion}
-              disabled={isCargandoLogout}
-              className={typeTheme === 'dark'
-                ? 'text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center text-sm transition-colors duration-200 px-4 py-2'
-                : 'text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center text-sm transition-colors duration-200 px-4 py-2'}
-            >
-              {isCargandoLogout ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Cerrando...
-                </>
-              ) : (
-                'Cerrar Sesión'
-              )}
-            </button>
-          )}
+        {/* Menú links: desktop siempre visible; móvil con AnimatePresence + motion (variantes compartidas con UseFrameMotion) */}
+        <div className="hidden sm:flex flex-row items-center sm:space-x-4 static w-auto bg-transparent shadow-none z-[9999]">
+          {contenidoMenuDashboard}
+        </div>
+        <div className="sm:hidden" aria-hidden={!menuAbierto}>
+          <MobileMenuDrawer
+            isAbierto={menuAbierto}
+            onCerrar={() => {
+              setMenuAbierto(false);
+              setNotificacionesAbiertas(false);
+            }}
+            offsetTopClass="top-[5.25rem]"
+            typeTheme={typeTheme}
+          >
+            {construirContenidoMenuDashboard(true)}
+          </MobileMenuDrawer>
         </div>
       </div>
     </nav>

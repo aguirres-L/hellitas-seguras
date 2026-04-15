@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getAllDataCollection } from '../data/firebase/firebase';
 import { getChapitaFiletForUserId } from '../data/hook/getChapitaFiletForUserId';
+import { etiquetaEstadoChapita, clasePuntoEstadoChapita } from '../utils/chapitaEstado';
 
 export interface NotificacionChapita {
   id: string;
@@ -10,18 +11,22 @@ export interface NotificacionChapita {
   fechaActualizacion: string;
   fotoUrl?: string;
   usuarioId: string;
+  mascotaId?: string;
 }
 
 export interface NotificacionesChapitasProps {
   isAbierto: boolean;
   onCerrar: () => void;
   typeTheme: 'light' | 'dark';
+  /** En drawer móvil: lista en flujo (evita recorte por overflow del panel). */
+  isModoInline?: boolean;
 }
 
 export const NotificacionesChapitas: React.FC<NotificacionesChapitasProps> = ({
   isAbierto,
   onCerrar,
   typeTheme,
+  isModoInline = false,
 }) => {
   const { usuario } = useAuth();
   const [notificaciones, setNotificaciones] = useState<NotificacionChapita[]>([]);
@@ -57,13 +62,14 @@ export const NotificacionesChapitas: React.FC<NotificacionesChapitasProps> = ({
       const chapitasUsuario = await getChapitaFiletForUserId(usuario.uid);
       
       // Transformar datos para el formato de notificaciones
-      const notificacionesChapitas = chapitasUsuario.map(chapita => ({
+      const notificacionesChapitas = chapitasUsuario.map((chapita) => ({
         id: chapita.id,
         nombreMascota: chapita.mascotaNombre || 'Mascota sin nombre',
         estado: chapita.estado || 'sin estado',
         fechaActualizacion: chapita.fechaActualizacion?.toDate?.()?.toISOString() || new Date().toISOString(),
         fotoUrl: chapita.fotoMascota,
-        usuarioId: chapita.usuarioId
+        usuarioId: chapita.usuarioId,
+        mascotaId: chapita.mascotaId,
       }))
       .sort((a, b) => new Date(b.fechaActualizacion).getTime() - new Date(a.fechaActualizacion).getTime());
 
@@ -93,76 +99,38 @@ export const NotificacionesChapitas: React.FC<NotificacionesChapitasProps> = ({
 
   if (!isAbierto) return null;
 
-// Función para obtener el color del estado
-const obtenerColorEstado = (estado: string) => {
-  switch (estado.toLowerCase()) {
-    case 'pendiente':
-      return 'bg-yellow-500';
-    case 'aprobado':
-    case "entregado":
-    case 'completado':
-      return 'bg-green-500';
-    case 'rechazado':
-    case 'cancelado':
-      return 'bg-red-500';
-    case 'en_produccion':
-    case 'fabricacion':
-      return 'bg-blue-500';
-    case 'en_viaje':
-    case 'en_transito':
-      return 'bg-purple-500';
-    case 'disponible':
-      return 'bg-indigo-500';
-    default:
-      return 'bg-gray-500';
-  }
-};
-
-// Función para obtener el mensaje del estado
-const obtenerMensajeEstado = (estado: string) => {
-  switch (estado.toLowerCase()) {
-    case 'pendiente':
-      return 'Chapita pendiente';
-    case 'aprobado':
-      return 'Chapita aprobada';
-    case "entregado":
-      return 'Estado: entregado';
-    case 'rechazado':
-      return 'Chapita rechazada';
-    case 'cancelado':
-      return 'Chapita cancelada';
-    case 'en_produccion':
-    case 'fabricacion':
-      return 'Estado: fabricación';
-    case 'en_viaje':
-    case 'en_transito':
-      return 'Estado: en viaje';
-    case 'disponible':
-      return 'Chapita disponible';
-    default:
-      return `Estado: ${estado}`;
-  }
-};
-
+  const clasesContenedor = isModoInline
+    ? `relative mt-2 w-full max-w-full ${
+        typeTheme === 'dark'
+          ? 'bg-gray-800 border border-gray-700'
+          : 'bg-white border border-gray-200'
+      } rounded-lg shadow-inner z-10`
+    : `absolute right-0 top-full mt-2 w-80 max-w-sm ${
+        typeTheme === 'dark'
+          ? 'bg-gray-800 border border-gray-700'
+          : 'bg-white border border-gray-200'
+      } rounded-lg shadow-xl z-50`;
 
   return (
-    <div 
-      ref={dropdownRef}
-      className={`absolute right-0 top-full mt-2 w-80 max-w-sm ${
-        typeTheme === 'dark' 
-          ? 'bg-gray-800 border border-gray-700' 
-          : 'bg-white border border-gray-200'
-      } rounded-lg shadow-xl z-50`}
-    >
+    <div ref={dropdownRef} className={clasesContenedor}>
       {/* Header */}
       <div className={`px-4 py-3 border-b ${
         typeTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
       }`}>
-        <h3 className={`font-semibold ${
-          typeTheme === 'dark' ? 'text-white' : 'text-gray-900'
-        }`}>
+        <h3
+          className={`font-semibold ${
+            typeTheme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}
+        >
           Estado de Chapitas
         </h3>
+        <p
+          className={`mt-1 text-xs leading-snug ${
+            typeTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+          }`}
+        >
+          Tocá una fila para ir al perfil y abrir la pestaña de chapita con el detalle del pedido.
+        </p>
       </div>
 
       {/* Contenido */}
@@ -195,86 +163,95 @@ const obtenerMensajeEstado = (estado: string) => {
           </div>
         ) : (
           <div className="p-2">
-            {notificaciones.map((notificacion) => (
-              <div
-                key={notificacion.id}
-                className={`flex items-center p-3 rounded-lg mb-2 hover:bg-opacity-50 transition-colors duration-200 ${
-                  typeTheme === 'dark' 
-                    ? 'hover:bg-gray-700' 
-                    : 'hover:bg-gray-50'
-                }`}
-              >
-                {/* Avatar de la mascota */}
-                <div className="flex-shrink-0 mr-3">
-                  <img
-                    src={notificacion.fotoUrl || "/dog-avatar.png"}
-                    alt={notificacion.nombreMascota}
-                    className="w-10 h-10 rounded-full object-cover border-2 border-orange-200"
-                  />
-                </div>
-
-                {/* Contenido de la notificación */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className={`text-sm font-medium truncate ${
-                      typeTheme === 'dark' ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      {notificacion.nombreMascota}
-                    </p>
-                    <span className={`text-xs ${
-                      typeTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      {new Date(notificacion.fechaActualizacion).toLocaleDateString()}
-                    </span>
+            {notificaciones.map((notificacion) => {
+              const filaClass = `flex items-center rounded-lg p-3 mb-2 transition-colors duration-200 ${
+                typeTheme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+              }`;
+              const contenido = (
+                <>
+                  <div className="mr-3 shrink-0">
+                    <img
+                      src={notificacion.fotoUrl || '/dog-avatar.png'}
+                      alt=""
+                      className="h-10 w-10 rounded-full border-2 border-orange-200 object-cover"
+                    />
                   </div>
-                  
-                  <div className="flex items-center mt-1">
-                    <div className="flex items-center mt-1">
-                      <div className={`w-2 h-2 rounded-full mr-2 ${obtenerColorEstado(notificacion.estado)}`}></div>
-                      <p className={`text-xs ${typeTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                        }`}>
-                        {obtenerMensajeEstado(notificacion.estado)}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p
+                        className={`truncate text-sm font-medium ${
+                          typeTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                        }`}
+                      >
+                        {notificacion.nombreMascota}
                       </p>
-</div>
+                      <span
+                        className={`shrink-0 text-xs ${
+                          typeTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                        }`}
+                      >
+                        {new Date(notificacion.fechaActualizacion).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center">
+                      <div
+                        className={`mr-2 h-2 w-2 shrink-0 rounded-full ${clasePuntoEstadoChapita(
+                          notificacion.estado
+                        )}`}
+                      />
+                      <p
+                        className={`text-xs ${
+                          typeTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                        }`}
+                      >
+                        {etiquetaEstadoChapita(notificacion.estado, 'corta')}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                  <div className="ml-2 shrink-0 text-orange-500" aria-hidden>
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </>
+              );
 
-                {/* Icono de estado */}
-                <div className="flex-shrink-0 ml-2">
-                  {notificacion.estado ? (
-                    <div className="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center">
-                      <svg className="w-3 h-3 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  ) : (
-                    <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                      <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  )}
+              return notificacion.mascotaId ? (
+                <Link
+                  key={notificacion.id}
+                  to={`/pet/${notificacion.mascotaId}`}
+                  className={`${filaClass} block text-left no-underline`}
+                  onClick={() => onCerrar()}
+                >
+                  {contenido}
+                </Link>
+              ) : (
+                <div key={notificacion.id} className={filaClass}>
+                  {contenido}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
       {/* Footer */}
       {notificaciones.length > 0 && (
-        <div className={`px-4 py-3 border-t ${
-          typeTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
-        }`}>
+        <div
+          className={`border-t px-4 py-3 ${
+            typeTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+          }`}
+        >
           <button
+            type="button"
             onClick={onCerrar}
             className={`w-full text-center text-sm font-medium transition-colors duration-200 ${
-              typeTheme === 'dark' 
-                ? 'text-orange-400 hover:text-orange-300' 
+              typeTheme === 'dark'
+                ? 'text-orange-400 hover:text-orange-300'
                 : 'text-orange-600 hover:text-orange-700'
             }`}
           >
-            
+            Cerrar
           </button>
         </div>
       )}

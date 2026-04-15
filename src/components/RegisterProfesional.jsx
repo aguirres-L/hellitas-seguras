@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   createUserWithEmailAndPassword,
   updateProfile 
@@ -47,11 +47,67 @@ const tiposProfesional = [
        </svg>
      ),
      descripcion: 'Alimentos y Accesorios'
-   }
+   },
+  {
+    tipo: 'paseador',
+    nombre: 'Paseador',
+    color: 'amber',
+    icono: (
+      <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+        />
+      </svg>
+    ),
+    descripcion: 'Paseos y ejercicio',
+  },
 ];
+
+const estilosPorColorTipo = {
+  blue: {
+    cardSel: 'border-blue-500 bg-blue-50 shadow-lg shadow-blue-100',
+    iconoSel: 'bg-blue-500 text-white',
+    iconoIdle: 'bg-blue-100 text-blue-600',
+    tituloSel: 'text-blue-900',
+    check: 'bg-blue-500',
+  },
+  violet: {
+    cardSel: 'border-violet-500 bg-violet-50 shadow-lg shadow-violet-100',
+    iconoSel: 'bg-violet-500 text-white',
+    iconoIdle: 'bg-violet-100 text-violet-600',
+    tituloSel: 'text-violet-900',
+    check: 'bg-violet-500',
+  },
+  green: {
+    cardSel: 'border-green-500 bg-green-50 shadow-lg shadow-green-100',
+    iconoSel: 'bg-green-500 text-white',
+    iconoIdle: 'bg-green-100 text-green-600',
+    tituloSel: 'text-green-900',
+    check: 'bg-green-500',
+  },
+  amber: {
+    cardSel: 'border-amber-500 bg-amber-50 shadow-lg shadow-amber-100',
+    iconoSel: 'bg-amber-500 text-white',
+    iconoIdle: 'bg-amber-100 text-amber-700',
+    tituloSel: 'text-amber-900',
+    check: 'bg-amber-500',
+  },
+};
+
+const tiposProfesionalUrl = ['veterinario', 'peluquero', 'tienda', 'paseador'];
 
 const RegisterProfesional = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isAutenticado, tipoUsuario, isCargando } = useAuth();
   const [formData, setFormData] = useState({
     nombre: '', 
@@ -76,6 +132,16 @@ const RegisterProfesional = () => {
   const [urlImagenLocal, setUrlImagenLocal] = useState('');
   const [isSubiendoImagen, setIsSubiendoImagen] = useState(false);
   let logo = '../../assets/new-logo11.png';
+
+  // Tipo de registro desde la landing (?tipo=veterinario|peluquero|tienda|paseador)
+  useLayoutEffect(() => {
+    const tipo = searchParams.get('tipo');
+    if (tiposProfesionalUrl.includes(tipo)) {
+      setFormData((prev) =>
+        prev.tipoProfesional === tipo ? prev : { ...prev, tipoProfesional: tipo }
+      );
+    }
+  }, [searchParams]);
 
   // Redirigir si ya está autenticado como profesional
   useEffect(() => {
@@ -125,7 +191,7 @@ const RegisterProfesional = () => {
           const { subirImagenProfesional } = await import('../data/firebase/firebase');
           urlImagenFinal = await subirImagenProfesional(userCredential.user.uid, archivoImagen);
         } catch (error) {
-          console.error('Error al subir imagen del local:', error);
+          console.error('Error al subir imagen:', error);
           // Continuar sin imagen si hay error
         } finally {
           setIsSubiendoImagen(false);
@@ -253,7 +319,7 @@ const RegisterProfesional = () => {
             propsAdicionales={{}}
           >
             <p className="text-gray-600 mb-2">
-              Para profesionales veterinarios y peluqueros
+              Veterinarias, peluquerías, tiendas y paseadores
             </p>
           </UseFrameMotion>
           
@@ -308,55 +374,35 @@ const RegisterProfesional = () => {
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Tipo de Usuario
             </label>
-                        <div className="flex flex-row gap-3">
-              {tiposProfesional.map((profesional) => (
+                        <div className="grid grid-cols-2 gap-3">
+              {tiposProfesional.map((profesional) => {
+                const st = estilosPorColorTipo[profesional.color] || estilosPorColorTipo.blue;
+                const seleccionado = formData.tipoProfesional === profesional.tipo;
+                return (
                 <button
                   key={profesional.tipo}
                   type="button"
                   onClick={() => handleTipoProfesionalChange(profesional.tipo)}
                   disabled={isRegistrando}
                   className={`
-                    flex-1 relative p-3 rounded-xl border-2 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed min-w-0
-                    ${formData.tipoProfesional === profesional.tipo 
-                      ? profesional.color === 'blue'
-                        ? 'border-blue-500 bg-blue-50 shadow-lg shadow-blue-100'
-                        : profesional.color === 'violet'
-                        ? 'border-violet-500 bg-violet-50 shadow-lg shadow-violet-100'
-                        : 'border-green-500 bg-green-50 shadow-lg shadow-green-100'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                    }
+                    relative p-3 rounded-xl border-2 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed min-w-0
+                    ${seleccionado ? st.cardSel : 'border-gray-200 bg-white hover:border-gray-300'}
                   `}
                 >
                   <div className="flex flex-col items-center space-y-2 text-center">
-                    <div className={`
-                      p-2 rounded-lg
-                      ${formData.tipoProfesional === profesional.tipo
-                        ? profesional.color === 'blue'
-                          ? 'bg-blue-500 text-white'
-                          : profesional.color === 'violet'
-                          ? 'bg-violet-500 text-white'
-                          : 'bg-green-500 text-white'
-                        : profesional.color === 'blue'
-                          ? 'bg-blue-100 text-blue-600'
-                          : profesional.color === 'violet'
-                          ? 'bg-violet-100 text-violet-600'
-                          : 'bg-green-100 text-green-600'
-                      }
-                    `}>
+                    <div
+                      className={`p-2 rounded-lg ${
+                        seleccionado ? st.iconoSel : st.iconoIdle
+                      }`}
+                    >
                       {profesional.icono}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className={`
-                        font-semibold text-sm truncate
-                        ${formData.tipoProfesional === profesional.tipo
-                          ? profesional.color === 'blue'
-                            ? 'text-blue-900'
-                            : profesional.color === 'violet'
-                            ? 'text-violet-900'
-                            : 'text-green-900'
-                          : 'text-gray-900'
-                        }
-                      `}>
+                      <h3
+                        className={`font-semibold text-sm truncate ${
+                          seleccionado ? st.tituloSel : 'text-gray-900'
+                        }`}
+                      >
                         {profesional.nombre}
                       </h3>
                                             <p className={`
@@ -365,11 +411,8 @@ const RegisterProfesional = () => {
                         {profesional.descripcion}
                       </p>
                     </div>
-                    {formData.tipoProfesional === profesional.tipo && (
-                      <div className={`
-                        absolute top-2 right-2 p-1 rounded-full
-                        ${profesional.color === 'blue' ? 'bg-blue-500' : profesional.color === 'violet' ? 'bg-violet-500' : 'bg-green-500'}
-                      `}>
+                    {seleccionado && (
+                      <div className={`absolute top-2 right-2 p-1 rounded-full ${st.check}`}>
                         <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
@@ -377,7 +420,8 @@ const RegisterProfesional = () => {
                     )}
                   </div>
                 </button>
-              ))}
+              );
+              })}
             </div>
             </div>
           </UseFrameMotion>
@@ -499,7 +543,15 @@ const RegisterProfesional = () => {
               type="text"
               required
               className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-              placeholder={formData.tipoProfesional === 'veterinario' ? 'Cirugía, Dermatología, etc.' : formData.tipoProfesional === 'peluquero' ? 'Corte de raza, Baño terapéutico, etc.' : 'Alimentos, Juguetes, Accesorios, etc.'}
+              placeholder={
+                formData.tipoProfesional === 'veterinario'
+                  ? 'Cirugía, Dermatología, etc.'
+                  : formData.tipoProfesional === 'peluquero'
+                    ? 'Corte de raza, Baño terapéutico, etc.'
+                    : formData.tipoProfesional === 'paseador'
+                      ? 'Paseos individuales, grupos pequeños, etc.'
+                      : 'Alimentos, Juguetes, Accesorios, etc.'
+              }
               value={formData.especialidad}
               onChange={handleChange}
               disabled={isRegistrando}
@@ -517,7 +569,9 @@ const RegisterProfesional = () => {
           >
             <div>
             <label htmlFor="direccion" className="block text-sm font-medium text-gray-700 mb-2">
-              Dirección del establecimiento
+              {formData.tipoProfesional === 'paseador'
+                ? 'Dirección o zona habitual de trabajo'
+                : 'Dirección del establecimiento'}
             </label>
             <input
               id="direccion"
@@ -737,7 +791,7 @@ const RegisterProfesional = () => {
           </UseFrameMotion>
           )}
 
-          {/* Foto del local */}
+          {/* Foto del local o del paseador (mismo campo en Firestore) */}
           <UseFrameMotion
             tipoAnimacion="fade"
             duracion={0.5}
@@ -747,16 +801,21 @@ const RegisterProfesional = () => {
           >
             <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Foto del local (opcional)
+              {formData.tipoProfesional === 'paseador'
+                ? 'Foto del paseador (opcional)'
+                : 'Foto del local (opcional)'}
             </label>
             <ImageUploaderProfesional
               onImageSelect={setArchivoImagen}
               onImageUploaded={setUrlImagenLocal}
               isCargando={isRegistrando || isSubiendoImagen}
               profesionalId={formData.email} // Usar email como ID temporal hasta que se cree el usuario
+              varianteImagen={formData.tipoProfesional === 'paseador' ? 'paseador' : 'local'}
             />
             <p className="text-xs text-gray-500 mt-1">
-              Sube una foto de tu local para generar confianza en los usuarios
+              {formData.tipoProfesional === 'paseador'
+                ? 'Una foto tuya ayuda a que los dueños te reconozcan y confíen al contactarte.'
+                : 'Sube una foto de tu local para generar confianza en los usuarios.'}
             </p>
             </div>
           </UseFrameMotion>

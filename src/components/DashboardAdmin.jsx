@@ -9,6 +9,7 @@ import { obtenerEstadoMensualidad } from '../utils/mensualidadUtils';
 import AllHistorias from './uiDashboardSuperAdmin/historias_macotas/AllHistorias';
 import NewHistoria from './uiDashboardSuperAdmin/historias_macotas/NewHistoria';
 import InformationOfOng from './uiDashboardSuperAdmin/data_of_ong/InformationOfOng';
+import { AdminDashboardTabBar } from './uiDashboardSuperAdmin/AdminDashboardTabBar';
 
 // Constantes financieras configurables
 const VALOR_MENSUALIDAD = 3000; // CLP
@@ -31,10 +32,11 @@ const DashboardAdmin = () => {
   const [mesSeleccionado, setMesSeleccionado] = useState(new Date().getMonth());
   const [añoSeleccionado, setAñoSeleccionado] = useState(new Date().getFullYear());
 
-  // Estados para usuarios comunes con membresía
+  /* Gestión de usuarios — desactivada temporalmente (sin implementación)
   const [usuariosComunes, setUsuariosComunes] = useState([]);
   const [isCargandoUsuariosComunes, setIsCargandoUsuariosComunes] = useState(false);
-  
+  */
+
   // Estados para liquidaciones y estadísticas
   const [liquidacionesMensuales, setLiquidacionesMensuales] = useState([]);
   const [isCargandoLiquidaciones, setIsCargandoLiquidaciones] = useState(false);
@@ -78,19 +80,16 @@ const DashboardAdmin = () => {
     }
   };
 
-  // Función para cargar usuarios comunes con membresía activa (excluyendo período gratis)
+  /* Gestión de usuarios — desactivada
   const cargarUsuariosComunes = async () => {
     setIsCargandoUsuariosComunes(true);
     try {
       const todosUsuarios = await getAllDataCollection('usuarios');
-      // Filtrar usuarios comunes (no superAdmin, no admin, no profesional)
-      const usuariosFiltrados = todosUsuarios.filter(usuario => 
-        usuario.rol !== 'superAdmin' && 
-        usuario.rol !== 'admin' && 
+      const usuariosFiltrados = todosUsuarios.filter(usuario =>
+        usuario.rol !== 'superAdmin' &&
+        usuario.rol !== 'admin' &&
         usuario.rol !== 'profesional'
       );
-      
-      // Aplicar sistema de mensualidades a cada usuario
       const usuariosConMensualidades = usuariosFiltrados.map(usuario => {
         const estadoMensualidad = obtenerEstadoMensualidad(usuario);
         return {
@@ -103,14 +102,11 @@ const DashboardAdmin = () => {
           esGratis: estadoMensualidad.esGratis || false
         };
       });
-      
-      // Filtrar solo usuarios con membresía activa Y que NO estén en período gratis
-      const usuariosConMembresiaPura = usuariosConMensualidades.filter(usuario => 
-        usuario.isMember === true && 
+      const usuariosConMembresiaPura = usuariosConMensualidades.filter(usuario =>
+        usuario.isMember === true &&
         usuario.estadoMensualidad !== 'periodo_gracia' &&
         usuario.esGratis !== true
       );
-      
       setUsuariosComunes(usuariosConMembresiaPura);
     } catch (error) {
       console.error("Error al cargar usuarios comunes:", error);
@@ -118,6 +114,7 @@ const DashboardAdmin = () => {
       setIsCargandoUsuariosComunes(false);
     }
   };
+  */
 
   // Función para calcular liquidaciones mensuales basadas en datos reales
   const calcularLiquidacionesMensuales = async () => {
@@ -322,9 +319,7 @@ const DashboardAdmin = () => {
   // Cargar datos según la pestaña activa
   useEffect(() => {
     switch (pestañaActiva) {
-      case 'usuarios':
-        cargarUsuariosComunes();
-        break;
+      // case 'usuarios': cargarUsuariosComunes(); break; // desactivado temporalmente
       case 'liquidaciones':
         calcularLiquidacionesMensuales();
         break;
@@ -335,6 +330,12 @@ const DashboardAdmin = () => {
         break;
     }
   }, [pestañaActiva, mesSeleccionado, añoSeleccionado]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!window.matchMedia('(max-width: 767px)').matches) return;
+    window.scrollTo(0, 0);
+  }, [pestañaActiva]);
 
   // Función para formatear moneda
   const formatearMoneda = (valor) => {
@@ -354,7 +355,7 @@ const DashboardAdmin = () => {
     }
   };
 
-  // Función para obtener el color del rol
+  /* Gestión de usuarios — helpers de badges (reactivar con la sección)
   const obtenerColorRol = (rol) => {
     switch (rol) {
       case 'admin': return 'bg-purple-100 text-purple-800';
@@ -363,8 +364,6 @@ const DashboardAdmin = () => {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
-
-  // Función para obtener el color del tipo de mensualidad
   const obtenerColorMensualidad = (tipo) => {
     switch (tipo) {
       case 'Premium': return 'bg-yellow-100 text-yellow-800';
@@ -373,6 +372,41 @@ const DashboardAdmin = () => {
       case 'Profesional': return 'bg-indigo-100 text-indigo-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+  */
+
+  /** Pestañas principales solo escritorio (en móvil se usa AdminDashboardTabBar) */
+  const clasesPestañaPrincipal = (id) => {
+    const isActive = pestañaActiva === id;
+    const base =
+      'shrink-0 whitespace-nowrap px-2 pb-2 pt-2 text-center text-sm font-medium transition-colors duration-200 lg:px-3 lg:text-base';
+    if (typeTheme === 'light') {
+      if (isActive) {
+        return `${base} border-b-2 border-purple-500 text-purple-600`;
+      }
+      return `${base} text-gray-600 hover:border-b-2 hover:border-gray-300 hover:text-gray-800`;
+    }
+    if (isActive) {
+      return `${base} border-b-2 border-purple-400 text-purple-300`;
+    }
+    return `${base} text-gray-400 hover:border-b-2 hover:border-gray-600 hover:text-gray-200`;
+  };
+
+  /** Sub-pestañas historias: dos columnas en móvil para que el texto no se corte */
+  const clasesSubPestañaHistorias = (id) => {
+    const isActive = subPestañaHistorias === id;
+    const base =
+      'min-h-[48px] flex w-full items-center justify-center rounded-lg px-2 py-2 text-center text-xs font-medium leading-snug transition-colors duration-200 sm:text-sm md:block md:w-auto md:shrink-0 md:rounded-none md:px-2 md:py-2 md:pb-2 md:text-left md:text-base';
+    if (typeTheme === 'light') {
+      if (isActive) {
+        return `${base} border border-purple-200 bg-purple-50 text-purple-700 md:border-0 md:border-b-2 md:border-purple-500 md:bg-transparent`;
+      }
+      return `${base} border border-transparent text-gray-600 hover:border-gray-200 hover:bg-gray-50 md:border-0 md:hover:bg-transparent md:hover:border-b-2 md:hover:border-gray-300`;
+    }
+    if (isActive) {
+      return `${base} border border-purple-500/40 bg-purple-950/40 text-purple-200 md:border-0 md:border-b-2 md:border-purple-400 md:bg-transparent`;
+    }
+    return `${base} border border-transparent text-gray-400 hover:border-gray-600 hover:bg-gray-700/40 md:border-0 md:hover:bg-transparent md:hover:border-b-2 md:hover:border-gray-600`;
   };
 
   return (
@@ -393,7 +427,7 @@ const DashboardAdmin = () => {
       />
 
       {/* Main Content */}
-      <div className="relative container mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div className="relative container mx-auto px-4 py-6 pb-32 sm:px-6 md:pb-6 lg:px-8">
         {/* Header del Dashboard */}
         <div className="text-center mt-4 mb-8">
           <h2 className={typeTheme === 'light'
@@ -409,83 +443,80 @@ const DashboardAdmin = () => {
 
         {/* Pestañas de navegación */}
         <div className={typeTheme === 'light'
-          ? "bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8"
-          : "bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8"
+          ? "bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 sm:p-6 mb-8"
+          : "bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg p-4 sm:p-6 mb-8"
         }>
-          <div className="border-b border-gray-200 mb-6">
-            <div className="flex space-x-4 overflow-x-auto">
-              <button 
+          <div
+            className={`mb-6 hidden border-b pb-1 md:block ${
+              typeTheme === 'light' ? 'border-gray-200' : 'border-gray-600'
+            }`}
+          >
+            <nav
+              className="flex flex-row items-center gap-1 overflow-x-auto pb-0 [scrollbar-width:thin] lg:gap-3"
+              role="tablist"
+              aria-label="Secciones del panel administrativo"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={pestañaActiva === 'liquidaciones'}
                 onClick={() => setPestañaActiva('liquidaciones')}
-                className={`pb-2 font-medium transition-colors duration-200 whitespace-nowrap ${
-                  pestañaActiva === 'liquidaciones' 
-                    ? 'border-b-2 border-purple-500 text-purple-600' 
-                    : typeTheme === 'light'
-                      ? 'text-gray-600 hover:text-gray-800 hover:border-b-2 hover:border-gray-300'
-                      : 'text-gray-400 hover:text-gray-300 hover:border-b-2 hover:border-gray-600'
-                }`}
+                className={clasesPestañaPrincipal('liquidaciones')}
               >
                 Liquidaciones Mensuales
               </button>
 
-              <button 
+              <button
+                type="button"
+                role="tab"
+                aria-selected={pestañaActiva === 'historyMascotas'}
                 onClick={() => setPestañaActiva('historyMascotas')}
-                className={`pb-2 font-medium transition-colors duration-200 whitespace-nowrap ${
-                  pestañaActiva === 'historyMascotas' 
-                    ? 'border-b-2 border-purple-500 text-purple-600' 
-                    : typeTheme === 'light'
-                      ? 'text-gray-600 hover:text-gray-800 hover:border-b-2 hover:border-gray-300'
-                      : 'text-gray-400 hover:text-gray-300 hover:border-b-2 hover:border-gray-600'
-                }`}
+                className={clasesPestañaPrincipal('historyMascotas')}
               >
                 Historia de Mascotas
               </button>
 
-              <button 
+              {/* Gestión de Usuarios — desactivada temporalmente
+              <button
+                type="button"
+                role="tab"
+                aria-selected={pestañaActiva === 'usuarios'}
                 onClick={() => setPestañaActiva('usuarios')}
-                className={`pb-2 font-medium transition-colors duration-200 whitespace-nowrap ${
-                  pestañaActiva === 'usuarios' 
-                    ? 'border-b-2 border-purple-500 text-purple-600' 
-                    : typeTheme === 'light'
-                      ? 'text-gray-600 hover:text-gray-800 hover:border-b-2 hover:border-gray-300'
-                      : 'text-gray-400 hover:text-gray-300 hover:border-b-2 hover:border-gray-600'
-                }`}
+                className={clasesPestañaPrincipal('usuarios')}
               >
                 Gestión de Usuarios
               </button>
+              */}
 
-              <button 
+              <button
+                type="button"
+                role="tab"
+                aria-selected={pestañaActiva === 'estadisticas'}
                 onClick={() => setPestañaActiva('estadisticas')}
-                className={`pb-2 font-medium transition-colors duration-200 whitespace-nowrap ${
-                  pestañaActiva === 'estadisticas' 
-                    ? 'border-b-2 border-purple-500 text-purple-600' 
-                    : typeTheme === 'light'
-                      ? 'text-gray-600 hover:text-gray-800 hover:border-b-2 hover:border-gray-300'
-                      : 'text-gray-400 hover:text-gray-300 hover:border-b-2 hover:border-gray-600'
-                }`}
+                className={clasesPestañaPrincipal('estadisticas')}
               >
                 Estadísticas Generales
               </button>
 
-
-            <button 
+              <button
+                type="button"
+                role="tab"
+                aria-selected={pestañaActiva === 'information_of_ong'}
                 onClick={() => setPestañaActiva('information_of_ong')}
-                className={`pb-2 font-medium transition-colors duration-200 whitespace-nowrap ${
-                  pestañaActiva === 'information_of_ong' 
-                    ? 'border-b-2 border-purple-500 text-purple-600' 
-                    : typeTheme === 'light'
-                      ? 'text-gray-600 hover:text-gray-800 hover:border-b-2 hover:border-gray-300'
-                      : 'text-gray-400 hover:text-gray-300 hover:border-b-2 hover:border-gray-600'
-                }`}
+                className={clasesPestañaPrincipal('information_of_ong')}
               >
                 Información de la Organización
               </button>
-
-            </div>
+            </nav>
           </div>
 
           {/* Contenido de Liquidaciones Mensuales */}
           {pestañaActiva === 'liquidaciones' && (
-            <div>
+            <div
+              id="panel-admin-liquidaciones"
+              role="tabpanel"
+              aria-labelledby="tab-admin-liquidaciones"
+            >
               <h3 className="text-xl font-bold text-gray-900 mb-6">Liquidaciones Mensuales</h3>
               
               {isCargandoLiquidaciones ? (
@@ -658,131 +689,15 @@ const DashboardAdmin = () => {
             </div>
           )}
 
-          {/* Contenido de Gestión de Usuarios */}
-          {pestañaActiva === 'usuarios' && (
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Gestión de Usuarios</h3>
-              
-              {/* Filtros */}
-              <div className="flex gap-4 mb-6">
-                <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                  <option value="">Todos los roles</option>
-                  <option value="usuario">Usuario</option>
-                  <option value="admin">Admin</option>
-                  <option value="profesional">Profesional</option>
-                </select>
-                <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                  <option value="">Todos los estados</option>
-                  <option value="activo">Activo</option>
-                  <option value="inactivo">Inactivo</option>
-                </select>
-                <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                  <option value="">Todas las mensualidades</option>
-                  <option value="si">Con mensualidad</option>
-                  <option value="no">Sin mensualidad</option>
-                </select>
-              </div>
-
-              {/* Tabla de usuarios */}
-              {isCargandoUsuariosComunes ? (
-                <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
-                  <p className="mt-2 text-gray-600">Cargando usuarios...</p>
-                </div>
-              ) : (
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-200">
-                    <h4 className="text-lg font-semibold text-gray-900">Lista de Usuarios con Membresía</h4>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mensualidad</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registro</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actividad</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {usuariosComunes.length === 0 ? (
-                          <tr>
-                            <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
-                              No hay usuarios con membresía activa
-                            </td>
-                          </tr>
-                        ) : (
-                          usuariosComunes.map((usuario) => (
-                            <tr key={usuario.id} className="hover:bg-gray-50">
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex items-center">
-                                  <div className="flex-shrink-0 h-10 w-10">
-                                    <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                                      <span className="text-sm font-medium text-purple-600">
-                                        {usuario.displayName ? usuario.displayName.charAt(0) : usuario.email.charAt(0)}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="ml-4">
-                                    <div className="text-sm font-medium text-gray-900">
-                                      {usuario.displayName || usuario.nombre || 'Sin nombre'}
-                                    </div>
-                                    <div className="text-sm text-gray-500">{usuario.email}</div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${obtenerColorRol(usuario.rol)}`}>
-                                  {usuario.rol}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                  usuario.isMember ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {usuario.isMember ? 'Activo' : 'Inactivo'}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                {usuario.tipoMensualidad ? (
-                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${obtenerColorMensualidad(usuario.tipoMensualidad)}`}>
-                                    {usuario.tipoMensualidad}
-                                  </span>
-                                ) : (
-                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${usuario.colorEstadoMensualidad || 'bg-gray-100 text-gray-800'}`}>
-                                    {usuario.mensajeEstadoMensualidad || 'Sin mensualidad'}
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {usuario.fechaCreacion ? new Date(usuario.fechaCreacion.seconds * 1000).toLocaleDateString('es-CL') : 'N/A'}
-                              </td>
-                              <td className="px-6 py-4  whitespace-nowrap text-sm text-gray-900">
-                                <div   className="flex flex-row gap-2">
-                                  <div>Mascotas: {usuario.infoMascotas ? usuario.infoMascotas.length : 0}</div>
-                                  <div>Citas: {usuario.citas ? usuario.citas.length : 0}</div>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                               
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Gestión de Usuarios: sección desactivada temporalmente (estado, carga y helpers comentados en el archivo). */}
 
           {/* Contenido de Estadísticas Generales */}
           {pestañaActiva === 'estadisticas' && (
-            <div>
+            <div
+              id="panel-admin-estadisticas"
+              role="tabpanel"
+              aria-labelledby="tab-admin-estadisticas"
+            >
               <h3 className="text-xl font-bold text-gray-900 mb-6">Estadísticas Generales</h3>
               
               {isCargandoEstadisticas ? (
@@ -1029,35 +944,41 @@ const DashboardAdmin = () => {
 
           {/* Contenido de Historia de Mascotas */}
           {pestañaActiva === 'historyMascotas' && (
-            <div>
-              {/* Sub-pestañas para historias */}
-              <div className="mb-6 border-b border-gray-200">
-                <div className="flex space-x-4">
+            <div
+              id="panel-admin-historyMascotas"
+              role="tabpanel"
+              aria-labelledby="tab-admin-historyMascotas"
+            >
+              {/* Sub-pestañas: 2 columnas en móvil para evitar texto cortado */}
+              <div
+                className={`mb-6 md:border-b md:pb-1 ${
+                  typeTheme === 'light' ? 'md:border-gray-200' : 'md:border-gray-600'
+                }`}
+              >
+                <nav
+                  className="grid grid-cols-2 gap-2 md:flex md:flex-row md:gap-4 md:overflow-x-auto lg:gap-6"
+                  role="tablist"
+                  aria-label="Historias de mascotas"
+                >
                   <button
+                    type="button"
+                    role="tab"
+                    aria-selected={subPestañaHistorias === 'ver'}
                     onClick={() => setSubPestañaHistorias('ver')}
-                    className={`pb-2 font-medium transition-colors duration-200 whitespace-nowrap ${
-                      subPestañaHistorias === 'ver'
-                        ? 'border-b-2 border-purple-500 text-purple-600'
-                        : typeTheme === 'light'
-                          ? 'text-gray-600 hover:text-gray-800 hover:border-b-2 hover:border-gray-300'
-                          : 'text-gray-400 hover:text-gray-300 hover:border-b-2 hover:border-gray-600'
-                    }`}
+                    className={clasesSubPestañaHistorias('ver')}
                   >
                     Ver Todas las Historias
                   </button>
                   <button
+                    type="button"
+                    role="tab"
+                    aria-selected={subPestañaHistorias === 'crear'}
                     onClick={() => setSubPestañaHistorias('crear')}
-                    className={`pb-2 font-medium transition-colors duration-200 whitespace-nowrap ${
-                      subPestañaHistorias === 'crear'
-                        ? 'border-b-2 border-purple-500 text-purple-600'
-                        : typeTheme === 'light'
-                          ? 'text-gray-600 hover:text-gray-800 hover:border-b-2 hover:border-gray-300'
-                          : 'text-gray-400 hover:text-gray-300 hover:border-b-2 hover:border-gray-600'
-                    }`}
+                    className={clasesSubPestañaHistorias('crear')}
                   >
                     Crear Nueva Historia
                   </button>
-                </div>
+                </nav>
               </div>
 
               {/* Contenido según sub-pestaña */}
@@ -1074,13 +995,23 @@ const DashboardAdmin = () => {
 
           {/* Contenido de Información de la Organización */}
           {pestañaActiva === 'information_of_ong' && (
-            <div>
+            <div
+              id="panel-admin-information_of_ong"
+              role="tabpanel"
+              aria-labelledby="tab-admin-information_of_ong"
+            >
               <h3 className="text-xl font-bold text-gray-900 mb-6">Información de la Organización</h3>
               <InformationOfOng />
             </div>
           )}
         </div>
       </div>
+
+      <AdminDashboardTabBar
+        pestanaActiva={pestañaActiva}
+        onCambiarPestana={setPestañaActiva}
+        typeTheme={typeTheme}
+      />
     </div>
   );
 };

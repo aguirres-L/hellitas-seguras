@@ -1,20 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { aiService } from '../services/aiService';
 import { TIPOS_CONSEJOS } from '../config/tiposConsejos';
-import { SelectorNivelPrompt } from './SelectorNivelPrompt';
 
-// Importar debugger y test solo en desarrollo
 if (process.env.NODE_ENV === 'development') {
   import('../utils/cacheDebugger');
   import('../utils/testFrenoPeticiones');
 }
 
-// Este componente recibe props
-export const ConsejosIA = ({ 
-  consejos, 
-  cargando, 
-  error, 
-  fuente, 
+const etiquetaFuente = (clave) => {
+  switch (clave) {
+    case 'huggingface':
+      return 'IA (Hugging Face)';
+    case 'cohere':
+      return 'IA (Cohere)';
+    case 'gemini':
+      return 'IA (Gemini)';
+    case 'ia_no_disponible':
+      return 'IA no disponible';
+    case 'predefinidos':
+      return 'Consejos de respaldo';
+    default:
+      return 'Fuente desconocida';
+  }
+};
+
+export const ConsejosIA = ({
+  consejos,
+  cargando,
+  error,
+  fuente,
   tematica,
   fechaCreacion,
   peticionesRestantes,
@@ -23,587 +37,529 @@ export const ConsejosIA = ({
   puedeGenerarConsejos,
   tipoConsejoSeleccionado,
   setTipoConsejoSeleccionado,
-  promptSeleccionado,
-  setPromptSeleccionado,
-  onGenerarConsejos, 
-  onLimpiarConsejos,
+  promptSeleccionado: _promptSeleccionado,
+  setPromptSeleccionado: _setPromptSeleccionado,
+  onGenerarConsejos,
+  onLimpiarConsejos: _onLimpiarConsejos,
   onRegenerarConsejos,
   onCargarConsejoDelHistorial,
-  onLimpiarHistorial,
+  onLimpiarHistorial: _onLimpiarHistorial,
   testAPIs,
   testModeloEspecifico,
-  mascota = null
+  mascota: _mascota = null,
 }) => {
   const [estadisticasCache, setEstadisticasCache] = useState(null);
   const [mostrarSelector, setMostrarSelector] = useState(!consejos);
   const [mostrarVideo, setMostrarVideo] = useState(false);
   const [consejoDetalleSeleccionado, setConsejoDetalleSeleccionado] = useState(null);
 
-  // Actualizar estadísticas del cache
   useEffect(() => {
     const stats = aiService.obtenerEstadisticasCache();
     setEstadisticasCache(stats);
-  }, [consejos]); // Actualizar cuando cambien los consejos
+  }, [consejos]);
 
-  // Ocultar selector cuando se generan consejos
   useEffect(() => {
     if (consejos) {
       setMostrarSelector(false);
     }
   }, [consejos]);
 
-  // Controlar la visibilidad del video con delay
   useEffect(() => {
     if (cargando) {
-      // Mostrar el video cuando empieza la carga
       setMostrarVideo(true);
     } else {
-      // Mantener el video visible 1.5 segundos adicionales después de que termine la carga
-      const timer = setTimeout(() => {
-        setMostrarVideo(false);
-      }, 1500);
-      
+      const timer = setTimeout(() => setMostrarVideo(false), 1200);
       return () => clearTimeout(timer);
     }
   }, [cargando]);
 
-  // Función para formatear fechas
   const formatearFecha = (fechaISO) => {
     if (!fechaISO) return '';
-    
     try {
       const fecha = new Date(fechaISO);
-      return fecha.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
+      return fecha.toLocaleDateString('es', {
+        day: 'numeric',
+        month: 'short',
         year: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
       });
-    } catch (error) {
-      console.warn('Error formateando fecha:', error);
+    } catch {
       return '';
     }
   };
 
-  // Función para formatear el texto con markdown básico
   const formatearConsejos = (texto) => {
-    if (!texto) return '';
+    if (!texto) return null;
 
-    return texto
-      .split('\n')
-      .map((linea, index) => {
-        // Títulos principales (##)
-        if (linea.startsWith('**') && linea.endsWith('**')) {
-          return (
-            <h4 key={index} className="font-bold text-lg text-gray-800 mb-3 mt-4 first:mt-0">
-              {linea.replace(/\*\*/g, '')}
-            </h4>
-          );
-        }
-        
-        // Subtítulos (###)
-        if (linea.startsWith('•')) {
-          return (
-            <li key={index} className="text-sm text-gray-700 mb-2 ml-4">
-              {linea.substring(1).trim()}
-            </li>
-          );
-        }
-        
-        // Párrafos normales
-        if (linea.trim()) {
-          return (
-            <p key={index} className="text-sm text-gray-700 mb-3">
-              {linea}
-            </p>
-          );
-        }
-        
-        return null;
-      })
-      .filter(Boolean);
+    const lineas = texto.split('\n');
+    const nodos = [];
+    let bufferViñetas = [];
+
+    const volcarViñetas = (keyBase) => {
+      if (bufferViñetas.length === 0) return;
+      nodos.push(
+        <ul key={`ul-${keyBase}`} className="list-disc pl-5 space-y-1.5 text-sm text-gray-700 mb-3">
+          {bufferViñetas.map((item, i) => (
+            <li key={`${keyBase}-li-${i}`}>{item}</li>
+          ))}
+        </ul>
+      );
+      bufferViñetas = [];
+    };
+
+    lineas.forEach((linea, index) => {
+      if (linea.startsWith('**') && linea.endsWith('**')) {
+        volcarViñetas(index);
+        nodos.push(
+          <h4
+            key={`h-${index}`}
+            className="font-semibold text-base text-gray-900 pt-2 first:pt-0 border-t border-gray-100 first:border-0 mt-3 first:mt-0"
+          >
+            {linea.replace(/\*\*/g, '')}
+          </h4>
+        );
+        return;
+      }
+
+      if (linea.trim().startsWith('•')) {
+        bufferViñetas.push(linea.replace(/^•\s*/, '').trim());
+        return;
+      }
+
+      volcarViñetas(index);
+
+      if (linea.trim()) {
+        nodos.push(
+          <p key={`p-${index}`} className="text-sm text-gray-700 leading-relaxed">
+            {linea}
+          </p>
+        );
+      }
+    });
+
+    volcarViñetas('end');
+    return nodos;
   };
 
+  const tipoNombre = TIPOS_CONSEJOS.find((t) => t.id === tipoConsejoSeleccionado)?.nombre;
+
+  const botonPrimarioClass =
+    'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors shadow-sm disabled:opacity-45 disabled:cursor-not-allowed';
+  const botonSecundarioClass =
+    'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold border-2 border-orange-200 text-orange-800 bg-orange-50 hover:bg-orange-100 transition-colors disabled:opacity-45';
+
   return (
-    <div className="space-y-4">
-      {/* Header con botones */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
-        <div>
-          <h3 className="font-bold text-lg text-gray-900 mb-1">
-            Consejos de Cuidado Inteligentes
-          </h3>
-          <p className="text-sm text-gray-600">
-            Consejos personalizados basados en la raza de tu mascota
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            📅 Dispones de 3 consejos personalizados por mes
-          </p>
-          {tematica && (
-            <p className="text-xs text-purple-600 mt-1">
-              🎯 Temática: {tematica}
+    <div className="space-y-5">
+      {/* Cabecera + acciones */}
+      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="p-4 sm:p-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
+              Consejos con IA
+            </h3>
+            <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+              Elegí un tema y generá recomendaciones según la raza. Son orientativas: ante cualquier duda, consultá a tu
+              veterinario.
             </p>
-          )}
-          {fechaCreacion && (
-            <p className="text-xs text-gray-500 mt-1">
-              📅 Creado: {formatearFecha(fechaCreacion)}
-            </p>
-          )}
-          {peticionesRestantes !== null && (
-            <p className={`text-xs mt-1 ${
-              peticionesRestantes === 0 
-                ? 'text-red-600' 
-                : peticionesRestantes === 1
-                  ? 'text-orange-600'
-                  : 'text-blue-600'
-            }`}>
-              {peticionesRestantes === 0 
-                ? '🔒 Límite mensual alcanzado (3/3 consejos generados)' 
-                : peticionesRestantes === 1
-                  ? `⚠️ Último consejo disponible este mes (${3 - peticionesRestantes}/3 usados)`
-                  : `📊 Tienes ${peticionesRestantes} consejos disponibles este mes (${3 - peticionesRestantes}/3 usados)`
-              }
-            </p>
-          )}
-          {estadisticasTematicas && estadisticasTematicas.total > 0 && (
-            <p className="text-xs text-green-600 mt-1">
-              🎯 Hay temáticas diferentes disponibles
-            </p>
-          )}
-        </div>
-        
-        <div className="flex gap-2">
-          {/* Botones de test de APIs (solo en desarrollo) */}
-          {process.env.NODE_ENV === 'development' && testAPIs && (
-            <div className="flex gap-2">
-              <button
-                onClick={testAPIs}
-                className="px-3 py-2 rounded-lg bg-purple-500 text-white hover:bg-purple-600 transition-colors duration-200 text-sm font-medium flex items-center"
-                title="Test de APIs de IA"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                Test APIs
-              </button>
-              
-              <button
-                onClick={() => testModeloEspecifico('gpt2')}
-                className="px-3 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 text-sm font-medium"
-                title="Test modelo GPT2"
-              >
-                Test GPT2
-              </button>
-              
-              <button
-                onClick={() => testModeloEspecifico('distilgpt2')}
-                className="px-3 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors duration-200 text-sm font-medium"
-                title="Test modelo DistilGPT2"
-              >
-                Test DistilGPT2
-              </button>
-            </div>
-          )}
-          
-          {/* Botón principal */}
-          {!cargando && (
-            <>
-              {consejos && (
-                <button
-                  onClick={() => {
-                    setMostrarSelector(true);
-                    setTipoConsejoSeleccionado(null);
-                  }}
-                  className="px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium flex items-center bg-purple-500 text-white hover:bg-purple-600"
-                  title="Crear un nuevo consejo"
+
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              {peticionesRestantes !== null && (
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    peticionesRestantes === 0
+                      ? 'bg-red-100 text-red-800'
+                      : peticionesRestantes === 1
+                        ? 'bg-amber-100 text-amber-900'
+                        : 'bg-orange-100 text-orange-900'
+                  }`}
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Nuevo Consejo
-                </button>
+                  {peticionesRestantes === 0
+                    ? '0 consejos IA restantes este mes'
+                    : `${peticionesRestantes} de 3 consejos IA este mes`}
+                </span>
               )}
-              <button
-                onClick={() => consejos ? onRegenerarConsejos() : onGenerarConsejos(tipoConsejoSeleccionado)}
-                disabled={!puedeGenerarConsejos || !tipoConsejoSeleccionado}
-                className={`px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium flex items-center ${
-                  !puedeGenerarConsejos || !tipoConsejoSeleccionado
-                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                    : consejos 
-                      ? 'bg-green-500 text-white hover:bg-green-600' 
-                      : 'bg-blue-500 text-white hover:bg-blue-600'
-                }`}
-                title={
-                  !puedeGenerarConsejos 
-                    ? 'Límite mensual alcanzado' 
-                    : !tipoConsejoSeleccionado 
-                      ? 'Selecciona un tipo de consejo primero' 
-                      : ''
-                }
+              {tematica && consejos && (
+                <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+                  Tema: {tematica}
+                </span>
+              )}
+              {fechaCreacion && consejos && (
+                <span className="text-xs text-gray-500">{formatearFecha(fechaCreacion)}</span>
+              )}
+              {estadisticasTematicas && estadisticasTematicas.total > 0 && (
+                <span className="text-xs text-gray-500">Varias temáticas en tu historial</span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row flex-wrap gap-2 shrink-0">
+            {process.env.NODE_ENV === 'development' && testAPIs && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={testAPIs}
+                  className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-medium text-white hover:bg-violet-700"
+                >
+                  Test APIs
+                </button>
+                <button
+                  type="button"
+                  onClick={() => testModeloEspecifico('gpt2')}
+                  className="rounded-lg bg-slate-600 px-3 py-2 text-xs font-medium text-white hover:bg-slate-700"
+                >
+                  Test GPT2
+                </button>
+                <button
+                  type="button"
+                  onClick={() => testModeloEspecifico('distilgpt2')}
+                  className="rounded-lg bg-slate-500 px-3 py-2 text-xs font-medium text-white hover:bg-slate-600"
+                >
+                  Test Distil
+                </button>
+              </div>
+            )}
+
+            {!cargando && (
+              <div className="flex flex-col sm:flex-row gap-2">
+                {consejos && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMostrarSelector(true);
+                      setTipoConsejoSeleccionado(null);
+                    }}
+                    className={botonSecundarioClass}
+                  >
+                    <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Otro tema
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => (consejos ? onRegenerarConsejos() : onGenerarConsejos(tipoConsejoSeleccionado))}
+                  disabled={!puedeGenerarConsejos || !tipoConsejoSeleccionado}
+                  className={`${botonPrimarioClass} ${
+                    !puedeGenerarConsejos || !tipoConsejoSeleccionado
+                      ? 'bg-gray-300 text-gray-500'
+                      : 'bg-orange-500 text-white hover:bg-orange-600'
+                  }`}
+                  title={
+                    !puedeGenerarConsejos
+                      ? 'Límite mensual alcanzado'
+                      : !tipoConsejoSeleccionado
+                        ? 'Elegí un tipo de consejo primero'
+                        : ''
+                  }
+                >
+                  <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  {!puedeGenerarConsejos
+                    ? 'Límite alcanzado'
+                    : !tipoConsejoSeleccionado
+                      ? 'Elegí un tema'
+                      : consejos
+                        ? 'Regenerar'
+                        : 'Generar consejos'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Selector de tipo */}
+        {!cargando && mostrarSelector && (
+          <div className="border-t border-gray-100 bg-gray-50/70 px-4 py-5 sm:px-5">
+            <p className="text-sm font-semibold text-gray-900 mb-1">Elegí un tema</p>
+            <p className="text-xs text-gray-500 mb-4">Un consejo por generación. Podés volver a elegir cuando quieras.</p>
+
+            <div className="hidden md:grid md:grid-cols-4 gap-2.5">
+              {TIPOS_CONSEJOS.map((tipo) => (
+                <button
+                  key={tipo.id}
+                  type="button"
+                  onClick={() => setTipoConsejoSeleccionado(tipo.id)}
+                  className={`rounded-xl border-2 p-3 text-left transition-all duration-200 ${
+                    tipoConsejoSeleccionado === tipo.id
+                      ? `${tipo.color} shadow-md ring-2 ring-orange-200/80`
+                      : `border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-sm ${tipo.colorHover}`
+                  }`}
+                >
+                  <span className="text-xl" aria-hidden>
+                    {tipo.icono}
+                  </span>
+                  <div className="mt-1.5 font-semibold text-sm leading-tight">{tipo.nombre}</div>
+                  <div className="text-xs text-gray-500 mt-1 line-clamp-2 leading-snug">{tipo.descripcion}</div>
+                </button>
+              ))}
+            </div>
+
+            <div className="md:hidden">
+              <div
+                className="flex gap-2.5 overflow-x-auto pb-2 -mx-1 px-1"
+                style={{
+                  scrollbarWidth: 'thin',
+                  WebkitOverflowScrolling: 'touch',
+                  scrollSnapType: 'x mandatory',
+                }}
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                {!puedeGenerarConsejos 
-                  ? 'Límite Alcanzado' 
-                  : !tipoConsejoSeleccionado
-                    ? 'Selecciona un tipo'
-                    : consejos 
-                      ? 'Regenerar Consejos' 
-                      : 'Generar Consejos'
-                }
-              </button>
-            </>
-          )}
-          
-        
-        </div>
+                {TIPOS_CONSEJOS.map((tipo, index) => (
+                  <button
+                    key={tipo.id}
+                    type="button"
+                    onClick={() => setTipoConsejoSeleccionado(tipo.id)}
+                    className={`flex-shrink-0 w-[min(88vw,280px)] scroll-mx-1 rounded-xl border-2 p-3 text-left transition-all ${
+                      tipoConsejoSeleccionado === tipo.id
+                        ? `${tipo.color} shadow-md ring-2 ring-orange-200/80`
+                        : `border-gray-200 bg-white text-gray-700 active:scale-[0.99] ${tipo.colorHover}`
+                    }`}
+                    style={{
+                      scrollSnapAlign: index === 0 ? 'start' : index === TIPOS_CONSEJOS.length - 1 ? 'end' : 'center',
+                    }}
+                  >
+                    <span className="text-xl" aria-hidden>
+                      {tipo.icono}
+                    </span>
+                    <div className="mt-1.5 font-semibold text-sm">{tipo.nombre}</div>
+                    <div className="text-xs text-gray-500 mt-1 line-clamp-2">{tipo.descripcion}</div>
+                  </button>
+                ))}
+              </div>
+              {TIPOS_CONSEJOS.length > 1 && (
+                <p className="mt-2 text-center text-xs text-gray-400">Deslizá para ver más temas</p>
+              )}
+            </div>
+
+            {tipoConsejoSeleccionado && (
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-orange-100 bg-orange-50/80 px-3 py-2.5">
+                <span className="text-orange-700 text-sm font-medium">Seleccionado: {tipoNombre}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Selector de Tipos de Consejos */}
-      {!cargando && mostrarSelector && (
-
-<div className="bg-white/60 rounded-lg p-6 shadow-sm mb-6">
-{/* <h4 className="font-bold text-lg text-gray-900 mb-4 flex items-center">
-  <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-  </svg>
-  Selecciona el tipo de consejo que necesitas
-</h4>
-<p className="text-sm text-gray-600 mb-4">
-  Elige una categoría específica para obtener consejos personalizados y detallados
-</p> */}
-
-{/* Versión Desktop - Grid */}
-<div className="hidden md:grid md:grid-cols-4 gap-3">
-  {TIPOS_CONSEJOS.map((tipo) => (
-    <button
-      key={tipo.id}
-      onClick={() => setTipoConsejoSeleccionado(tipo.id)}
-      className={`p-4 rounded-lg border-2 transition-all duration-200 text-center ${
-        tipoConsejoSeleccionado === tipo.id
-          ? `${tipo.color} border-current shadow-md transform scale-105`
-          : `bg-gray-50 text-gray-700 border-gray-200 hover:${tipo.colorHover} hover:border-current hover:shadow-sm`
-      }`}
-    >
-      <div className="text-2xl mb-2">{tipo.icono}</div>
-      <div className="font-medium text-sm">{tipo.nombre}</div>
-      <div className="text-xs text-gray-500 mt-1 line-clamp-2">
-        {tipo.descripcion}
-      </div>
-    </button>
-  ))}
-</div>
-
-{/* Versión Mobile - Slider horizontal */}
-<div className="md:hidden">
-  <div 
-    className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide px-1"
-    style={{ 
-      scrollbarWidth: 'none',
-      msOverflowStyle: 'none',
-      WebkitOverflowScrolling: 'touch',
-      scrollSnapType: 'x mandatory'
-    }}
-  >
-    {TIPOS_CONSEJOS.map((tipo, index) => (
-      <button
-        key={tipo.id}
-        onClick={() => setTipoConsejoSeleccionado(tipo.id)}
-        className={`flex-shrink-0 w-[85%] max-w-[280px] p-4 rounded-lg border-2 transition-all duration-200 text-center ${
-          tipoConsejoSeleccionado === tipo.id
-            ? `${tipo.color} border-current shadow-md transform scale-105`
-            : `bg-gray-50 text-gray-700 border-gray-200 active:${tipo.colorHover} active:border-current`
-        }`}
-        style={{ 
-          scrollSnapAlign: index === 0 ? 'start' : index === TIPOS_CONSEJOS.length - 1 ? 'end' : 'center'
-        }}
-      >
-        <div className="text-2xl mb-2">{tipo.icono}</div>
-        <div className="font-medium text-sm">{tipo.nombre}</div>
-        <div className="text-xs text-gray-500 mt-1 line-clamp-2">
-          {tipo.descripcion}
-        </div>
-      </button>
-    ))}
-  </div>
-  
-  {/* Indicador de scroll para mobile - muestra que hay más contenido */}
-  <div className="flex justify-center mt-3 gap-1.5">
-    {TIPOS_CONSEJOS.length > 1 && (
-      <div className="text-xs text-gray-400 flex items-center gap-1">
-        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
-        </svg>
-        <span>Desliza para ver más</span>
-        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-        </svg>
-      </div>
-    )}
-  </div>
-</div>
-
-{tipoConsejoSeleccionado && (
-  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-    <div className="flex items-center">
-      <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <span className="text-blue-800 text-sm font-medium">
-        Tipo seleccionado: {TIPOS_CONSEJOS.find(t => t.id === tipoConsejoSeleccionado)?.nombre}
-      </span>
-    </div>
-  </div>
-)}
-</div>
-      )}
-
-
-      {/* Estado de carga */}
+      {/* Carga */}
       {mostrarVideo && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-          <div className="flex items-center justify-center mb-4">
+        <div
+          className="rounded-2xl border border-orange-100 bg-gradient-to-b from-orange-50/90 to-white p-5 sm:p-6 text-center shadow-sm"
+          role="status"
+          aria-live="polite"
+          aria-busy={cargando}
+        >
+          <div className="mx-auto max-w-xs sm:max-w-sm">
             <video
               autoPlay
               loop
               muted
               playsInline
-              className="max-w-full h-auto rounded-lg shadow-md"
-              style={{ maxHeight: '200px' }}
+              className="w-full rounded-xl border border-orange-100 shadow-sm"
+              style={{ maxHeight: 'min(200px, 40vh)' }}
             >
               <source src="/vn.mp4" type="video/mp4" />
-              Tu navegador no soporta la reproducción de video.
             </video>
           </div>
-          <p className="text-blue-700 font-medium">Generando consejos personalizados...</p>
-          <p className="text-blue-600 text-sm mt-1">
-            Esto puede tomar unos segundos
-          </p>
+          <p className="mt-4 text-sm font-semibold text-gray-900">Generando consejos…</p>
+          <p className="text-xs text-gray-600 mt-1">Suele tardar unos segundos.</p>
+          {cargando && (
+            <div className="mt-3 flex justify-center">
+              <span className="h-1.5 w-32 overflow-hidden rounded-full bg-orange-100">
+                <span className="block h-full w-1/2 animate-pulse rounded-full bg-orange-400" />
+              </span>
+            </div>
+          )}
         </div>
       )}
-      {/* Error */}
+
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <svg className="h-5 w-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 0116 0zm-7-4a1 1 0 011-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-            <p className="text-red-700 text-sm">{error}</p>
-          </div>
+        <div
+          className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 flex gap-3 items-start"
+          role="alert"
+        >
+          <svg className="h-5 w-5 text-red-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <p className="text-sm text-red-800 leading-relaxed">{error}</p>
         </div>
       )}
 
-      {/* Consejos generados */}
       {consejos && !cargando && (
-        <div className={`rounded-lg p-6 ${
-          fuente === 'ia_no_disponible' 
-            ? 'bg-gradient-to-br from-orange-50 to-red-50 border border-orange-200' 
-            : 'bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200'
-        }`}>
-          <div className="space-y-4">
-            {formatearConsejos(consejos)}
+        <article
+          className={`rounded-2xl border shadow-sm overflow-hidden ${
+            fuente === 'ia_no_disponible'
+              ? 'border-amber-200 bg-amber-50/40'
+              : 'border-gray-200 bg-white'
+          }`}
+        >
+          <div
+            className={`px-4 py-3 sm:px-5 border-b text-xs sm:text-sm ${
+              fuente === 'ia_no_disponible'
+                ? 'bg-amber-100/50 border-amber-200 text-amber-950'
+                : 'bg-gray-50 border-gray-100 text-gray-600'
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <span className="font-medium">{etiquetaFuente(fuente)}</span>
+              <span className={fuente === 'ia_no_disponible' ? 'text-amber-800' : 'text-gray-500'}>
+                {fuente === 'ia_no_disponible'
+                  ? 'Probá de nuevo en unos minutos.'
+                  : 'No reemplaza la opinión profesional.'}
+              </span>
+            </div>
           </div>
-          
-          {/* Footer con información de la fuente */}
-          <div className={`mt-6 pt-4 border-t ${
-            fuente === 'ia_no_disponible' 
-              ? 'border-orange-200' 
-              : 'border-blue-200'
-          }`}>
-            <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs gap-2 ${
-              fuente === 'ia_no_disponible' 
-                ? 'text-orange-600' 
-                : 'text-blue-600'
-            }`}>
-              <div className="flex items-center">
-                <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-                <span>
-                  {fuente === 'huggingface' ? 'Consejos generados por IA (Hugging Face)' : 
-                   fuente === 'cohere' ? 'Consejos generados por IA (Cohere)' : 
-                   fuente === 'ia_no_disponible' ? 'Servicio de IA temporalmente no disponible' :
-                   'Consejos predefinidos'}
-                </span>
-              </div>
-              <div className={fuente === 'ia_no_disponible' ? 'text-orange-500' : 'text-blue-500'}>
-                {fuente === 'ia_no_disponible' 
-                  ? '🔄 Intenta nuevamente en unos minutos' 
-                  : '💡 Siempre consulta con tu veterinario para recomendaciones específicas'
-                }
-              </div>
+
+          <div className="p-4 sm:p-6 space-y-1 border-l-4 border-orange-400">
+            <div className="prose prose-sm max-w-none text-gray-800">{formatearConsejos(consejos)}</div>
+          </div>
+
+          <footer className="px-4 py-3 sm:px-5 bg-gray-50/80 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-gray-500">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              {fechaCreacion && <span>Generado: {formatearFecha(fechaCreacion)}</span>}
+              <span className="text-gray-400">{etiquetaFuente(fuente)}</span>
             </div>
-            
-            {/* Información de fecha y fuente */}
-            <div className="mt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-gray-500 gap-2">
-              {fechaCreacion && (
-                <div className="flex items-center">
-                  <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                  </svg>
-                  <span>Generado el {formatearFecha(fechaCreacion)}</span>
-                </div>
-              )}
-              <div className="text-gray-400">
-                {fuente === 'huggingface' ? '🤖 IA' : 
-                 fuente === 'cohere' ? '🧠 Cohere' : 
-                 fuente === 'ia_no_disponible' ? '⚠️ IA no disponible' :
-                 '📚 Predefinidos'}
-              </div>
-            </div>
-            
-            {/* Información del cache */}
             {estadisticasCache && estadisticasCache.total > 0 && (
-              <div className="mt-2 text-xs text-gray-500">
-                📦 Cache: {estadisticasCache.validas} consejos guardados localmente
-              </div>
+              <span className="text-gray-400">
+                Caché local: {estadisticasCache.validas} entradas
+              </span>
             )}
-          </div>
-        </div>
+          </footer>
+        </article>
       )}
 
-      {/* Estado vacío */}
       {!consejos && !cargando && !error && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-          <div className="text-gray-400 mb-3">
-            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 px-6 py-10 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+              />
             </svg>
           </div>
-          <p className="text-gray-600 mb-2">Consejos personalizados disponibles</p>
-          <p className="text-gray-500 text-sm">
-            Haz clic en "Generar Consejos" para obtener recomendaciones específicas para tu mascota
+          <p className="text-sm font-semibold text-gray-800">Todavía no generaste consejos</p>
+          <p className="text-sm text-gray-600 mt-1 max-w-md mx-auto">
+            Elegí un tema arriba y tocá <span className="font-medium text-gray-800">Generar consejos</span>.
           </p>
         </div>
       )}
 
-      {/* Historial de Consejos */}
       {historial && historial.length > 0 && (
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg p-0 sm:p-6">
-          {consejoDetalleSeleccionado ? (
-            /* Vista de Detalle del Consejo Seleccionado */
-            <div className="space-y-4 px-2 sm:px-0">
-              {/* Header con botón de volver */}
-              <div className="flex items-center justify-between mb-4">
-                <button
-                  onClick={() => setConsejoDetalleSeleccionado(null)}
-                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors duration-200"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Volver al historial
-                </button>
-              </div>
+        <section className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+          <div className="px-4 py-3 sm:px-5 border-b border-gray-100 bg-gray-50/80">
+            <h4 className="text-sm font-semibold text-gray-900">Historial en este dispositivo</h4>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {historial.length} {historial.length === 1 ? 'consejo guardado' : 'consejos guardados'} · Tocá una tarjeta
+              para ver el detalle
+            </p>
+          </div>
 
-              {/* Información del consejo */}
-              <div className="bg-white/80 rounded-lg p-4 sm:p-6 border border-green-100">
-                {/* Header con temática y fecha */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4 pb-4 border-b border-green-200">
-                  <span className="text-sm sm:text-base font-bold text-green-800 bg-green-100 px-3 py-1 rounded-full self-start">
+          {consejoDetalleSeleccionado ? (
+            <div className="p-4 sm:p-5 space-y-4">
+              <button
+                type="button"
+                onClick={() => setConsejoDetalleSeleccionado(null)}
+                className="inline-flex items-center gap-2 text-sm font-medium text-orange-700 hover:text-orange-800"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Volver al historial
+              </button>
+
+              <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 pb-4 border-b border-gray-200">
+                  <span className="inline-flex w-fit rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-900">
                     {consejoDetalleSeleccionado.tematica}
                   </span>
-                  <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-600">
+                  <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-gray-600">
                     <span>{formatearFecha(consejoDetalleSeleccionado.fechaCreacion)}</span>
-                    <span>•</span>
-                    <span>Raza: <span className="font-medium">{consejoDetalleSeleccionado.raza}</span></span>
-                    <span>•</span>
-                    <span className="text-blue-600">
-                      {consejoDetalleSeleccionado.fuente === 'huggingface' ? '🤖 IA' : 
-                       consejoDetalleSeleccionado.fuente === 'cohere' ? '🧠 Cohere' : '📚 Predefinidos'}
-                    </span>
+                    <span className="text-gray-300">·</span>
+                    <span>Raza: {consejoDetalleSeleccionado.raza}</span>
+                    <span className="text-gray-300">·</span>
+                    <span>{etiquetaFuente(consejoDetalleSeleccionado.fuente)}</span>
                   </div>
                 </div>
-
-                {/* Contenido completo del consejo */}
-                <div className="prose prose-sm sm:prose max-w-none">
-                  <div className="space-y-4">
-                    {formatearConsejos(consejoDetalleSeleccionado.consejos)}
-                  </div>
+                <div className="prose prose-sm max-w-none text-gray-800">
+                  {formatearConsejos(consejoDetalleSeleccionado.consejos)}
                 </div>
               </div>
 
-              {/* Botones de acción */}
-              <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                 <button
+                  type="button"
                   onClick={() => setConsejoDetalleSeleccionado(null)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                 >
                   Cerrar
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     onCargarConsejoDelHistorial(consejoDetalleSeleccionado.id);
                     setConsejoDetalleSeleccionado(null);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center justify-center gap-2"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                   </svg>
-                  Cargar este consejo
+                  Ver este consejo
                 </button>
               </div>
             </div>
           ) : (
-            /* Vista de Lista de Cards */
-            <>
-              <div className="space-y-2 sm:space-y-3 px-2 sm:px-0">
-                {historial.map((item, index) => (
-                  <div 
-                    key={item.id} 
-                    className="bg-white/60 rounded-lg p-4 border border-green-100 hover:border-green-200 active:border-green-300 transition-colors duration-200 cursor-pointer w-full"
-                    onClick={() => setConsejoDetalleSeleccionado(item)}
-                  >
-                    {/* Header con temática y fecha - Stack vertical en mobile */}
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                      <span className="text-xs sm:text-sm font-medium text-green-800 bg-green-100 px-2 py-1 rounded-full self-start">
-                        {item.tematica}
-                      </span>
-                      <span className="text-xs text-gray-500 whitespace-nowrap">
-                        {formatearFecha(item.fechaCreacion)}
-                      </span>
-                    </div>
-
-                    {/* Contenido principal */}
-                    <div className="flex items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        {/* Texto del consejo */}
-                        <p className="text-xs sm:text-sm text-gray-700 line-clamp-2 mb-2 break-words">
-                          {item.consejos.substring(0, 100)}...
-                        </p>
-                        
-                        {/* Footer con raza y fuente - Stack vertical en mobile muy pequeño */}
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-2">
-                          <span className="text-xs text-gray-500 whitespace-nowrap">
-                            Raza: {item.raza}
-                          </span>
-                          <span className="text-xs text-blue-600 whitespace-nowrap">
-                            {item.fuente === 'huggingface' ? '🤖 IA' : 
-                             item.fuente === 'cohere' ? '🧠 Cohere' : '📚 Predefinidos'}
-                          </span>
+            <ul className="p-2 sm:p-3 space-y-2 list-none">
+              {historial.map((item) => {
+                const texto = typeof item.consejos === 'string' ? item.consejos : '';
+                const preview =
+                  texto.length > 140 ? `${texto.slice(0, 140).trim()}…` : texto || 'Sin texto';
+                return (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      onClick={() => setConsejoDetalleSeleccionado(item)}
+                      className="w-full text-left rounded-xl border border-gray-100 bg-white p-4 transition-colors hover:border-orange-200 hover:bg-orange-50/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                            <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
+                              {item.tematica}
+                            </span>
+                            <span className="text-xs text-gray-500">{formatearFecha(item.fechaCreacion)}</span>
+                          </div>
+                          <p className="text-sm text-gray-700 line-clamp-2">{preview}</p>
+                          <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500">
+                            <span>{item.raza}</span>
+                            <span className="text-gray-300">·</span>
+                            <span>{etiquetaFuente(item.fuente)}</span>
+                          </div>
                         </div>
-                      </div>
-                      
-                      {/* Flecha indicadora */}
-                      <div className="flex-shrink-0 mt-1">
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg
+                          className="h-5 w-5 shrink-0 text-gray-400 mt-0.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Footer informativo */}
-              <div className="mt-4 text-xs text-green-600 text-center px-2">
-                📦 {historial.length} consejo{historial.length !== 1 ? 's' : ''} guardado{historial.length !== 1 ? 's' : ''} localmente • Haz clic para ver detalles
-              </div>
-            </>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           )}
-        </div>
+        </section>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { aiService } from '../services/aiService';
+import { API_KEYS } from '../config/apiKeys';
 import { obtenerPromptPorDefecto } from '../prompts/promptManager';
 
 export const useConsejosIA = (raza, userId = null, mascotaId = null, mascota = null) => {
@@ -85,39 +86,37 @@ export const useConsejosIA = (raza, userId = null, mascotaId = null, mascota = n
       }
 
       const resultado = await aiService.obtenerConsejosRaza(raza, false, userId, mascotaId, tipoSeleccionado, promptPersonalizado);
-      
-      // Manejar tanto formato nuevo (objeto) como formato antiguo (string)
-      if (typeof resultado === 'object' && resultado.consejos) {
-        setConsejos(resultado.consejos);
+
+      if (
+        typeof resultado === 'object' &&
+        resultado !== null &&
+        (resultado.consejos || resultado.fuente === 'ia_no_disponible')
+      ) {
+        setConsejos(resultado.consejos || '');
         setTematica(resultado.tematica);
         setFuente(resultado.fuente);
         setFechaCreacion(resultado.fechaCreacion || new Date().toISOString());
-        
-        // Si la IA no está disponible, no consumir petición mensual
+
         if (resultado.fuente === 'ia_no_disponible') {
-          // No actualizar peticiones restantes ni historial
           return;
         }
       } else {
-        // Formato antiguo (string directo)
         setConsejos(resultado);
         setTematica(tipoSeleccionado);
         setFuente('predefinidos');
         setFechaCreacion(new Date().toISOString());
       }
-      
-      // Actualizar peticiones restantes y historial
+
       if (userId && mascotaId) {
         const restantes = aiService.obtenerPeticionesRestantes(userId, mascotaId);
         setPeticionesRestantes(restantes);
-        
-        // Verificar si puede generar más consejos después de esta petición
+
         const estadoFreno = aiService.verificarFrenoPeticiones(userId, mascotaId);
         setPuedeGenerarConsejos(estadoFreno.puedeHacerPeticion);
-        
+
         const historialConsejos = aiService.obtenerHistorialConsejos(userId, mascotaId);
         setHistorial(historialConsejos);
-        
+
         const statsTematicas = aiService.obtenerEstadisticasTematicas(userId, mascotaId);
         setEstadisticasTematicas(statsTematicas);
       }
@@ -232,15 +231,17 @@ export const useConsejosIA = (raza, userId = null, mascotaId = null, mascota = n
       const resultado = await aiService.regenerarConsejos(raza, userId, mascotaId, tipoSeleccionado, promptPersonalizado);
       
       // Manejar tanto formato nuevo (objeto) como formato antiguo (string)
-      if (typeof resultado === 'object' && resultado.consejos) {
-        setConsejos(resultado.consejos);
+      if (
+        typeof resultado === 'object' &&
+        resultado !== null &&
+        (resultado.consejos || resultado.fuente === 'ia_no_disponible')
+      ) {
+        setConsejos(resultado.consejos || '');
         setTematica(resultado.tematica);
         setFuente(resultado.fuente);
         setFechaCreacion(resultado.fechaCreacion || new Date().toISOString());
-        
-        // Si la IA no está disponible, no consumir petición mensual
+
         if (resultado.fuente === 'ia_no_disponible') {
-          // No actualizar peticiones restantes ni historial
           return;
         }
       } else {
@@ -250,19 +251,17 @@ export const useConsejosIA = (raza, userId = null, mascotaId = null, mascota = n
         setFuente('predefinidos');
         setFechaCreacion(new Date().toISOString());
       }
-      
-      // Actualizar peticiones restantes y historial
+
       if (userId && mascotaId) {
         const restantes = aiService.obtenerPeticionesRestantes(userId, mascotaId);
         setPeticionesRestantes(restantes);
-        
-        // Verificar si puede generar más consejos después de esta petición
+
         const estadoFreno = aiService.verificarFrenoPeticiones(userId, mascotaId);
         setPuedeGenerarConsejos(estadoFreno.puedeHacerPeticion);
-        
+
         const historialConsejos = aiService.obtenerHistorialConsejos(userId, mascotaId);
         setHistorial(historialConsejos);
-        
+
         const statsTematicas = aiService.obtenerEstadisticasTematicas(userId, mascotaId);
         setEstadisticasTematicas(statsTematicas);
       }

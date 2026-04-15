@@ -11,11 +11,58 @@ import DecoracionForm from './decoracionUi/DecoracionForm';
 import { useTheme } from '../contexts/ThemeContext';
 import { ConsejosIA } from './ConsejosIA';
 import { useConsejosIA } from '../hooks/useConsejosIA';
-import { getChapitaFiletForUserId } from '../data/hook/getChapitaFiletForUserId';
 import { getChapitasByMascotaId } from '../data/hook/getChapitasByMascotaId';
+import { etiquetaEstadoChapita, clasesBadgeEstadoChapita } from '../utils/chapitaEstado';
 import QRCode from 'react-qr-code';
 import SvgAlert from './ui/svg/SvgAlert';
 import UseFrameMotion from './hook_frame_motion/UseFrameMotion';
+
+/** Toggle “mascota perdida”: mismo control en layout móvil compacto y en desktop. */
+function ControlTogglePerdida({ mascotaId, isPerdida, isGuardando, onCambiar }) {
+  return (
+    <div className="flex shrink-0 items-center justify-center gap-2">
+      {isGuardando ? (
+        <div
+          className="flex h-9 items-center justify-center"
+          role="status"
+          aria-live="polite"
+          aria-label="Guardando estado"
+        >
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
+        </div>
+      ) : (
+        <>
+          <span className={`text-xs font-semibold ${!isPerdida ? 'text-gray-800' : 'text-gray-400'}`}>No</span>
+          <label
+            htmlFor={`mascota-perdida-${mascotaId}`}
+            className={`relative inline-flex cursor-pointer items-center ${
+              isGuardando ? 'cursor-wait opacity-60' : ''
+            }`}
+          >
+            <input
+              id={`mascota-perdida-${mascotaId}`}
+              type="checkbox"
+              checked={isPerdida || false}
+              onChange={(e) => onCambiar(e.target.checked)}
+              disabled={isGuardando}
+              className="peer sr-only"
+              aria-describedby={`mascota-perdida-ayuda-${mascotaId}`}
+              aria-label="Marcar mascota como perdida en el perfil público"
+            />
+            <span id={`mascota-perdida-ayuda-${mascotaId}`} className="sr-only">
+              Al activar, el perfil público muestra alerta de mascota perdida
+            </span>
+            <span
+              aria-hidden
+              className="relative inline-block h-6 w-11 shrink-0 rounded-full bg-gray-300 transition-colors after:pointer-events-none after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-all after:content-[''] peer-checked:bg-red-500 peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-orange-400 peer-focus-visible:ring-offset-2"
+            />
+          </label>
+          <span className={`text-xs font-semibold ${isPerdida ? 'text-red-700' : 'text-gray-400'}`}>Sí, perdida</span>
+        </>
+      )}
+    </div>
+  );
+}
 
 // Este componente recibe props a través de useParams
 const PetProfile = () => {
@@ -37,6 +84,7 @@ const PetProfile = () => {
   const [openMetodoPago, setOpenMetodoPago] = useState(false);
   const [urlCopiada, setUrlCopiada] = useState(false);
   const [isGuardandoEstadoPerdida, setIsGuardandoEstadoPerdida] = useState(false);
+  const [mostrarLeyendaPerdidaMovil, setMostrarLeyendaPerdidaMovil] = useState(false);
 
   // Hook para consejos de IA
   const {
@@ -78,10 +126,8 @@ const PetProfile = () => {
       try {
         setIsCargando(true);
         const datosUsuario = await obtenerUsuarioPorUid(usuario.uid);
-        const chapitasUsuario = await getChapitaFiletForUserId(usuario.uid);
-        
-        
-        // Obtener chapitas específicas de esta mascota usando la función helper
+
+        // Chapitas asociadas a esta mascota (pagoChapita)
         const chapitasDeEstaMascota = await getChapitasByMascotaId(id);
         
         // Guardar en el estado para usar en la UI
@@ -117,6 +163,9 @@ const PetProfile = () => {
     cargarMascota();
   }, [usuario?.uid, id]);
 
+  useEffect(() => {
+    setMostrarLeyendaPerdidaMovil(false);
+  }, [id]);
 
   const handleMetodoPago = () => {
     setOpenMetodoPago(!openMetodoPago);
@@ -375,7 +424,7 @@ const PetProfile = () => {
         </div>
 
         {/* Contenido Principal */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6">
+        <div className="rounded-xl bg-white/80 p-4 shadow-lg backdrop-blur-sm sm:p-6">
           {/* Alerta de Mascota Perdida */}
           {mascota.isPerdida && (
             <div className="mb-6 bg-red-50 border-2 border-red-300 rounded-lg p-4 animate-pulse">
@@ -396,73 +445,97 @@ const PetProfile = () => {
             </div>
           )}
 
-          {/* Encabezado */}
-          <div className="flex flex-col md:flex-row items-start md:items-center ">
-            <div className=" mb-4 md:mb-0">
-            
-            {/* Foto de la mascota */}
-              <div className="flex items-center justify-center">
-                <img 
-                  src={mascota.fotoUrl || "/dog-avatar.png"} 
-                  alt={mascota.nombre} 
-                  onClick={abrirModal}
-                  className="w-24 h-24 rounded-full mr-6 border-4 border-orange-100 shadow-lg object-cover cursor-pointer" 
-                />
-                {/* Switch de Mascota Perdida - Acceso Rápido - Posicionado sobre la foto */}
-                {usuario && (
-                  <div className={`absolute -top-2 -right-2 flex flex-col items-center gap-1 ${
-                    mascota.isPerdida ? 'bg-red-500' : 'bg-green-500'
-                  } rounded-full p-2 shadow-lg border-2 border-white`}>
-                    {isGuardandoEstadoPerdida ? (
-                      <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      </div>
-                    ) : (
-                      <>
-                        <label className={`relative inline-flex items-center cursor-pointer ${
-                          isGuardandoEstadoPerdida ? 'opacity-60 cursor-wait' : ''
-                        }`}>
-                          <input
-                            type="checkbox"
-                            checked={mascota.isPerdida || false}
-                            onChange={(e) => handleCambiarEstadoPerdida(e.target.checked)}
-                            disabled={isGuardandoEstadoPerdida}
-                            className="sr-only peer"
-                          />
-                          <div className={`w-10 h-5 bg-white/30 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-white rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${
-                            mascota.isPerdida ? 'peer-checked:bg-red-600' : 'peer-checked:bg-green-600'
-                          }`}></div>
-                        </label>
-                       {/*  <span className="text-xs font-bold text-white text-center leading-tight">
-                          {mascota.isPerdida ? '🚨' : '✅'}
-                        </span> */}
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-
-
+          {/* Encabezado: menos aire vertical en móvil; bloque “perdida” compacto + detalle colapsable */}
+          <div className="flex flex-col gap-4 sm:gap-6 sm:flex-row sm:items-start md:items-center">
+            <div className="flex justify-center sm:justify-start">
+              <img
+                src={mascota.fotoUrl || '/dog-avatar.png'}
+                alt={mascota.nombre}
+                onClick={abrirModal}
+                className="h-20 w-20 shrink-0 cursor-pointer rounded-full border-4 border-orange-100 object-cover shadow-lg sm:h-24 sm:w-24 sm:mr-6"
+              />
             </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-2xl font-bold text-gray-900">{mascota.nombre}</h2>
-                {usuario && mascota.isPerdida && (
-                  <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-bold animate-pulse">
-                    PERDIDA
-                  </span>
-                )}
+            <div className="min-w-0 flex-1 text-center sm:text-left">
+              <div className="mb-2 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+                {mascota.isPerdida ? (<span className="animate-pulse rounded-full bg-red-100 px-3 py-1 text-xl font-bold text-red-800">
+                    {mascota.nombre}
+                  </span>): (<h2 className="text-xl font-bold text-gray-900 sm:text-2xl">{mascota.nombre}</h2>)}
               </div>
-              <p className="text-gray-600 mb-3">{mascota.raza} • {mascota.edad}</p>
-              <div className="flex space-x-2">
-                {usuario && (
-                  <button 
+              <p className="mb-3 text-gray-600">{mascota.raza} • {mascota.edad}</p>
+
+              {usuario && (
+                <div
+                  className={`mb-3 rounded-lg border p-2.5 text-left sm:mb-4 sm:rounded-xl sm:p-4 ${
+                    mascota.isPerdida
+                      ? 'border-red-200 bg-red-50/70'
+                      : 'border-orange-100 bg-orange-50/40'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3 sm:items-center sm:gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold text-gray-900">
+                        <button
+                          type="button"
+                          id="toggle-leyenda-perdida-movil"
+                          className="sm:hidden inline-flex max-w-full items-center gap-1 rounded-md py-0.5 pl-0 pr-1 text-left text-orange-900 underline decoration-orange-300 decoration-2 underline-offset-2 hover:bg-orange-100/50 hover:text-orange-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-1"
+                          aria-expanded={mostrarLeyendaPerdidaMovil}
+                          aria-controls="leyenda-perdida-movil"
+                          onClick={() => setMostrarLeyendaPerdidaMovil((v) => !v)}
+                        >
+                          ¿Perdida?
+                          <svg
+                            className={`h-4 w-4 shrink-0 text-orange-700 transition-transform duration-200 ${
+                              mostrarLeyendaPerdidaMovil ? 'rotate-180' : ''
+                            }`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        <span className="hidden sm:inline">¿Tu mascota está perdida?</span>
+                      </div>
+                      <p className="mt-1 hidden text-xs leading-snug text-gray-600 sm:block">
+                        Activá esta opción si se escapó o no la encontrás: el perfil público mostrará una alerta para
+                        que quien la vea pueda contactarte.
+                      </p>
+                    </div>
+                    <ControlTogglePerdida
+                      mascotaId={mascota.id}
+                      isPerdida={mascota.isPerdida}
+                      isGuardando={isGuardandoEstadoPerdida}
+                      onCambiar={handleCambiarEstadoPerdida}
+                    />
+                  </div>
+                  {mostrarLeyendaPerdidaMovil && (
+                    <div
+                      id="leyenda-perdida-movil"
+                      role="region"
+                      aria-labelledby="toggle-leyenda-perdida-movil"
+                      className="mt-2 rounded-md border border-orange-100/70 bg-white/50 px-2 py-2 sm:hidden"
+                    >
+                      <p className="text-xs leading-relaxed text-gray-600">
+                        Activá esta opción si se escapó o no la encontrás: el perfil público mostrará una alerta para que
+                        quien la vea pueda contactarte.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {usuario && (
+                <div className="mb-6 flex justify-center sm:mb-7 sm:justify-start">
+                  <button
+                    type="button"
                     onClick={() => setMostrarEdicion(true)}
-                    className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors duration-200 text-sm font-medium"
+                    className="w-full max-w-xs rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-orange-600 sm:w-auto sm:max-w-none sm:py-2"
                   >
                     Editar perfil
                   </button>
-                )}
+                </div>
+              )}
               {/*   {usuario && (
                   <button 
                     onClick={() => setMostrarCitas(true)}
@@ -471,39 +544,52 @@ const PetProfile = () => {
                     Gestionar Citas
                   </button>
                 )} */}
-              </div>
             </div>
           </div>
 
-          {/* Pestañas */}
-          <div className="border-b border-gray-200 mb-6">
-            <div className="flex space-x-4 overflow-x-auto">
-              <button 
+          {/* Pestañas: scroll horizontal en móvil, etiqueta corta para Chapita */}
+          <div className="-mx-1 mb-6 mt-1 border-b border-gray-200 sm:mx-0 sm:mt-0">
+            <div
+              className="flex snap-x snap-mandatory gap-1 overflow-x-auto pb-1 pt-0.5 [scrollbar-width:thin] [-webkit-overflow-scrolling:touch] sm:gap-3 md:gap-4"
+              role="tablist"
+              aria-label="Secciones del perfil de mascota"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={pestañaActiva === 'informacion'}
                 onClick={() => setPestañaActiva('informacion')}
-                className={`pb-2 font-medium transition-colors duration-200 whitespace-nowrap ${
-                  pestañaActiva === 'informacion' 
-                    ? 'border-b-2 border-orange-500 text-orange-600' 
-                    : 'text-gray-600 hover:text-gray-800 hover:border-b-2 hover:border-gray-300'
+                className={`shrink-0 snap-start px-3 pb-2 text-sm font-medium transition-colors duration-200 sm:px-4 sm:text-base ${
+                  pestañaActiva === 'informacion'
+                    ? 'border-b-2 border-orange-500 text-orange-600'
+                    : 'border-b-2 border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-800'
                 }`}
               >
                 Información
               </button>
-         {/*      <button 
+              <button
+                type="button"
+                role="tab"
+                aria-selected={pestañaActiva === 'historial'}
                 onClick={() => setPestañaActiva('historial')}
-                className={`pb-2 font-medium transition-colors duration-200 whitespace-nowrap ${
-                  pestañaActiva === 'historial' 
-                    ? 'border-b-2 border-orange-500 text-orange-600' 
-                    : 'text-gray-600 hover:text-gray-800 hover:border-b-2 hover:border-gray-300'
+                className={`shrink-0 snap-start px-3 pb-2 text-sm font-medium transition-colors duration-200 sm:px-4 sm:text-base ${
+                  pestañaActiva === 'historial'
+                    ? 'border-b-2 border-orange-500 text-orange-600'
+                    : 'border-b-2 border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-800'
                 }`}
               >
-                Historial Médico
-              </button> */}
-              <button 
+                <span className="sm:hidden">Chapita</span>
+                <span className="hidden sm:inline">Chapita de {mascota.nombre}</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={pestañaActiva === 'cuidados'}
                 onClick={() => setPestañaActiva('cuidados')}
-                className={`pb-2 font-medium transition-colors duration-200 whitespace-nowrap ${
-                  pestañaActiva === 'cuidados' 
-                    ? 'border-b-2 border-orange-500 text-orange-600' 
-                    : 'text-gray-600 hover:text-gray-800 hover:border-b-2 hover:border-gray-300'
+                className={`shrink-0 snap-start px-3 pb-2 text-sm font-medium transition-colors duration-200 sm:px-4 sm:text-base ${
+                  pestañaActiva === 'cuidados'
+                    ? 'border-b-2 border-orange-500 text-orange-600'
+                    : 'border-b-2 border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-800'
                 }`}
               >
                 Consejos IA
@@ -520,9 +606,11 @@ const PetProfile = () => {
               waitForUserView={true}
               propsAdicionales={{}}
             >
-              <div className="grid md:grid-cols-2 gap-8">
+          
+
+              <div className="grid gap-4 sm:gap-8 md:grid-cols-2">
                 {/* Datos Básicos */}
-                <div className="bg-white/60 rounded-lg p-6 shadow-sm">
+                <div className="rounded-lg bg-white/60 p-4 shadow-sm sm:p-6">
                   <h3 className="font-bold text-lg mb-4 text-gray-900">Información Básica</h3>
                   <div className="space-y-4">
                     <div className="flex items-center">
@@ -594,51 +682,58 @@ const PetProfile = () => {
                   </div>
                 </div>
 
-                {/* QR */}
-                <div className="flex flex-col items-center bg-white/60 rounded-lg p-6 shadow-sm">
-                  <div className="p-4 mb-4 flex flex-col md:flex-row items-center justify-center gap-4">
-                    <img src={mascota.fotoUrl} style={{borderRadius:'50% '}} alt="QR" className="w-48 h-48 object-cover  " />
-                   {/*  <h3 className="font-bold text-lg mb-4 text-gray-900 text-center">
-                    Compartir Perfil de {mascota.nombre}
-                  </h3> */}
-                  
-                  {/* Contenedor del QR con fondo blanco */}
-                  <div className="bg-white p-4 rounded-lg shadow-md mb-4 border-2 border-orange-100 w-full md:w-auto flex items-center justify-center">
-                    <QRCode
-                      value={obtenerUrlPublica()}
-                      size={200}
-                      level="H"
-                      style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                      fgColor="#1f2937"
-                      bgColor="#ffffff"
-                    />
+                {/* QR + URL (columna apilada en móvil) */}
+                <div className="flex flex-col items-center rounded-lg bg-white/60 p-4 shadow-sm sm:p-6">
+                  <div className="mb-4 flex w-full max-w-sm flex-col items-center justify-center gap-4 sm:max-w-none sm:flex-row">
+                {/*     <img
+                      src={mascota.fotoUrl}
+                      style={{ borderRadius: '50%' }}
+                      alt={mascota.nombre}
+                      className="h-36 w-36 shrink-0 object-cover sm:h-44 sm:w-44 md:h-48 md:w-48"
+                    /> */}
+
+                    <div className="flex w-full max-w-[min(100%,220px)] justify-center sm:max-w-[240px] md:w-auto">
+                      <div className="flex w-full justify-center rounded-lg border-2 border-orange-100 bg-white p-3 shadow-md sm:p-4">
+                        <div className="w-full max-w-[176px] sm:max-w-[200px]">
+                          <QRCode
+                            value={obtenerUrlPublica()}
+                            size={200}
+                            level="H"
+                            style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
+                            fgColor="#1f2937"
+                            bgColor="#ffffff"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-              
-                  {/* Botón para solicitar chapita */}
+
                   <button
-                    onClick={handleMetodoPago}
-                    className="w-full mb-4 bg-gradient-to-r from-orange-500 to-pink-500 text-white px-6 py-3 rounded-lg hover:from-orange-600 hover:to-pink-600 transition-all duration-200 font-medium shadow-lg transform hover:scale-105"
+                    type="button"
+                    onClick={() => setPestañaActiva('historial')}
+                    className="mb-4 min-h-[44px] w-full max-w-md rounded-lg border-2 border-orange-200 bg-orange-50 px-3 py-2.5 text-center text-sm font-semibold leading-tight text-orange-800 transition hover:bg-orange-100 sm:text-base"
                   >
-                    Quiero una chapita para {mascota.nombre}
+                    <span className="block sm:inline">Ver pedidos de chapita</span>
+                    <span className="block text-xs font-medium opacity-90 sm:ml-1 sm:inline sm:text-base">
+                      y solicitar una nueva
+                    </span>
                   </button>
 
-
-                  {/* URL pública con botón de copiar */}
-                  <div className="w-full mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
-                      URL Pública del Perfil
+                  <div className="mb-4 w-full min-w-0 max-w-lg">
+                    <label className="mb-2 block text-center text-sm font-medium text-gray-700">
+                      URL pública del perfil
                     </label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-stretch">
                       <input
                         type="text"
                         value={obtenerUrlPublica()}
                         readOnly
-                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        className="min-w-0 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 sm:text-sm"
                       />
                       <button
+                        type="button"
                         onClick={copiarUrl}
-                        className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                        className={`flex min-h-[44px] w-full shrink-0 items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 sm:w-auto sm:min-w-[3rem] ${
                           urlCopiada
                             ? 'bg-green-500 text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -661,109 +756,126 @@ const PetProfile = () => {
                     </div>
                   </div>
 
-                
-                  
-                  <p className="text-sm text-gray-500 mt-3 text-center">
-                    {mascota.estadoChapita === true 
-                      ? `La chapita para ${mascota.nombre} está en producción` 
-                      : `Contactanos para obtener la chapita para ${mascota.nombre}`
-                    }
+                  <p className="mt-3 px-1 text-center text-sm leading-relaxed text-gray-500">
+                    El QR abre el perfil público de {mascota.nombre}. El pedido de la chapita física está en la pestaña{' '}
+                    <strong className="text-gray-700">Chapita</strong>
+                    <span className="hidden sm:inline">
+                      {' '}
+                      de {mascota.nombre}
+                    </span>
+                    .
                   </p>
                 </div>
               </div>
-
-              {/* Sección de Chapitas Existentes */}
-              {chapitasDeEstaMascota.length > 0 && (
-                <div className="mt-8 bg-white/60 rounded-lg p-6 shadow-sm">
-                  <div className="flex items-center mb-4">
-                    <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-orange-600 text-lg">🏷️</span>
-                    </div>
-                    <h3 className="font-bold text-lg text-gray-900">Chapitas de {mascota.nombre}</h3>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {chapitasDeEstaMascota.map((chapita, index) => {
-                      const estiloEstado = obtenerEstiloEstado(chapita.estado);
-                      return (
-                        <div key={chapita.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center">
-                              <span className="text-2xl mr-3">{estiloEstado.icono}</span>
-                              <div>
-                                <h4 className="font-semibold text-gray-900">
-                                  Chapita #{index + 1}
-                                </h4>
-                                <p className="text-sm text-gray-600">
-                                  ID: {chapita.id.substring(0, 8)}...
-                                </p>
-                              </div>
-                            </div>
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium border ${estiloEstado.color}`}>
-                              {estiloEstado.texto}
-                            </span>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <p className="text-gray-600">Fecha de creación:</p>
-                              <p className="font-medium">{formatearFecha(chapita.fechaCreacion)}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600">Última actualización:</p>
-                              <p className="font-medium">{formatearFecha(chapita.fechaActualizacion)}</p>
-                            </div>
-                          </div>
-                          
-                          {chapita.estado === 'entregado' && (
-                            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                              <p className="text-green-800 text-sm font-medium">
-                                🎉 ¡Tu chapita ha sido entregada! Esperamos que la disfrutes.
-                              </p>
-                            </div>
-                          )}
-                          
-                          {chapita.estado === 'fabricacion' && (
-                            <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                              <p className="text-orange-800 text-sm font-medium">
-                                🔨 Tu chapita está siendo fabricada. Te notificaremos cuando esté lista.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  
-                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-blue-800 text-sm">
-                      <strong>💡 Información:</strong> Tienes {chapitasDeEstaMascota.length} chapita{chapitasDeEstaMascota.length > 1 ? 's' : ''} para {mascota.nombre}. 
-                      {chapitasDeEstaMascota.some(c => c.estado === 'fabricacion' || c.estado === 'en viaje') 
-                        ? ' Una de ellas está en proceso de fabricación o en camino.' 
-                        : ' Todas han sido entregadas.'}
-                    </p>
-                  </div>
-                </div>
-              )}
             </UseFrameMotion>
           )}
 
           {pestañaActiva === 'historial' && (
-            <div className="bg-white/60 rounded-lg p-6 shadow-sm">
-              <h3 className="font-bold text-lg mb-4 text-gray-900">Historial Médico</h3>
-              {mascota.vacunas && mascota.vacunas.length > 0 ? (
-                <div className="space-y-4">
-                  {mascota.vacunas.map((vacuna, idx) => (
-                    <div key={idx} className="border-l-4 border-green-500 pl-4 py-2">
-                      <p className="font-medium text-gray-900">{vacuna.nombre}</p>
-                      <p className="text-sm text-gray-600">{vacuna.fecha}</p>
+            <UseFrameMotion
+              tipoAnimacion="slideUp"
+              duracion={0.6}
+              delay={0.1}
+              waitForUserView={true}
+              propsAdicionales={{}}
+            >
+              <div className="rounded-lg bg-white/60 p-4 shadow-sm sm:p-6">
+                {/* Pestaña reutilizada: seguimiento de chapitas (mismo criterio que menú Chapitas) */}
+                <div className="rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50/90 via-white to-pink-50/40 p-4 shadow-sm sm:p-6">
+        
+
+                  {chapitasDeEstaMascota.length === 0 ? (
+                  <>
+                  <p className="font-medium text-gray-800">
+                        Todavía no hay un pedido de chapita registrado para {mascota.nombre}.
+                      </p>
+                      <p className="mt-2 text-sm text-gray-500">
+                        Cuando completes el pago, el seguimiento aparecerá aquí y en Chapitas.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleMetodoPago}
+                        className="mt-5 inline-flex w-full max-w-sm items-center justify-center rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-3 font-semibold text-white shadow-md transition hover:from-orange-600 hover:to-pink-600 sm:w-auto"
+                      >
+                        Quiero una chapita para {mascota.nombre}
+                      </button>
+                    </>
+                  ) : (
+                    <div className="mt-5 space-y-4">
+                      {chapitasDeEstaMascota.map((chapita, index) => {
+                        const estiloEstado = obtenerEstiloEstado(chapita.estado);
+                        return (
+                          <div
+                            key={chapita.id}
+                            className="rounded-xl border border-gray-200 bg-white/90 p-4 shadow-sm transition hover:shadow-md"
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div className="flex min-w-0 items-center gap-3">
+                                <span className="shrink-0 text-2xl" aria-hidden>
+                                  {estiloEstado.icono}
+                                </span>
+                                <div>
+                                  <h4 className="font-semibold text-gray-900">Pedido #{index + 1}</h4>
+                                  <p className="text-xs text-gray-500">ID: {chapita.id.substring(0, 10)}…</p>
+                                </div>
+                              </div>
+                              <span
+                                className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold ${clasesBadgeEstadoChapita(
+                                  chapita.estado
+                                )}`}
+                              >
+                                {etiquetaEstadoChapita(chapita.estado, 'corta')}
+                              </span>
+                            </div>
+                            <p className="mt-3 text-sm text-gray-600">
+                              {etiquetaEstadoChapita(chapita.estado, 'larga')}
+                            </p>
+                            <div className="mt-4 grid grid-cols-1 gap-3 text-sm text-gray-600 sm:grid-cols-2">
+                              <div>
+                                <span className="text-xs uppercase tracking-wide text-gray-400">Alta</span>
+                                <p className="font-medium text-gray-900">{formatearFecha(chapita.fechaCreacion)}</p>
+                              </div>
+                              <div>
+                                <span className="text-xs uppercase tracking-wide text-gray-400">
+                                  Última actualización
+                                </span>
+                                <p className="font-medium text-gray-900">{formatearFecha(chapita.fechaActualizacion)}</p>
+                              </div>
+                            </div>
+                            {chapita.estado === 'entregado' && (
+                              <div className="mt-3 rounded-lg border border-green-200 bg-green-50 p-3">
+                                <p className="text-sm font-medium text-green-800">
+                                  ¡Gracias! Esta chapita figura como entregada.
+                                </p>
+                              </div>
+                            )}
+                            {chapita.estado === 'fabricacion' && (
+                              <div className="mt-3 rounded-lg border border-orange-200 bg-orange-50 p-3">
+                                <p className="text-sm font-medium text-orange-800">
+                                  Estamos fabricando tu chapita; te avisamos cuando avance el envío.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="rounded-lg border border-blue-100 bg-blue-50/80 p-3 text-sm text-blue-900 sm:flex-1">
+                          <strong>Tip:</strong> cada cambio de estado también lo mostramos en el menú{' '}
+                          <strong>Chapitas</strong> para que no pierdas ningún aviso.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleMetodoPago}
+                          className="shrink-0 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:from-orange-600 hover:to-pink-600"
+                        >
+                          Pedir otra chapita
+                        </button>
+                      </div>
                     </div>
-                  ))}
+                  )}
                 </div>
-              ) : (
-                <p className="text-gray-500 text-center py-8">No hay registros médicos disponibles</p>
-              )}
-            </div>
+              </div>
+            </UseFrameMotion>
           )}
 
           {pestañaActiva === 'cuidados' && (

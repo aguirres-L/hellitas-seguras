@@ -1,456 +1,696 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ImageUploader } from './ImageUploader';
 import { useAuth } from '../contexts/AuthContext';
 import BusquedaAvanzada from './uiDashboardUser/BusquedaAvanzada';
 import BusquedaAvanzadaGatos from './uiDashboardUser/BusquedaAvanzadaGatos';
 import BusquedaOtrosAnimales from './uiDashboardUser/BusquedaOtrosAnimales';
 
-// Este componente no recibe props opcionales.
-export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
-  const { usuario } = useAuth();
-  
-  // Tabs
-  const [tab, setTab] = useState(0);
+const TOTAL_PASOS = 6;
 
-  // Identificación simple
+/** Devuelve YYYY-MM-DD: hoy retrocediendo años y meses (misma hora del día). */
+const calcularFechaNacimientoDesdeEdadAproximada = (años, meses) => {
+  const hoy = new Date();
+  const nacimiento = new Date(
+    hoy.getFullYear() - Number(años),
+    hoy.getMonth() - Number(meses),
+    hoy.getDate()
+  );
+  const y = nacimiento.getFullYear();
+  const mo = String(nacimiento.getMonth() + 1).padStart(2, '0');
+  const d = String(nacimiento.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${d}`;
+};
+
+const mensajesPaso = [
+  {
+    titulo: 'Empecemos con una foto',
+    subtitulo:
+      'Así tu compañero tiene rostro en la app. Si preferís, podés saltar este paso y agregarla después.',
+  },
+  {
+    titulo: '¿Cómo se llama?',
+    subtitulo: 'El nombre que le decís todos los días, con cariño.',
+  },
+  {
+    titulo: '¿Qué raza es?',
+    subtitulo:
+      'Escribila o elegí del listado: perros, gatos u otros animalitos.',
+  },
+  {
+    titulo: '¿Cuándo nació?',
+    subtitulo:
+      'Podés poner la fecha exacta o solo la edad aproximada; en ambos casos calculamos todo lo demás.',
+  },
+  {
+    titulo: '¿De qué color es?',
+    subtitulo: 'Opcional — si no querés, podés dejarlo en blanco.',
+  },
+  {
+    titulo: 'Algo más que debamos saber?',
+    subtitulo:
+      'Notas útiles: alergias visibles, si es perro guía, dieta especial… lo que quieras contarnos.',
+  },
+];
+
+export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
+  const { usuario } = useAuth();
+
+  const [paso, setPaso] = useState(0);
+  /** null | 'perros' | 'gatos' | 'otros' — vista secundaria dentro del paso de raza */
+  const [vistaCatalogoRaza, setVistaCatalogoRaza] = useState(null);
+
   const [nombre, setNombre] = useState('');
   const [razaSeleccionada, setRazaSeleccionada] = useState('');
   const [raza, setRaza] = useState('');
   const [fechaNacimiento, setFechaNacimiento] = useState('');
+  /** 'fechaExacta' | 'edadAproximada' */
+  const [modoNacimiento, setModoNacimiento] = useState('edadAproximada');
+  const [añosAproximados, setAñosAproximados] = useState('');
+  const [mesesAdicionales, setMesesAdicionales] = useState('');
   const [edadCalculada, setEdadCalculada] = useState('');
   const [color, setColor] = useState('');
   const [archivoImagen, setArchivoImagen] = useState(null);
   const [urlImagenMascota, setUrlImagenMascota] = useState('');
   const [contacto, setContacto] = useState('');
 
-
-  // Detalles avanzados
   const [vacunas, setVacunas] = useState([{ nombre: '', fecha: '' }]);
   const [alergias, setAlergias] = useState('');
   const [enfermedades, setEnfermedades] = useState('');
   const [notas, setNotas] = useState('');
 
-  // Función para generar ID único
   const generarIdUnico = () => {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substr(2, 9);
     return `${timestamp}-${random}`;
   };
 
-  // Generar ID único para esta mascota (una sola vez)
   const [mascotaId] = useState(() => generarIdUnico());
 
-  // Función para calcular edad desde fecha de nacimiento
   const calcularEdad = (fechaNac) => {
     if (!fechaNac) return '';
-    
+
     const hoy = new Date();
     const nacimiento = new Date(fechaNac);
-    
-    // Validar que la fecha no sea futura
+
     if (nacimiento > hoy) return 'Fecha inválida';
-    
+
     let años = hoy.getFullYear() - nacimiento.getFullYear();
     let meses = hoy.getMonth() - nacimiento.getMonth();
     let días = hoy.getDate() - nacimiento.getDate();
-    
-    // Ajustar si el día aún no ha llegado este mes
+
     if (días < 0) {
       meses--;
       const ultimoMes = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
       días += ultimoMes.getDate();
     }
-    
-    // Ajustar si el mes aún no ha llegado este año
+
     if (meses < 0) {
       años--;
       meses += 12;
     }
-    
-    // Formatear resultado
+
     if (años === 0) {
       if (meses === 0) {
         return `${días} día${días !== 1 ? 's' : ''}`;
       }
       return `${meses} mes${meses !== 1 ? 'es' : ''}`;
     }
-    
+
     if (meses === 0) {
       return `${años} año${años !== 1 ? 's' : ''}`;
     }
-    
+
     return `${años} año${años !== 1 ? 's' : ''} y ${meses} mes${meses !== 1 ? 'es' : ''}`;
   };
 
-  // Función para calcular edad numérica (en años con decimales)
   const calcularEdadNumerica = (fechaNac) => {
     if (!fechaNac) return 0;
-    
+
     const hoy = new Date();
     const nacimiento = new Date(fechaNac);
-    
+
     if (nacimiento > hoy) return 0;
-    
+
     const diferenciaMs = hoy - nacimiento;
-    const años = diferenciaMs / (1000 * 60 * 60 * 24 * 365.25); // 365.25 para considerar años bisiestos
-    
-    return Math.round(años * 10) / 10; // Redondear a 1 decimal
+    const años = diferenciaMs / (1000 * 60 * 60 * 24 * 365.25);
+
+    return Math.round(años * 10) / 10;
   };
 
-  // Calcular edad automáticamente cuando cambia la fecha de nacimiento
   useEffect(() => {
     const edad = calcularEdad(fechaNacimiento);
     setEdadCalculada(edad);
   }, [fechaNacimiento]);
 
-  // Sincronizar raza seleccionada con el campo de raza
+  useEffect(() => {
+    if (modoNacimiento !== 'edadAproximada') return;
+
+    const años = Math.max(0, parseInt(String(añosAproximados), 10) || 0);
+    const meses = Math.max(0, Math.min(11, parseInt(String(mesesAdicionales), 10) || 0));
+
+    if (años === 0 && meses === 0) {
+      setFechaNacimiento('');
+      return;
+    }
+
+    const añosLimitados = Math.min(años, 50);
+    const fecha = calcularFechaNacimientoDesdeEdadAproximada(añosLimitados, meses);
+    setFechaNacimiento(fecha);
+  }, [modoNacimiento, añosAproximados, mesesAdicionales]);
+
   useEffect(() => {
     if (razaSeleccionada) {
       setRaza(razaSeleccionada);
-      // Cambiar automáticamente al tab de identificación para mostrar la raza seleccionada
-      setTab(0);
+      setVistaCatalogoRaza(null);
     }
   }, [razaSeleccionada]);
 
-  // Animación simple para tabs
-  const tabClasses = (active) =>
-    `px-4 py-2 rounded-t-lg font-semibold transition-all duration-300 ${
-      active
-        ? 'bg-orange-500 text-white shadow-lg scale-105'
-        : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
-    }`;
+  const isRazaCompleta = Boolean(
+    (raza && raza.trim()) || (razaSeleccionada && razaSeleccionada.trim())
+  );
 
-  // Manejo de vacunas dinámicas
-  const handleVacunaChange = (idx, field, value) => {
-    const nuevasVacunas = vacunas.map((v, i) =>
-      i === idx ? { ...v, [field]: value } : v
-    );
-    setVacunas(nuevasVacunas);
+  const isPasoNacimientoValido = useCallback(() => {
+    if (!fechaNacimiento) return false;
+    const nac = new Date(fechaNacimiento + 'T12:00:00');
+    const hoy = new Date();
+    hoy.setHours(23, 59, 59, 999);
+    if (nac > hoy || edadCalculada === 'Fecha inválida') return false;
+
+    if (modoNacimiento === 'edadAproximada') {
+      const años = parseInt(String(añosAproximados), 10);
+      if (Number.isNaN(años) || años < 0 || años > 50) return false;
+      const meses = parseInt(String(mesesAdicionales), 10);
+      if (mesesAdicionales !== '' && mesesAdicionales != null) {
+        if (Number.isNaN(meses) || meses < 0 || meses > 11) return false;
+      }
+      if (años === 0 && (Number.isNaN(meses) ? 0 : meses) === 0) return false;
+      if (años === 0 && mesesAdicionales === '') return false;
+    }
+    return true;
+  }, [
+    fechaNacimiento,
+    edadCalculada,
+    modoNacimiento,
+    añosAproximados,
+    mesesAdicionales,
+  ]);
+
+  const puedeAvanzar = useCallback(() => {
+    switch (paso) {
+      case 0:
+        return true;
+      case 1:
+        return Boolean(nombre.trim());
+      case 2:
+        return isRazaCompleta;
+      case 3:
+        return isPasoNacimientoValido();
+      case 4:
+        return true;
+      case 5:
+        return true;
+      default:
+        return false;
+    }
+  }, [paso, nombre, isRazaCompleta, isPasoNacimientoValido]);
+
+  const onContinuar = () => {
+    if (!puedeAvanzar() || vistaCatalogoRaza) return;
+    setPaso((p) => Math.min(p + 1, TOTAL_PASOS - 1));
   };
-  const agregarVacuna = () => setVacunas([...vacunas, { nombre: '', fecha: '' }]);
-  const eliminarVacuna = (idx) =>
-    setVacunas(vacunas.filter((_, i) => i !== idx));
 
-  // Envío
-  const handleSubmit = (e) => {
+  const onAtras = () => {
+    if (vistaCatalogoRaza) {
+      setVistaCatalogoRaza(null);
+      return;
+    }
+    setPaso((p) => Math.max(p - 1, 0));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!nombre || !raza || !fechaNacimiento) return;
-    
+
     const mascotaConId = {
-      id: mascotaId, // Usar el ID generado al inicio
+      id: mascotaId,
       nombre,
       raza: razaSeleccionada || raza,
-      fechaNacimiento, // Guardar fecha de nacimiento
-      edad: edadCalculada, // Guardar edad calculada como string legible
-      edadNumerica: calcularEdadNumerica(fechaNacimiento), // Para cálculos futuros
+      fechaNacimiento,
+      edad: edadCalculada,
+      edadNumerica: calcularEdadNumerica(fechaNacimiento),
       color,
-      fotoUrl: urlImagenMascota, // Usar la URL de la imagen subida
+      fotoUrl: urlImagenMascota,
       contacto,
-      vacunas: vacunas.filter(v => v.nombre && v.fecha),
+      vacunas: vacunas.filter((v) => v.nombre && v.fecha),
       alergias,
       enfermedades,
       notas,
       estadoChapita: false,
-      fechaCreacion: new Date().toISOString(), // Agregar fecha de creación
+      fechaCreacion: new Date().toISOString(),
     };
-    
-    onAgregarMascota(mascotaConId);
-    
-    // Limpia el formulario
-    setNombre('');
-    setRaza('');
-    setRazaSeleccionada('');
-    setFechaNacimiento('');
-    setEdadCalculada('');
-    setColor('');
-    setArchivoImagen(null);
-    setUrlImagenMascota('');
-    setContacto('');
-    setVacunas([{ nombre: '', fecha: '' }]);
-    setAlergias('');
-    setEnfermedades('');
-    setNotas('');
-    setTab(0);
+
+    const resultado = await Promise.resolve(onAgregarMascota(mascotaConId));
+    if (resultado === false) return;
+
+    /* Éxito: el modal se cierra desde el padre y este formulario se desmonta; no hace falta resetear estado aquí. */
   };
+
+  const progreso = ((paso + 1) / TOTAL_PASOS) * 100;
+  const { titulo, subtitulo } = mensajesPaso[paso] || mensajesPaso[0];
+
+  const botonSecundarioClass =
+    'px-4 py-3 rounded-lg font-semibold border-2 border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100 transition-all duration-200 text-base';
+
+  const botonPrimarioClass =
+    'bg-orange-500 text-white px-4 py-3 rounded-lg font-semibold shadow-md hover:bg-orange-600 transition-all duration-200 text-base disabled:opacity-50 disabled:cursor-not-allowed';
+
+  const inputClass =
+    'border border-gray-300 rounded-xl px-4 py-3 w-full text-base focus:ring-2 focus:ring-orange-400 focus:border-orange-400 outline-none transition-shadow';
+
+  const renderIndicadorRazaSeleccionada = () =>
+    razaSeleccionada ? (
+      <div className="bg-green-50 border border-green-200 rounded-xl p-4 mt-3">
+        <div className="flex items-start gap-2">
+          <svg className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <div>
+            <p className="text-sm text-green-700 font-medium">Listo</p>
+            <p className="text-lg font-semibold text-green-900 capitalize">{razaSeleccionada}</p>
+          </div>
+        </div>
+      </div>
+    ) : null;
+
+  const contenidoCatalogo =
+    vistaCatalogoRaza === 'perros' ? (
+      <div className="space-y-4 animate-fade-in">
+        <button type="button" className={botonSecundarioClass + ' w-full sm:w-auto'} onClick={() => setVistaCatalogoRaza(null)}>
+          ← Volver a la pregunta
+        </button>
+        <BusquedaAvanzada onRazaSeleccionada={setRazaSeleccionada} razaSeleccionada={razaSeleccionada} />
+        {renderIndicadorRazaSeleccionada()}
+      </div>
+    ) : vistaCatalogoRaza === 'gatos' ? (
+      <div className="space-y-4 animate-fade-in">
+        <button type="button" className={botonSecundarioClass + ' w-full sm:w-auto'} onClick={() => setVistaCatalogoRaza(null)}>
+          ← Volver a la pregunta
+        </button>
+        <BusquedaAvanzadaGatos onRazaSeleccionada={setRazaSeleccionada} razaSeleccionada={razaSeleccionada} />
+        {renderIndicadorRazaSeleccionada()}
+      </div>
+    ) : vistaCatalogoRaza === 'otros' ? (
+      <div className="space-y-4 animate-fade-in">
+        <button type="button" className={botonSecundarioClass + ' w-full sm:w-auto'} onClick={() => setVistaCatalogoRaza(null)}>
+          ← Volver a la pregunta
+        </button>
+        <BusquedaOtrosAnimales onRazaSeleccionada={setRazaSeleccionada} razaSeleccionada={razaSeleccionada} />
+        {renderIndicadorRazaSeleccionada()}
+      </div>
+    ) : null;
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-2 sm:p-4 md:p-6 "
+      aria-busy={isCargando}
+      className="relative w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-4 sm:p-6 md:p-8 min-h-[320px] flex flex-col"
     >
-      {/* Header con Tab y Avatar */}
-      <div className="flex items-center justify-between  pb-4 gap-4">
-        {/* Tab Identificación */}
-        <button
-          type="button"
-          className={tabClasses(tab === 0) + " flex-shrink-0"}
-          onClick={() => setTab(0)}
+      {isCargando && (
+        <div
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 rounded-2xl bg-white/90 px-6 text-center backdrop-blur-[2px]"
+          role="status"
+          aria-live="polite"
+          aria-label="Guardando mascota"
         >
-          {tab === 1 || tab === 2 || tab === 3 ? 'Volver' : 'Identificación'}
-        </button>
-        
-        {/* Avatar de mascota - componente de imagen compacto */}
-        <div className="flex-shrink-0 flex flex-col items-center">
-          <label className="block text-xs font-medium text-gray-600 mb-2 text-center">
-            Foto de mascota
-          </label>
-          <div className="relative avatar-container" style={{ width: '80px', height: '80px' }}>
-            <ImageUploader
-              onImageSelect={setArchivoImagen}
-              onImageUploaded={setUrlImagenMascota}
-              isCargando={isCargando}
-              userId={usuario?.uid}
-              petId={mascotaId}
-              imagenActual={urlImagenMascota}
-              className="avatar-upload-compact"
-            />
+          <div
+            className="h-12 w-12 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"
+            aria-hidden
+          />
+          <div>
+            <p className="text-lg font-semibold text-gray-900">Guardando tu mascota…</p>
+            <p className="mt-1 text-sm text-gray-600">Esto puede tardar unos segundos. No cierres esta ventana.</p>
           </div>
+        </div>
+      )}
+
+      {/* Barra de progreso estilo Typeform */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
+          <span>
+            Paso {paso + 1} de {TOTAL_PASOS}
+          </span>
+          <span className="text-orange-600 font-medium">{Math.round(progreso)}%</span>
+        </div>
+        <div className="h-1.5 bg-orange-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-orange-500 rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${progreso}%` }}
+          />
         </div>
       </div>
 
-      {/* Tab content */}
-      <div className="transition-all duration-500">
-        {tab === 0 && (
-          <div className="animate-fade-in flex flex-col gap-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-            <input
-              className="border rounded px-3 py-2 w-full text-base"
-              placeholder="Nombre"
-              value={nombre}
-              onChange={e => setNombre(e.target.value)}
-              required
-            />
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Raza</label>
-              <input
-                className={`border rounded px-3 py-2 w-full text-base ${
-                  razaSeleccionada ? 'border-green-400 bg-green-50' : 'border-gray-300'
-                }`}
-                placeholder="Raza"
-                value={raza}
-                onChange={e => setRaza(e.target.value)}
-                required
-              />
-              {razaSeleccionada && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
+      {vistaCatalogoRaza ? (
+        contenidoCatalogo
+      ) : (
+        <>
+          <div className="mb-6 animate-fade-in">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">{titulo}</h2>
+            <p className="mt-2 text-gray-600 text-base leading-relaxed">{subtitulo}</p>
+          </div>
+
+          <div className="flex-1 animate-fade-in">
+            {paso === 0 && (
+              <div className="flex flex-col items-center gap-4 py-2">
+                <div className="relative avatar-conversation mx-auto">
+                  <ImageUploader
+                    onImageSelect={setArchivoImagen}
+                    onImageUploaded={setUrlImagenMascota}
+                    isCargando={isCargando}
+                    userId={usuario?.uid}
+                    petId={mascotaId}
+                    imagenActual={urlImagenMascota}
+                    className="avatar-upload-conversational"
+                    usarModalOrigenFoto
+                  />
                 </div>
-              )}
-
-
-              <div className="flex flex-wrap gap-3 justify-end mt-2">
-              <button
-                type="button"
-                className={tabClasses(tab === 1) + " w-full sm:w-auto"}
-                onClick={() => setTab(1)}
-              >
-                Razas de Perros
-              </button>
-              <button
-                type="button"
-                className={tabClasses(tab === 2) + " w-full sm:w-auto"}
-                onClick={() => setTab(2)}
-              >
-                Razas de Gatos
-              </button>
-              <button
-                type="button"
-                className={tabClasses(tab === 3) + " w-full sm:w-auto"}
-                onClick={() => setTab(3)}
-              >
-                Otros Animales
-              </button>
+                {urlImagenMascota && (
+                  <p className="text-sm text-green-600 font-medium">¡Quedó genial! Seguimos cuando quieras.</p>
+                )}
               </div>
+            )}
 
-            </div>
-
-            
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Fecha de nacimiento
-              </label>
+            {paso === 1 && (
               <input
-                className="border rounded px-3 py-2 w-full text-base"
-                type="date"
-                value={fechaNacimiento}
-                onChange={e => setFechaNacimiento(e.target.value)}
-                max={new Date().toISOString().split('T')[0]} // No permitir fechas futuras
-                required
+                className={inputClass}
+                placeholder="Ej: Luna, Max, Mishi…"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    onContinuar();
+                  }
+                }}
               />
-              {edadCalculada && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <div className="flex items-center">
-                    <svg className="h-4 w-4 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+            )}
+
+            {paso === 2 && (
+              <div className="space-y-4">
+                <input
+                  className={`${inputClass} ${razaSeleccionada ? 'border-green-400 bg-green-50' : ''}`}
+                  placeholder="Escribí la raza o tipo"
+                  value={raza}
+                  onChange={(e) => setRaza(e.target.value)}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && isRazaCompleta) {
+                      e.preventDefault();
+                      onContinuar();
+                    }
+                  }}
+                />
+                <p className="text-sm text-gray-500">O buscá en el catálogo:</p>
+                <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-orange-100 text-orange-800 font-semibold hover:bg-orange-200 transition-colors"
+                    onClick={() => setVistaCatalogoRaza('perros')}
+                  >
+                    Razas de perros
+                  </button>
+                  <button
+                    type="button"
+                    className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-orange-100 text-orange-800 font-semibold hover:bg-orange-200 transition-colors"
+                    onClick={() => setVistaCatalogoRaza('gatos')}
+                  >
+                    Razas de gatos
+                  </button>
+                  <button
+                    type="button"
+                    className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-orange-100 text-orange-800 font-semibold hover:bg-orange-200 transition-colors"
+                    onClick={() => setVistaCatalogoRaza('otros')}
+                  >
+                    Otros animales
+                  </button>
+                </div>
+                {renderIndicadorRazaSeleccionada()}
+              </div>
+            )}
+
+            {paso === 3 && (
+              <div className="space-y-4">
+                <div
+                  className="flex rounded-xl border border-gray-200 p-1 bg-gray-50"
+                  role="group"
+                  aria-label="Forma de indicar la fecha de nacimiento"
+                >
+                  <button
+                    type="button"
+                    className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-semibold transition-colors ${
+                      modoNacimiento === 'edadAproximada'
+                        ? 'bg-white text-orange-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    onClick={() => {
+                      setModoNacimiento('edadAproximada');
+                      setFechaNacimiento('');
+                      setAñosAproximados('');
+                      setMesesAdicionales('');
+                    }}
+                  >
+                    Edad aproximada
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-semibold transition-colors ${
+                      modoNacimiento === 'fechaExacta'
+                        ? 'bg-white text-orange-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    onClick={() => {
+                      setModoNacimiento('fechaExacta');
+                      setAñosAproximados('');
+                      setMesesAdicionales('');
+                    }}
+                  >
+                    Fecha exacta
+                  </button>
+                </div>
+
+                {modoNacimiento === 'edadAproximada' ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-600">
+                      Indicá cuántos años cumplió (y si querés, meses extra). Usamos la fecha de hoy para estimar
+                      cuándo nació.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="anios-aprox" className="block text-xs font-medium text-gray-500 mb-1">
+                          Años (aprox.)
+                        </label>
+                        <input
+                          id="anios-aprox"
+                          className={inputClass}
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          max={50}
+                          placeholder="Ej: 3"
+                          value={añosAproximados}
+                          onChange={(e) => setAñosAproximados(e.target.value)}
+                          autoFocus
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="meses-extra" className="block text-xs font-medium text-gray-500 mb-1">
+                          Meses adicionales (opcional, 0–11)
+                        </label>
+                        <input
+                          id="meses-extra"
+                          className={inputClass}
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          max={11}
+                          placeholder="Ej: 6"
+                          value={mesesAdicionales}
+                          onChange={(e) => setMesesAdicionales(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    {parseInt(String(añosAproximados), 10) > 50 && (
+                      <p className="text-sm text-amber-700">Por favor revisá los años (máximo 50).</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <input
+                      className={inputClass}
+                      type="date"
+                      value={fechaNacimiento}
+                      onChange={(e) => setFechaNacimiento(e.target.value)}
+                      max={new Date().toISOString().split('T')[0]}
+                      autoFocus
+                    />
+                  </div>
+                )}
+
+                {fechaNacimiento && modoNacimiento === 'edadAproximada' && edadCalculada !== 'Fecha inválida' && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <p className="text-xs text-amber-800 font-medium mb-1">Fecha estimada de nacimiento</p>
+                    <p className="text-sm font-semibold text-amber-950">
+                      {new Date(fechaNacimiento + 'T12:00:00').toLocaleDateString('es', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </p>
+                    <p className="text-xs text-amber-800/90 mt-2">
+                      La guardamos como referencia; si más adelante tenés la fecha exacta, podés corregirla.
+                    </p>
+                  </div>
+                )}
+
+                {edadCalculada && edadCalculada !== 'Fecha inválida' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-2">
+                    <svg className="h-5 w-5 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     <div>
-                      <p className="text-xs text-blue-600 font-medium">Edad calculada:</p>
-                      <p className="text-sm font-semibold text-blue-800">
-                        {edadCalculada}
+                      <p className="text-xs text-blue-600 font-medium">
+                        {modoNacimiento === 'edadAproximada' ? 'Edad según lo que ingresaste' : 'Edad aproximada'}
                       </p>
+                      <p className="text-sm font-semibold text-blue-900">{edadCalculada}</p>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
-            <input
-              className="border rounded px-3 py-2 w-full text-base"
-              placeholder="Color"
-              value={color}
-              onChange={e => setColor(e.target.value)}
-            />
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notas Adicionales</label>
-            <textarea
-              className="border rounded px-3 py-2 mb-4 w-full text-base"
-              placeholder="Ejemplo: Perro guía - Mi acompañante necesita de mí para desplazarse"
-              name  ="notas"
-              value={notas}
-              onChange={e => setNotas(e.target.value)}
-              rows={3}
-            />
-          </div>
-        )}
-
-        {tab === 1 && (
-          <div className="space-y-4">
-            <BusquedaAvanzada 
-              onRazaSeleccionada={setRazaSeleccionada}
-              razaSeleccionada={razaSeleccionada}
-            />
-            
-            {/* Indicador de raza seleccionada */}
-            {razaSeleccionada && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <div>
-                    <p className="text-sm text-green-600 font-medium">Raza seleccionada:</p>
-                    <p className="text-lg font-semibold text-green-800 capitalize">
-                      {razaSeleccionada}
-                    </p>
-                    <p className="text-xs text-green-600 mt-1">
-                      Esta raza se ha agregado automáticamente al formulario
-                    </p>
-                  </div>
-                </div>
+                )}
+                {edadCalculada === 'Fecha inválida' && (
+                  <p className="text-sm text-red-600">Esa fecha es en el futuro. Revisala por favor.</p>
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {tab === 2 && (
-          <div className="space-y-4">
-            <BusquedaAvanzadaGatos 
-              onRazaSeleccionada={setRazaSeleccionada}
-              razaSeleccionada={razaSeleccionada}
-            />
-            
-            {/* Indicador de raza seleccionada */}
-            {razaSeleccionada && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <div>
-                    <p className="text-sm text-green-600 font-medium">Raza seleccionada:</p>
-                    <p className="text-lg font-semibold text-green-800 capitalize">
-                      {razaSeleccionada}
-                    </p>
-                    <p className="text-xs text-green-600 mt-1">
-                      Esta raza se ha agregado automáticamente al formulario
-                    </p>
-                  </div>
-                </div>
-              </div>
+            {paso === 4 && (
+              <input
+                className={inputClass}
+                placeholder="Ej: negro con manchas blancas, dorado…"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    onContinuar();
+                  }
+                }}
+              />
+            )}
+
+            {paso === 5 && (
+              <textarea
+                className={`${inputClass} min-h-[120px] resize-y`}
+                placeholder="Ejemplo: es perro guía y necesita estar cerca mío al moverse."
+                name="notas"
+                value={notas}
+                onChange={(e) => setNotas(e.target.value)}
+                rows={4}
+                autoFocus
+              />
             )}
           </div>
-        )}
-
-        {tab === 3 && (
-          <div className="space-y-4">
-            <BusquedaOtrosAnimales 
-              onRazaSeleccionada={setRazaSeleccionada}
-              razaSeleccionada={razaSeleccionada}
-            />
-            
-            {/* Indicador de tipo seleccionado */}
-            {razaSeleccionada && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center">
-                  <svg className="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <div>
-                    <p className="text-sm text-green-600 font-medium">Tipo seleccionado:</p>
-                    <p className="text-lg font-semibold text-green-800 capitalize">
-                      {razaSeleccionada}
-                    </p>
-                    <p className="text-xs text-green-600 mt-1">
-                      Este tipo se ha agregado automáticamente al formulario
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      { (tab === 0 || tab === 1 || tab === 2 || tab === 3) && (
-        <button
-          type="submit"
-          className="bg-orange-500 text-white px-4 py-3 rounded w-full font-semibold shadow-md hover:bg-orange-600 transition-all duration-300 text-base"
-          disabled={isCargando}
-        >
-          {isCargando ? 'Agregando...' : 'Agregar Mascota'}
-        </button>
+        </>
       )}
 
-      {/* Animación fade-in y estilos para avatar compacto (Tailwind + CSS) */}
+      <div className="mt-8 flex flex-col-reverse sm:flex-row gap-3 sm:items-center pt-2 border-t border-gray-100">
+        <div className="sm:flex-1">
+          {(paso > 0 || vistaCatalogoRaza) && (
+            <button type="button" className={botonSecundarioClass} onClick={onAtras} disabled={isCargando}>
+              Atrás
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:justify-end sm:flex-1">
+          {vistaCatalogoRaza ? null : paso < TOTAL_PASOS - 1 ? (
+            <>
+              {paso === 0 && (
+                <button
+                  type="button"
+                  className={botonSecundarioClass + ' w-full sm:w-auto'}
+                  onClick={onContinuar}
+                  disabled={isCargando}
+                >
+                  Saltar foto
+                </button>
+              )}
+              {paso === 4 && (
+                <button
+                  type="button"
+                  className={botonSecundarioClass + ' w-full sm:w-auto'}
+                  onClick={onContinuar}
+                  disabled={isCargando}
+                >
+                  Saltar
+                </button>
+              )}
+              <button
+                type="button"
+                className={botonPrimarioClass + ' w-full sm:w-auto'}
+                onClick={onContinuar}
+                disabled={isCargando || !puedeAvanzar()}
+              >
+                Continuar
+              </button>
+            </>
+          ) : (
+            <button type="submit" className={botonPrimarioClass + ' w-full sm:min-w-[200px]'} disabled={isCargando || !puedeAvanzar()}>
+              {isCargando ? 'Agregando…' : 'Agregar mascota'}
+            </button>
+          )}
+        </div>
+      </div>
+
       <style>
         {`
           .animate-fade-in {
-            animation: fadeIn 0.5s;
+            animation: fadeIn 0.45s ease-out;
           }
           @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px);}
-            to { opacity: 1; transform: translateY(0);}
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
           }
-          
-          /* Contenedor del avatar - tamaño fijo */
-          .avatar-container {
-            width: 80px !important;
-            height: 80px !important;
-            max-width: 80px !important;
-            max-height: 80px !important;
+
+          .avatar-conversation {
+            width: 200px;
+            height: 200px;
+          }
+
+          .avatar-upload-conversational {
+            width: 200px !important;
+            height: 200px !important;
+            max-width: 200px !important;
+            max-height: 200px !important;
             overflow: hidden !important;
           }
-          
-          /* Estilos para avatar compacto - forzar tamaño */
-          .avatar-upload-compact {
-            width: 80px !important;
-            height: 80px !important;
-            max-width: 80px !important;
-            max-height: 80px !important;
-            overflow: hidden !important;
-          }
-          
-          /* Área de carga del ImageUploader */
-          .avatar-upload-compact > div,
-          .avatar-upload-compact .border-2,
-          .avatar-upload-compact .border-dashed {
-            width: 80px !important;
-            height: 80px !important;
-            min-width: 80px !important;
-            min-height: 80px !important;
-            max-width: 80px !important;
-            max-height: 80px !important;
+
+          .avatar-upload-conversational > div,
+          .avatar-upload-conversational .border-2,
+          .avatar-upload-conversational .border-dashed {
+            width: 200px !important;
+            height: 200px !important;
+            min-width: 200px !important;
+            min-height: 200px !important;
+            max-width: 200px !important;
+            max-height: 200px !important;
             padding: 0 !important;
             margin: 0 !important;
             border-radius: 50% !important;
@@ -460,74 +700,48 @@ export const FormularioMascota = ({onAgregarMascota, isCargando }) => {
             overflow: hidden !important;
             border-width: 2px !important;
           }
-          
-          /* Imagen dentro del avatar */
-          .avatar-upload-compact img,
-          .avatar-upload-compact .relative img {
-            width: 80px !important;
-            height: 80px !important;
-            min-width: 80px !important;
-            min-height: 80px !important;
-            max-width: 80px !important;
-            max-height: 80px !important;
+
+          .avatar-upload-conversational img,
+          .avatar-upload-conversational .relative img {
+            width: 200px !important;
+            height: 200px !important;
             object-fit: cover !important;
             border-radius: 50% !important;
-            display: block !important;
           }
-          
-          /* Contenedor de imagen */
-          .avatar-upload-compact .relative {
-            width: 80px !important;
-            height: 80px !important;
-            max-width: 80px !important;
-            max-height: 80px !important;
-            overflow: hidden !important;
+
+          .avatar-upload-conversational .relative {
+            width: 200px !important;
+            height: 200px !important;
             border-radius: 50% !important;
+            overflow: hidden !important;
           }
-          
-          /* Ocultar todos los textos y elementos innecesarios */
-          .avatar-upload-compact .space-y-3,
-          .avatar-upload-compact .text-lg,
-          .avatar-upload-compact .text-sm,
-          .avatar-upload-compact .text-xs,
-          .avatar-upload-compact p,
-          .avatar-upload-compact .mt-2 {
+
+          .avatar-upload-conversational .space-y-3,
+          .avatar-upload-conversational .text-lg,
+          .avatar-upload-conversational .text-sm,
+          .avatar-upload-conversational .text-xs,
+          .avatar-upload-conversational p,
+          .avatar-upload-conversational .mt-2 {
             display: none !important;
           }
-          
-          /* Botón de eliminar imagen - ajustar posición */
-          .avatar-upload-compact button[type="button"] {
+
+          .avatar-upload-conversational button[type="button"] {
             position: absolute !important;
-            top: -4px !important;
-            right: -4px !important;
-            width: 20px !important;
-            height: 20px !important;
-            min-width: 20px !important;
-            min-height: 20px !important;
-            font-size: 14px !important;
-            line-height: 1 !important;
+            top: 4px !important;
+            right: 4px !important;
+            width: 28px !important;
+            height: 28px !important;
             z-index: 10 !important;
           }
-          
-          /* Icono de cámara cuando no hay imagen */
-          .avatar-upload-compact .w-16,
-          .avatar-upload-compact .h-16,
-          .avatar-upload-compact svg {
-            width: 32px !important;
-            height: 32px !important;
-            max-width: 32px !important;
-            max-height: 32px !important;
-          }
-          
-          /* Spinner de carga */
-          .avatar-upload-compact .animate-spin {
-            width: 24px !important;
-            height: 24px !important;
-            max-width: 24px !important;
-            max-height: 24px !important;
+
+          .avatar-upload-conversational .w-16,
+          .avatar-upload-conversational .h-16,
+          .avatar-upload-conversational svg {
+            width: 48px !important;
+            height: 48px !important;
           }
         `}
       </style>
     </form>
   );
-}; 
+};

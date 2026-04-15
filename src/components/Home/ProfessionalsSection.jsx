@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import UseFrameMotion from "../hook_frame_motion/UseFrameMotion";
 
 // Este componente no recibe props
@@ -22,81 +23,113 @@ export default function ProfessionalsSection() {
                         <span className="text-2xl">🤝</span>
                     </div>
                     <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-                        ¿Eres dueño de una veterinaria, peluquería o tienda de mascotas?
+                        ¿Veterinaria, peluquería, tienda de mascotas o paseador?
                     </h2>
                     <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                        Súmate a la comunidad y aporta a la identificación y rescate de mascotas perdidas.
+                        Súmate a la comunidad: servicios, productos o paseos, y aportá a la identificación y rescate
+                        de mascotas perdidas.
                     </p>
                 </div>
 
-                {/* Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Cards: 2×2 en tablet, fila de 4 en pantallas anchas; items-start evita centrar verticalmente celdas disparejas */}
+                <div className="grid grid-cols-1 items-start sm:grid-cols-2 xl:grid-cols-4 gap-8">
 
-                    <UseFrameMotion tipoAnimacion="slideRight" duracion={1} delay={0.5} waitForUserView={true}>
+                    <UseFrameMotion tipoAnimacion="slideRight" duracion={1} delay={0.5} waitForUserView={true} className="h-full w-full">
                     {/* Veterinarios */}
-                    <article className="group relative bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-blue-100">
+                    <article className="group relative flex h-full min-h-[280px] flex-col bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-blue-100">
                         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
                                 <span role="img" aria-label="veterinarios" className="text-2xl">🏥</span>
                             </div>
                         </div>
-                        <div className="pt-8">
-                            <h3 className="text-xl font-bold text-gray-800 text-center mb-3">Veterinarios</h3>
-                            <p className="text-gray-600 text-center mb-6 leading-relaxed">
+                        <div className="flex flex-1 flex-col pt-8">
+                            <h3 className="text-xl font-bold text-gray-800 text-center mb-3 min-h-[3.5rem] flex items-center justify-center px-1 leading-tight">
+                                Veterinarios
+                            </h3>
+                            <p className="text-gray-600 text-center mb-6 flex-1 leading-relaxed">
                                 Ofrece servicios médicos y ayuda a mascotas perdidas en tu clínica.
                             </p>
-                            <a
-                                href="/register-profesional"
+                            <Link
+                                to="/register-profesional?tipo=veterinario"
                                 className="block w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-xl text-sm font-semibold text-center hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
                             >
                                 Registrarse
-                            </a>
+                            </Link>
                         </div>
                     </article>
                     </UseFrameMotion>
 
-                    <UseFrameMotion tipoAnimacion="slideDown" duracion={1} delay={0.5} waitForUserView={true}>
+                    <UseFrameMotion tipoAnimacion="slideDown" duracion={1} delay={0.5} waitForUserView={true} className="h-full w-full">
                     {/* Peluqueros */}
-                    <article className="group relative bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-purple-100">
+                    <article className="group relative flex h-full min-h-[280px] flex-col bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-purple-100">
                         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                             <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
                                 <span role="img" aria-label="peluqueros" className="text-2xl">✂️</span>
                             </div>
                         </div>
-                        <div className="pt-8">
-                            <h3 className="text-xl font-bold text-gray-800 text-center mb-3">Peluqueros</h3>
-                            <p className="text-gray-600 text-center mb-6 leading-relaxed">
+                        <div className="flex flex-1 flex-col pt-8">
+                            <h3 className="text-xl font-bold text-gray-800 text-center mb-3 min-h-[3.5rem] flex items-center justify-center px-1 leading-tight">
+                                Peluqueros
+                            </h3>
+                            <p className="text-gray-600 text-center mb-6 flex-1 leading-relaxed">
                                 Cuida y embellece a las mascotas de la comunidad con tus servicios.
                             </p>
-                            <a
-                                href="/register-profesional"
+                            <Link
+                                to="/register-profesional?tipo=peluquero"
                                 className="block w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-xl text-sm font-semibold text-center hover:from-purple-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
                             >
                                 Registrarse
-                            </a>
+                            </Link>
                         </div>
                     </article>
                     </UseFrameMotion>
 
-                    <UseFrameMotion tipoAnimacion="slideLeft" duracion={1} delay={0.5} waitForUserView={true}>
-                    {/* Tiendas */}
-                    <article className="group relative bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-green-100">
+                    <UseFrameMotion tipoAnimacion="slideLeft" duracion={1} delay={0.5} waitForUserView={true} className="h-full w-full">
+                    {/* Tiendas (título corto para una sola línea; nombre largo solo para lectores de pantalla) */}
+                    <article className="group relative flex h-full min-h-[280px] flex-col bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-green-100">
                         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                             <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg">
                                 <span role="img" aria-label="tiendas" className="text-2xl">🛍️</span>
                             </div>
                         </div>
-                        <div className="pt-8">
-                            <h3 className="text-xl font-bold text-gray-800 text-center mb-3">Tiendas de Mascotas</h3>
-                            <p className="text-gray-600 text-center mb-6 leading-relaxed">
+                        <div className="flex flex-1 flex-col pt-8">
+                            <h3 className="text-xl font-bold text-gray-800 text-center mb-3 min-h-[3.5rem] flex items-center justify-center px-1 leading-tight">
+                                Tiendas
+                            </h3>
+                            <p className="text-gray-600 text-center mb-6 flex-1 leading-relaxed">
                                 Vendes alimentos y productos para mascotas en tu tienda.
                             </p>
-                            <a
-                                href="/register-profesional"
+                            <Link
+                                to="/register-profesional?tipo=tienda"
                                 className="block w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl text-sm font-semibold text-center hover:from-green-600 hover:to-green-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
                             >
                                 Registrarse
-                            </a>
+                            </Link>
+                        </div>
+                    </article>
+                    </UseFrameMotion>
+
+                    <UseFrameMotion tipoAnimacion="slideUp" duracion={1} delay={0.55} waitForUserView={true} className="h-full w-full">
+                    {/* Paseadores */}
+                    <article className="group relative flex h-full min-h-[280px] flex-col bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-amber-100">
+                        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
+                                <span role="img" aria-label="paseadores" className="text-2xl">🐕</span>
+                            </div>
+                        </div>
+                        <div className="flex flex-1 flex-col pt-8">
+                            <h3 className="text-xl font-bold text-gray-800 text-center mb-3 min-h-[3.5rem] flex items-center justify-center px-1 leading-tight">
+                                Paseadores
+                            </h3>
+                            <p className="text-gray-600 text-center mb-6 flex-1 leading-relaxed">
+                                Ofrecé paseos y ejercicio; los dueños te contactan por teléfono desde la app.
+                            </p>
+                            <Link
+                                to="/register-profesional?tipo=paseador"
+                                className="block w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-3 rounded-xl text-sm font-semibold text-center hover:from-amber-600 hover:to-orange-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
+                            >
+                                Registrarse
+                            </Link>
                         </div>
                     </article>
                     </UseFrameMotion>
@@ -109,15 +142,15 @@ export default function ProfessionalsSection() {
                 <div className="text-center mt-16">
                     <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-gray-100 max-w-md mx-auto">
                         <p className="text-gray-600 mb-4 text-lg">¿Ya tienes cuenta?</p>
-                        <a
-                            href="/login-profesional"
+                        <Link
+                            to="/login-profesional"
                             className="inline-flex items-center bg-gradient-to-r from-orange-500 to-pink-500 text-white px-8 py-3 rounded-xl font-semibold hover:from-orange-600 hover:to-pink-600 transition-all duration-200 transform hover:scale-105 shadow-lg"
                         >
                             <span>Acceder a mi panel de servicios</span>
                             <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                             </svg>
-                        </a>
+                        </Link>
                     </div>
                 </div>
                 </UseFrameMotion>

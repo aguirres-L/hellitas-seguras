@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { getAllDataCollection, deleteDataCollection } from '../../../data/firebase/firebase';
 import { useTheme } from '../../../contexts/ThemeContext';
 
+const imagenFallbackSvg =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect fill="#e5e7eb" width="800" height="600"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#9ca3af" font-family="system-ui,sans-serif" font-size="28">Sin imagen</text></svg>`
+  );
+
 // Este componente no recibe props
 export default function AllHistorias() {
   const { typeTheme } = useTheme();
@@ -95,11 +101,11 @@ export default function AllHistorias() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h3 className={`text-xl font-bold ${typeTheme === 'light' ? 'text-gray-900' : 'text-white'}`}>
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h3 className={`text-lg font-bold sm:text-xl ${typeTheme === 'light' ? 'text-gray-900' : 'text-white'}`}>
           Historias de Rescates en Adopción
         </h3>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 sm:justify-end">
           <button
             onClick={() => setFiltroEstado('todos')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -171,31 +177,56 @@ export default function AllHistorias() {
           </p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
           {historiasFiltradas.map((historia) => (
             <div
               key={historia.id}
               className={`${
                 typeTheme === 'light' ? 'bg-white' : 'bg-gray-800'
-              } rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow`}
+              } flex flex-col overflow-hidden rounded-xl shadow-lg transition-shadow hover:shadow-xl`}
             >
-              {/* Imagen de la mascota */}
-              {historia.imagenUrl && (
-                <div className="h-48 overflow-hidden">
+              {/* Imagen: aspect-ratio fijo + object-cover para que no se deforme en ningún ancho */}
+              <div
+                className={`relative aspect-[4/3] w-full shrink-0 overflow-hidden ${
+                  typeTheme === 'light' ? 'bg-gray-100' : 'bg-gray-900'
+                }`}
+              >
+                {historia.imagenUrl ? (
                   <img
                     src={historia.imagenUrl}
                     alt={historia.nombreMascota || 'Mascota rescatada'}
-                    className="w-full h-full object-cover"
+                    className="absolute inset-0 h-full w-full object-cover object-center"
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => {
-                      e.target.src = 'https://via.placeholder.com/400x300?text=Sin+imagen';
+                      const el = e.currentTarget;
+                      el.onerror = null;
+                      el.src = imagenFallbackSvg;
+                      el.alt = 'Imagen no disponible';
                     }}
                   />
-                </div>
-              )}
+                ) : (
+                  <div
+                    className={`flex h-full w-full flex-col items-center justify-center gap-1 px-4 text-center text-sm ${
+                      typeTheme === 'light' ? 'text-gray-400' : 'text-gray-500'
+                    }`}
+                  >
+                    <svg className="h-10 w-10 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span>Sin imagen</span>
+                  </div>
+                )}
+              </div>
 
-              <div className="p-6">
+              <div className="flex flex-1 flex-col p-4 sm:p-6">
                 {/* Header con nombre y estado */}
-                <div className="flex justify-between items-start mb-4">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h4 className={`text-xl font-bold ${typeTheme === 'light' ? 'text-gray-900' : 'text-white'}`}>
                       {historia.nombreMascota || 'Sin nombre'}
@@ -207,7 +238,11 @@ export default function AllHistorias() {
                     )}
                   </div>
                   {historia.estado && (
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${obtenerColorEstado(historia.estado)}`}>
+                    <span
+                      className={`w-fit shrink-0 rounded-full border px-3 py-1 text-xs font-semibold ${obtenerColorEstado(
+                        historia.estado
+                      )}`}
+                    >
                       {historia.estado === 'en_adopcion' ? 'En Adopción' : 
                        historia.estado === 'adoptado' ? 'Adoptado' :
                        historia.estado === 'rescatado' ? 'Rescatado' : historia.estado}
@@ -267,16 +302,22 @@ export default function AllHistorias() {
                   </div>
                 )}
 
-                {/* Botones de acción */}
-                <div className="flex gap-2 pt-4 border-t border-gray-200">
+                {/* Botones de acción: columna en móvil para área táctil cómoda */}
+                <div
+                  className={`mt-auto flex flex-col gap-2 border-t pt-4 sm:flex-row ${
+                    typeTheme === 'light' ? 'border-gray-200' : 'border-gray-600'
+                  }`}
+                >
                   <button
+                    type="button"
                     onClick={() => manejarEliminar(historia.id)}
-                    className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+                    className="min-h-[44px] flex-1 rounded-lg bg-red-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600 sm:py-2"
                   >
                     Eliminar
                   </button>
                   <button
-                    className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium"
+                    type="button"
+                    className="min-h-[44px] flex-1 rounded-lg bg-purple-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-purple-600 sm:py-2"
                     onClick={() => {
                       // TODO: Implementar edición
                       alert('Funcionalidad de edición próximamente');

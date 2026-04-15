@@ -13,14 +13,10 @@ import {
   setDoc,
   arrayUnion
 } from "firebase/firestore";
-import { 
-  ref, 
-  uploadBytes, 
-  getDownloadURL, 
-  deleteObject 
-} from "firebase/storage";
+import { ref, deleteObject } from "firebase/storage";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { db, storage, auth } from "./firebaseConfig";
+import { subirImagenImgbb } from "../imgbb/imgbb-upload";
 
 /**
  * Crea una nueva colección en Firestore
@@ -406,7 +402,7 @@ export const actualizarMascota = async (mascotaId, datosActualizados) => {
 
 /**
  * Obtiene profesionales filtrados por tipo
- * @param {string} tipoProfesional - 'veterinario' o 'peluquero'
+ * @param {string} tipoProfesional - 'veterinario' | 'peluquero' | 'tienda' | 'paseador'
  * @returns {Promise<Array>} - Array de profesionales del tipo especificado
  */
 export const obtenerProfesionalesPorTipo = async (tipoProfesional) => {
@@ -856,38 +852,33 @@ export const obtenerDescuentoPorId = async (profesionalId, descuentoId) => {
 // ==================== FUNCIONES DE STORAGE ====================
 
 /**
- * Sube un archivo a Firebase Storage
- * @param {File} archivo - Archivo a subir
- * @param {string} ruta - Ruta en Storage (ej: 'users/123/pets/456')
- * @param {string} nombreArchivo - Nombre del archivo
- * @returns {Promise<string>} - URL de descarga del archivo
+ * Sube una imagen a imgBB (la URL se guarda en Firestore como antes).
+ * Los parámetros ruta y nombreArchivo solo influyen en el nombre sugerido en imgBB.
+ *
+ * @param {File} archivo - Archivo de imagen
+ * @param {string} ruta - Prefijo lógico (ej. users/uid/pets/id); se usa en el name
+ * @param {string} nombreArchivo - Base del nombre del archivo
+ * @returns {Promise<string>} - URL pública de la imagen (imgBB)
  */
 export const subirArchivo = async (archivo, ruta, nombreArchivo) => {
   try {
-    // Crear referencia única para el archivo
-    const extension = archivo.name.split('.').pop();
-    const nombreUnico = `${nombreArchivo}_${Date.now()}.${extension}`;
-    const storageRef = ref(storage, `${ruta}/${nombreUnico}`);
-    
-    // Subir archivo
-    const snapshot = await uploadBytes(storageRef, archivo);
-    
-    // Obtener URL de descarga
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    
-    return downloadURL;
+    const extension = archivo.name?.split('.').pop();
+    const slugRuta = String(ruta || 'upload').replace(/[/\\]+/g, '_').slice(0, 80);
+    const nombreUnico = `${slugRuta}_${nombreArchivo}_${Date.now()}${extension ? `.${extension}` : ''}`;
+
+    return await subirImagenImgbb(archivo, { nombre: nombreUnico.replace(/[^\w.-]/g, '_').slice(0, 100) });
   } catch (error) {
-    console.error('Error al subir archivo:', error);
+    console.error('Error al subir archivo (imgBB):', error);
     throw error;
   }
 };
 
 /**
- * Sube una imagen de mascota a Firebase Storage
+ * Sube una imagen de mascota a imgBB; la URL se guarda en Firestore.
  * @param {string} userId - ID del usuario
  * @param {string} petId - ID de la mascota
  * @param {File} archivo - Archivo de imagen
- * @returns {Promise<string>} - URL de la imagen subida
+ * @returns {Promise<string>} - URL pública de la imagen
  */
 export const subirImagenMascota = async (userId, petId, archivo) => {
   try {
@@ -903,10 +894,10 @@ export const subirImagenMascota = async (userId, petId, archivo) => {
 };
 
 /**
- * Sube una imagen de profesional a Firebase Storage
+ * Sube una imagen de profesional a imgBB.
  * @param {string} profesionalId - ID del profesional
  * @param {File} archivo - Archivo de imagen
- * @returns {Promise<string>} - URL de la imagen subida
+ * @returns {Promise<string>} - URL pública de la imagen
  */
 export const subirImagenProfesional = async (profesionalId, archivo) => {
   try {
@@ -922,23 +913,30 @@ export const subirImagenProfesional = async (profesionalId, archivo) => {
 };
 
 /**
- * Elimina un archivo de Firebase Storage
+ * Elimina un archivo de Firebase Storage (solo URLs de Storage).
+ * Las URLs de imgBB u otros hosts no se borran aquí.
+ *
  * @param {string} urlArchivo - URL completa del archivo
  * @returns {Promise<void>}
  */
 export const eliminarArchivo = async (urlArchivo) => {
   try {
-    // Extraer la ruta del archivo desde la URL
+    if (!urlArchivo || typeof urlArchivo !== 'string') {
+      return;
+    }
+    if (!urlArchivo.includes('firebasestorage.googleapis.com')) {
+      return;
+    }
+
     const url = new URL(urlArchivo);
     const rutaArchivo = decodeURIComponent(url.pathname.split('/o/')[1]?.split('?')[0] || '');
-    
+
     if (!rutaArchivo) {
       throw new Error('No se pudo extraer la ruta del archivo desde la URL');
     }
-    
+
     const storageRef = ref(storage, rutaArchivo);
     await deleteObject(storageRef);
-    
   } catch (error) {
     console.error('Error al eliminar archivo:', error);
     throw error;
@@ -1330,9 +1328,9 @@ export const guardarDetalleOng = async (datosOng) => {
 };
 
 /**
- * Sube el logo de la ONG a Firebase Storage
+ * Sube el logo de la ONG a imgBB.
  * @param {File} archivo - Archivo de imagen del logo
- * @returns {Promise<string>} - URL del logo subido
+ * @returns {Promise<string>} - URL pública del logo
  */
 export const subirLogoOng = async (archivo) => {
   try {

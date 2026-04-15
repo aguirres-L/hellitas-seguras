@@ -47,8 +47,8 @@ export const DashboardCitasColapsable = ({
 
   return (
     <div className={typeTheme === 'light'
-      ? "bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8"
-      : "bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8"
+      ? "bg-white/80 backdrop-blur-sm rounded-xl shadow-lg px-6 pt-8 pb-6 mb-8 max-md:pt-9"
+      : "bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg px-6 pt-8 pb-6 mb-8 max-md:pt-9"
     }>
       {/* Header de Citas con Contador y Botón de Expansión */}
       <div className="flex items-center justify-between mb-4">

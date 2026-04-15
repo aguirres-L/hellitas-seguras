@@ -1,5 +1,6 @@
 // Servicio para integración con APIs de IA
-// Hugging Face como principal, Cohere como fallback
+// Si existe VITE_CONSEJOS_API_URL, se intenta primero el backend (Python/Gemini);
+// Hugging Face como fallback principal, Cohere como último recurso.
 
 import { API_KEYS, verificarConfiguracionAPIs, inicializarTokensDesdeFirebase } from '../config/apiKeys';
 
@@ -775,6 +776,120 @@ class AIService {
     return 'No se pudo generar consejos específicos.';
   }
 
+  /** URL base del API de consejos (Vite). Sin barra final. */
+  obtenerUrlConsejosApi() {
+    const raw = import.meta.env?.VITE_CONSEJOS_API_URL || '';
+    return String(raw).replace(/\/$/, '').trim();
+  }
+
+  /**
+   * POST /api/consejos al backend Python (Gemini). Ver usePythonInFront.md.
+   * @returns {{ skipped: true }} | {{ iaFallo: true, data: object }} | {{ data: object }}
+   */
+  async postConsejosPython(raza, tema, promptPersonalizado, userId, mascotaId) {
+    const base = this.obtenerUrlConsejosApi();
+    if (!base) {
+      return { skipped: true };
+    }
+
+    const promptBase =
+      promptPersonalizado && String(promptPersonalizado).trim()
+        ? String(promptPersonalizado)
+        : this.generarPrompt(raza, tema);
+    const prompt = this.sanitizarPrompt(promptBase, 12000);
+
+    const headers = { 'Content-Type': 'application/json' };
+    const bearer = import.meta.env?.VITE_CONSEJOS_API_BEARER_TOKEN;
+    if (bearer) {
+      headers.Authorization = `Bearer ${bearer}`;
+    }
+
+    const body = {
+      tipoConsejo: tema,
+      raza: raza ?? '',
+      prompt,
+    };
+    if (userId) body.userId = userId;
+    if (mascotaId) body.mascotaId = mascotaId;
+
+    let res;
+    try {
+      res = await fetch(`${base}/api/consejos`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      });
+    } catch (e) {
+      console.warn('Consejos API (Python) no alcanzable, se usará Hugging Face/Cohere:', e?.message);
+      return { skipped: true };
+    }
+
+    if (res.status === 401) {
+      console.warn('Consejos API: 401 (revisá Bearer / token), se usará Hugging Face/Cohere');
+      return { skipped: true };
+    }
+
+    let data;
+    try {
+      data = await res.json();
+    } catch (e) {
+      console.warn('Consejos API: respuesta no JSON, fallback HF/Cohere');
+      return { skipped: true };
+    }
+
+    if (!res.ok) {
+      console.warn('Consejos API:', res.status, data);
+      return { skipped: true };
+    }
+
+    const detalle = data.detalle ? String(data.detalle) : '';
+
+    if (data.fuente === 'ia_no_disponible' || data.error === true) {
+      const textoUsuario =
+        (data.consejos && String(data.consejos).trim()) ||
+        this.mensajeIANoDisponibleBackend(detalle);
+      return {
+        iaFallo: true,
+        data: {
+          consejos: textoUsuario,
+          tematica: data.tematica || tema,
+          fuente: 'ia_no_disponible',
+          error: true,
+          mensajeError: detalle || 'Servicio de consejos (Gemini) no disponible',
+        },
+      };
+    }
+
+    if (typeof data.consejos === 'string' && data.consejos.trim()) {
+      return {
+        iaFallo: false,
+        data: {
+          consejos: data.consejos.trim(),
+          tematica: data.tematica || tema,
+          fuente: data.fuente || 'gemini',
+          fechaCreacion: data.fechaCreacion || new Date().toISOString(),
+        },
+      };
+    }
+
+    return { skipped: true };
+  }
+
+  mensajeIANoDisponibleBackend(detalleTecnico = '') {
+    const extra = detalleTecnico ? `\n\n**Detalle:** ${detalleTecnico}` : '';
+    return `**Servicio de IA temporalmente no disponible**
+
+**¿Qué significa esto?**
+• El servicio de consejos (Gemini) no respondió con texto útil en este momento
+• No se ha consumido tu petición mensual
+
+**¿Qué podés hacer?**
+• Intentá de nuevo en unos minutos
+• Si el problema continúa, el sistema intentará otros proveedores cuando correspondan${extra}
+
+*Gracias por tu paciencia.*`;
+  }
+
   // Función principal para obtener consejos con validación de usuario y límites
   async obtenerConsejosRaza(raza, forzarRegeneracion = false, userId = null, mascotaId = null, tipoConsejo = null, promptPersonalizado = null) {
     // Usar tipo de consejo si se proporciona, sino generar temática automática
@@ -808,7 +923,18 @@ class AIService {
     }
 
     try {
-      // Intentar Hugging Face primero
+      const py = await this.postConsejosPython(raza, tema, promptPersonalizado, userId, mascotaId);
+      if (py.iaFallo) {
+        return py.data;
+      }
+      if (py.data) {
+        const resultadoPy = py.data;
+        this.setCache(raza, resultadoPy, userId, mascotaId);
+        this.registrarPeticion(userId, mascotaId);
+        return resultadoPy;
+      }
+
+      // Intentar Hugging Face
       const consejos = await this.llamarHuggingFace(raza, tema, promptPersonalizado);
       const resultado = { consejos, tematica: tema, fuente: 'huggingface' };
       this.setCache(raza, resultado, userId, mascotaId);

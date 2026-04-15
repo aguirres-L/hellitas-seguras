@@ -49,7 +49,8 @@ const animalesDomesticos = [
 /*   { id: 'pollito', nombre: 'Pollito', categoria: 'Ave', icono: '🐤' },
   { id: 'gallina', nombre: 'Gallina', categoria: 'Ave', icono: '🐔' },
  */  { id: 'pato', nombre: 'Pato', categoria: 'Ave', icono: '🦆' },
-  { id: 'ganso', nombre: 'Ganso', categoria: 'Ave', icono: '🪿' },
+  // Ganso: evitar 🪿 (Unicode reciente); 🦢 suele renderizar mejor en Windows/Android viejos
+  { id: 'ganso', nombre: 'Ganso', categoria: 'Ave', icono: '🦢' },
   
   // Animales de granja pequeños
   { id: 'cabrito', nombre: 'Cabrito', categoria: 'Otro', icono: '🐐' },
@@ -128,44 +129,33 @@ export default function BusquedaOtrosAnimales({ onRazaSeleccionada, razaSeleccio
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="text-center">
-        <h2 className="text-xl font-bold text-gray-800 mb-2">
+      <div className="text-left">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900">
           Identifica el tipo de tu mascota
         </h2>
-        <p className="text-gray-600 text-sm mb-3">
-          Selecciona o busca el tipo de animal que tienes
-        </p>
-        
-        {/* Mensaje educativo */}
-        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 mb-4">
-          <div className="flex items-start">
-            <svg className="h-5 w-5 text-indigo-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <p className="text-sm text-gray-600 mt-1">Buscá, tocá una opción o escribí y confirmá con Enter.</p>
+        <details className="mt-2 rounded-lg border border-indigo-200/80 bg-indigo-50/90 text-left">
+          <summary className="cursor-pointer list-none p-2.5 text-xs font-medium text-indigo-950 flex items-center gap-2 [&::-webkit-details-marker]:hidden">
+            <svg className="h-4 w-4 text-indigo-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
-            <div className="text-left">
-              <p className="text-sm text-indigo-800 font-medium">
-                ¿Qué tipos de mascotas puedes registrar?
-              </p>
-              <p className="text-xs text-indigo-700 mt-1">
-                Aves, roedores, reptiles, peces y otros animales domésticos. 
-                Si tienes un perro o gato, usa los tabs específicos para ellos.
-              </p>
-            </div>
-          </div>
-        </div>
+            ¿Qué podés registrar acá?
+          </summary>
+          <p className="px-2.5 pb-2.5 text-xs text-indigo-900 leading-snug border-t border-indigo-100">
+            Otros animalitos domésticos. Perro y gato van en sus pestañas propias para mejor búsqueda de raza.
+          </p>
+        </details>
       </div>
 
       {/* Raza seleccionada */}
       {razaSeleccionadaLocal && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-green-600 font-medium">Tipo seleccionado:</p>
-              <p className="text-lg font-semibold text-green-800 capitalize">
-                {razaSeleccionadaLocal}
-              </p>
+        <div className="rounded-xl border border-green-200 bg-green-50/90 px-3 py-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-green-700">Seleccionado</p>
+              <p className="text-base font-semibold text-green-900 capitalize truncate">{razaSeleccionadaLocal}</p>
             </div>
             <button
               type="button"
@@ -173,7 +163,7 @@ export default function BusquedaOtrosAnimales({ onRazaSeleccionada, razaSeleccio
                 setRazaSeleccionadaLocal('');
                 onRazaSeleccionada?.('');
               }}
-              className="text-green-600 hover:text-green-800 text-sm font-medium"
+              className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-green-800 hover:bg-green-100/80"
             >
               Cambiar
             </button>
@@ -182,7 +172,7 @@ export default function BusquedaOtrosAnimales({ onRazaSeleccionada, razaSeleccio
       )}
 
       {/* Opciones de búsqueda */}
-      <div className="space-y-4">
+      <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4">
      {/*    <div className="space-y-2">
           <h3 className="font-semibold text-gray-700 flex items-center">
             <span className="w-2 h-2 bg-indigo-500 rounded-full mr-2"></span>
@@ -207,20 +197,20 @@ export default function BusquedaOtrosAnimales({ onRazaSeleccionada, razaSeleccio
         </div> */}
 
         {/* Búsqueda por texto */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-gray-700 flex items-center">
-            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-            Buscar o escribir manualmente
-          </h3>
-          
+        <div className="space-y-2">
+          <label htmlFor="busqueda-otro-animal" className="block text-sm font-medium text-gray-800">
+            Buscar o escribir
+          </label>
           <div className="relative">
             <input
+              id="busqueda-otro-animal"
               type="text"
-              placeholder="Escribe el nombre del animal (ej: Canario, Hámster, Tortuga)..."
+              autoComplete="off"
+              placeholder="Ej: hurón, pato… (Enter si no aparece en lista)"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               onKeyDown={manejarEntradaManual}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-base outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
             />
             
             {busqueda && palabrasExcluidas.some(palabra => busqueda.toLowerCase().includes(palabra)) && (
@@ -299,20 +289,19 @@ export default function BusquedaOtrosAnimales({ onRazaSeleccionada, razaSeleccio
               
               return (
                 <div key={categoria} className="space-y-2">
-                  <h3 className="font-semibold text-gray-700 flex items-center">
-                    <span className="w-2 h-2 bg-indigo-500 rounded-full mr-2"></span>
-                    {categoria}
-                  </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{categoria}</h3>
+                  <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 sm:gap-2">
                     {animalesCategoria.map((animal) => (
                       <button
                         key={animal.id}
                         type="button"
                         onClick={() => manejarSeleccionAnimal(animal.nombre)}
-                        className="flex flex-col items-center justify-center p-3 bg-gray-50 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 border-2 border-transparent transition-all"
+                        className="flex min-h-[72px] flex-col items-center justify-center gap-0.5 rounded-lg border border-gray-100 bg-gray-50/90 px-1 py-2 text-center transition hover:border-indigo-200 hover:bg-indigo-50/80"
                       >
-                        <span className="text-3xl mb-1">{animal.icono}</span>
-                        <span className="text-xs font-medium text-gray-700 text-center">
+                        <span className="text-xl leading-none sm:text-2xl" aria-hidden>
+                          {animal.icono}
+                        </span>
+                        <span className="line-clamp-2 text-[11px] font-medium leading-tight text-gray-800 sm:text-xs">
                           {animal.nombre}
                         </span>
                       </button>
@@ -325,22 +314,10 @@ export default function BusquedaOtrosAnimales({ onRazaSeleccionada, razaSeleccio
         )}
       </div>
 
-      {/* Información adicional */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="ml-3">
-            <p className="text-sm text-blue-700">
-              <strong>Tip:</strong> Si tu mascota no aparece en la lista, puedes escribir el nombre manualmente 
-              y presionar Enter. Los perros y gatos deben registrarse en sus tabs específicos.
-            </p>
-          </div>
-        </div>
-      </div>
+      <p className="text-xs text-gray-500 leading-snug px-0.5">
+        <span className="font-medium text-gray-600">Tip:</span> si no está en la grilla, escribí el nombre y Enter.
+        Perro y gato: usá sus pestañas.
+      </p>
     </div>
   );
 }

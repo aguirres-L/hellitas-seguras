@@ -96,44 +96,33 @@ export default function BusquedaAvanzada({ onRazaSeleccionada, razaSeleccionada 
 
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <h2 className="text-xl font-bold text-gray-800 mb-2">
+    <div className="space-y-4">
+      <div className="text-left">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900">
           Identifica el tipo de tu mascota
         </h2>
-        <p className="text-gray-600 text-sm mb-3">
-          Esto nos ayuda a brindarte consejos de cuidado específicos
+        <p className="text-sm text-gray-600 mt-1">
+          Así personalizamos los consejos de cuidado.
         </p>
-        
-        {/* Mensaje educativo */}
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
-          <div className="flex items-start">
-            <svg className="h-5 w-5 text-amber-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <details className="mt-2 rounded-lg border border-amber-200/80 bg-amber-50/90 text-left">
+          <summary className="cursor-pointer list-none p-2.5 text-xs font-medium text-amber-900 flex items-center gap-2 [&::-webkit-details-marker]:hidden">
+            <svg className="h-4 w-4 text-amber-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
               <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
-            <div className="text-left">
-              <p className="text-sm text-amber-800 font-medium">
-                ¿Por qué es importante identificar el tipo de mascota?
-              </p>
-              <p className="text-xs text-amber-700 mt-1">
-                Cada tipo tiene necesidades específicas de cuidado, ejercicio y salud. 
-                Esto nos permite darte consejos personalizados para tu compañero.
-              </p>
-            </div>
-          </div>
-        </div>
+            ¿Por qué preguntamos la raza o tipo?
+          </summary>
+          <p className="px-2.5 pb-2.5 text-xs text-amber-800 leading-snug border-t border-amber-100">
+            Cada tipo tiene necesidades distintas de cuidado y actividad. Con este dato te damos recomendaciones más acertadas.
+          </p>
+        </details>
       </div>
 
-      {/* Raza seleccionada */}
       {razaSeleccionadaLocal && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-green-600 font-medium">Raza seleccionada:</p>
-              <p className="text-lg font-semibold text-green-800 capitalize">
-                {razaSeleccionadaLocal}
-              </p>
+        <div className="rounded-xl border border-green-200 bg-green-50/90 px-3 py-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-green-700">Seleccionado</p>
+              <p className="text-base font-semibold text-green-900 capitalize truncate">{razaSeleccionadaLocal}</p>
             </div>
             <button
               type="button"
@@ -141,7 +130,7 @@ export default function BusquedaAvanzada({ onRazaSeleccionada, razaSeleccionada 
                 setRazaSeleccionadaLocal('');
                 onRazaSeleccionada?.('');
               }}
-              className="text-green-600 hover:text-green-800 text-sm font-medium"
+              className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-green-800 hover:bg-green-100/80"
             >
               Cambiar
             </button>
@@ -149,234 +138,170 @@ export default function BusquedaAvanzada({ onRazaSeleccionada, razaSeleccionada 
         </div>
       )}
 
-      {/* Opciones de búsqueda */}
-      <div className="grid flex-col">
-        {/* Opción 1: Búsqueda por texto */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-gray-700 flex items-center">
-            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-            ¿Sabes la raza?
-          </h3>
-          
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="p-3 sm:p-4 space-y-3">
+          <div>
+            <label htmlFor="busqueda-raza-perro" className="block text-sm font-medium text-gray-800">
+              Buscar raza
+            </label>
+            <p className="text-xs text-gray-500 mt-0.5">Escribí y elegí de la lista; probá con «mestizo» si aplica.</p>
+          </div>
+
           <div className="relative">
             <input
+              id="busqueda-raza-perro"
               type="text"
-              placeholder="Escribe el nombre de la raza..."
+              autoComplete="off"
+              placeholder="Ej: labrador, caniche…"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-base outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
             />
-            
             {cargando && (
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-orange-500" />
               </div>
             )}
           </div>
 
-          {/* Resultados de búsqueda */}
           {busqueda && (
-            <div className="bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            <div className="max-h-52 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-sm">
               {razasFiltradas.length > 0 ? (
                 razasFiltradas.map((raza) => (
                   <button
                     key={raza.id}
                     type="button"
                     onClick={() => manejarSeleccionRaza(raza.nombre)}
-                    className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors ${
-                      raza.tipo === 'especial' ? 'bg-green-50 hover:bg-green-100' : ''
+                    className={`flex w-full items-start gap-2 border-b border-gray-100 px-3 py-2.5 text-left last:border-b-0 hover:bg-gray-50 ${
+                      raza.tipo === 'especial' ? 'bg-emerald-50/60 hover:bg-emerald-50' : ''
                     }`}
                   >
-                    <div className="flex items-center">
-                      {raza.tipo === 'especial' && (
-                        <span className="text-lg mr-2">🐕</span>
-                      )}
-                      <div className="flex-1">
-                        <div className={`font-medium capitalize ${
-                          raza.tipo === 'especial' ? 'text-green-800' : 'text-gray-800'
-                        }`}>
-                          {raza.nombre}
-                        </div>
-                        {raza.tipo === 'subraza' && (
-                          <div className="text-sm text-gray-500">
-                            Subraza de {raza.razaPadre}
-                          </div>
-                        )}
-                        {raza.tipo === 'especial' && (
-                          <div className="text-sm text-green-600">
-                            {raza.descripcion}
-                          </div>
-                        )}
+                    {raza.tipo === 'especial' && <span className="text-lg leading-none">🐕</span>}
+                    <div className="min-w-0 flex-1">
+                      <div
+                        className={`text-sm font-medium capitalize ${
+                          raza.tipo === 'especial' ? 'text-emerald-900' : 'text-gray-900'
+                        }`}
+                      >
+                        {raza.nombre}
                       </div>
+                      {raza.tipo === 'subraza' && (
+                        <div className="text-xs text-gray-500">Subraza de {raza.razaPadre}</div>
+                      )}
+                      {raza.tipo === 'especial' && (
+                        <div className="text-xs text-emerald-800/90">{raza.descripcion}</div>
+                      )}
                     </div>
                   </button>
                 ))
               ) : (
-                <div className="px-4 py-3 text-gray-500 text-center">
-                  No se encontraron razas. Intenta con "mestizo" o "criollo"
+                <div className="px-3 py-4 text-center text-sm text-gray-500">
+                  Sin coincidencias. Probá «mestizo» o «criollo».
                 </div>
               )}
             </div>
           )}
-        </div>
 
-        {/* Opción 2: Opción especial para mestizos */}
-        <div className="space-y-3 mt-4">
-          <h3 className="font-semibold text-gray-700 flex items-center">
-            <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-            ¿Tu mascota es mestiza?
-          </h3>
-          
-          <button
-            type="button"
-            onClick={() => manejarSeleccionRaza('Mestizo (Criollo)')}
-            className="w-full px-4 py-4 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 rounded-lg hover:from-green-200 hover:to-emerald-200 transition-all duration-200 border-2 border-green-200 hover:border-green-300"
-          >
-            <div className="flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-2xl mb-1">🐕</div>
-                <div className="font-semibold text-lg">Mestizo (Criollo)</div>
-                <div className="text-sm text-green-600 mt-1">
-                  Perro de raza mixta o sin raza específica
-                </div>
-                <div className="text-xs text-green-500 mt-2">
-                  ¡Todos los perros merecen el mejor cuidado!
-                </div>
-              </div>
-            </div>
-          </button>
-        </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+            <button
+              type="button"
+              onClick={() => manejarSeleccionRaza('Mestizo (Criollo)')}
+              className="flex min-h-[44px] min-w-0 flex-1 items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/90 px-3 py-2 text-left text-emerald-950 transition hover:bg-emerald-100"
+            >
+              <span className="text-xl leading-none" aria-hidden>
+                🐕
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold leading-tight">Mestizo (Criollo)</span>
+                <span className="block text-xs text-emerald-800/90 leading-snug">Cruce o sin raza definida</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMostrarCarrusel(!mostrarCarrusel)}
+              disabled={cargandoInicial}
+              aria-expanded={mostrarCarrusel}
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-semibold text-violet-900 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-40 sm:flex-none"
+            >
+              {cargandoInicial ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-violet-200 border-t-violet-700" />
+                  <span>Cargando…</span>
+                </>
+              ) : mostrarCarrusel ? (
+                'Cerrar fotos'
+              ) : (
+                'Ver por fotos'
+              )}
+            </button>
+          </div>
 
-        {/* Opción 3: Carrusel visual */}
-        <div className="space-y-3 mt-4">
-          <h3 className="font-semibold text-gray-700 flex items-center">
-            <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
-            ¿Quieres explorar razas específicas?
-          </h3>
-          
-          <button
-            type="button"
-            onClick={() => setMostrarCarrusel(!mostrarCarrusel)}
-            disabled={cargandoInicial}
-            className="w-full px-4 py-3 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-          >
-            {cargandoInicial ? (
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500 mr-2"></div>
-                Preparando carrusel...
-              </div>
-            ) : mostrarCarrusel ? (
-              'Ocultar carrusel'
-            ) : (
-              'Explorar visualmente'
-            )}
-          </button>
-
-          {/* Carrusel de imágenes */}
-          {mostrarCarrusel && (
-            <div className="space-y-3">
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-gray-700">Selecciona una imagen</h4>
-                  {(cargandoCarrusel || cargandoInicial) && (
-                    <div className="flex items-center text-sm text-gray-500">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500 mr-2"></div>
-                      {cargandoInicial ? 'Cargando imágenes...' : 'Procesando...'}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-60 overflow-y-auto">
-                  {Array.isArray(arrayCarrusel) && arrayCarrusel.length > 0 ? (
-                    arrayCarrusel.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => manejarSeleccionCarrusel(item.raza)}
-                        className="group relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-purple-500 transition-all"
-                      >
-                        <img
-                          src={item.imagen}
-                          alt={item.nombre}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200"></div>
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
-                          <p className="text-white text-xs font-medium text-center capitalize">
-                            {item.nombre}
-                          </p>
-                        </div>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="col-span-full flex items-center justify-center py-8 text-gray-500">
-                      <div className="text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-2"></div>
-                        <p className="text-sm">
-                          {cargandoInicial ? 'Cargando imágenes...' : 'Preparando carrusel...'}
-                        </p>
-                        {cargandoInicial && (
-                          <p className="text-xs text-gray-400 mt-1">
-                            Esto puede tomar unos segundos
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={cargarMasImagenes}
-                  disabled={cargandoCarrusel || cargandoInicial}
-                  className="w-full mt-3 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-all duration-200"
-                >
-                  {cargandoInicial ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Cargando más imágenes...
-                    </div>
-                  ) : cargandoCarrusel ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Procesando...
-                    </div>
-                  ) : (
-                    'Cargar más imágenes'
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Error handling */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-600 text-sm">
-            Error al cargar datos: {error}
+          <p className="text-xs text-gray-500 leading-snug">
+            <span className="font-medium text-gray-600">Tip:</span> mestizo → consejos generales; si conocés una raza
+            dominante, mejor elegila para consejos más puntuales.
           </p>
         </div>
-      )}
 
-      {/* Información adicional */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
+        {mostrarCarrusel && (
+          <div className="space-y-3 border-t border-gray-100 bg-slate-50/60 p-3 sm:p-4">
+            <div className="flex items-center justify-between gap-2">
+              <h4 className="text-sm font-semibold text-gray-800">Elegí por foto</h4>
+              {(cargandoCarrusel || cargandoInicial) && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-violet-600" />
+                  {cargandoInicial ? 'Cargando…' : 'Actualizando…'}
+                </span>
+              )}
+            </div>
+
+            <div className="grid max-h-56 grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-4">
+              {Array.isArray(arrayCarrusel) && arrayCarrusel.length > 0 ? (
+                arrayCarrusel.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => manejarSeleccionCarrusel(item.raza)}
+                    className="group relative aspect-square overflow-hidden rounded-lg border-2 border-transparent hover:border-violet-500"
+                  >
+                    <img
+                      src={item.imagen}
+                      alt={item.nombre}
+                      className="h-full w-full object-cover transition group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/25" />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1 pb-1 pt-4">
+                      <p className="text-center text-[10px] font-medium capitalize leading-tight text-white sm:text-xs">
+                        {item.nombre}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="col-span-full flex flex-col items-center justify-center gap-2 py-8 text-gray-500">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-violet-600" />
+                  <p className="text-sm">{cargandoInicial ? 'Cargando imágenes…' : 'Preparando…'}</p>
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={cargarMasImagenes}
+              disabled={cargandoCarrusel || cargandoInicial}
+              className="w-full rounded-xl bg-violet-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {cargandoInicial || cargandoCarrusel ? 'Cargando más…' : 'Más fotos'}
+            </button>
           </div>
-          <div className="ml-3">
-            <p className="text-sm text-blue-700">
-              <strong>Tip:</strong> Si tu mascota es mestiza, selecciona "Mestizo (Criollo)" para recibir consejos generales. 
-              Si conoces alguna raza dominante, puedes seleccionarla para consejos más específicos.
-            </p>
-          </div>
-        </div>
+        )}
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5">
+          <p className="text-sm text-red-700">Error al cargar datos: {error}</p>
+        </div>
+      )}
 
       {/* Consejos de cuidado */}
       <ConsejosCuidado 

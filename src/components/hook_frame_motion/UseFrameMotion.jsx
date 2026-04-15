@@ -1,6 +1,49 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
 
+/** Mismas variantes que usa `UseFrameMotion`; útiles con `AnimatePresence` + `motion.div` (hijo directo debe ser `motion`). */
+export const animacionesPredefinidasFrameMotion = {
+  fade: {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
+  },
+  slideUp: {
+    initial: { opacity: 0, y: 50 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: 50 },
+  },
+  slideDown: {
+    initial: { opacity: 0, y: -50 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -50 },
+  },
+  slideLeft: {
+    initial: { opacity: 0, x: 50 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: 50 },
+  },
+  slideRight: {
+    initial: { opacity: 0, x: -50 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -50 },
+  },
+  scale: {
+    initial: { opacity: 0, scale: 0.8 },
+    animate: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 0.8 },
+  },
+  rotate: {
+    initial: { opacity: 0, rotate: -10 },
+    animate: { opacity: 1, rotate: 0 },
+    exit: { opacity: 0, rotate: 10 },
+  },
+};
+
+export function crearTransicionFrameMotion(duracion = 0.5, delay = 0) {
+  return { duration: duracion, delay, ease: 'easeOut' };
+}
+
 /**
  * Componente wrapper reutilizable para aplicar animaciones de framer-motion
  * a cualquier elemento hijo.
@@ -73,54 +116,13 @@ export default function UseFrameMotion({
     };
   }, [waitForUserView]);
 
-  // Definición de animaciones predefinidas
-  const animacionesPredefinidas = {
-    fade: {
-      initial: { opacity: 0 },
-      animate: { opacity: 1 },
-      exit: { opacity: 0 },
-    },
-    slideUp: {
-      initial: { opacity: 0, y: 50 },
-      animate: { opacity: 1, y: 0 },
-      exit: { opacity: 0, y: 50 },
-    },
-    slideDown: {
-      initial: { opacity: 0, y: -50 },
-      animate: { opacity: 1, y: 0 },
-      exit: { opacity: 0, y: -50 },
-    },
-    slideLeft: {
-      initial: { opacity: 0, x: 50 },
-      animate: { opacity: 1, x: 0 },
-      exit: { opacity: 0, x: 50 },
-    },
-    slideRight: {
-      initial: { opacity: 0, x: -50 },
-      animate: { opacity: 1, x: 0 },
-      exit: { opacity: 0, x: -50 },
-    },
-    scale: {
-      initial: { opacity: 0, scale: 0.8 },
-      animate: { opacity: 1, scale: 1 },
-      exit: { opacity: 0, scale: 0.8 },
-    },
-    rotate: {
-      initial: { opacity: 0, rotate: -10 },
-      animate: { opacity: 1, rotate: 0 },
-      exit: { opacity: 0, rotate: 10 },
-    },
-  };
-
   // Seleccionar la animación a usar
-  const animacion = animacionPersonalizada || animacionesPredefinidas[tipoAnimacion] || animacionesPredefinidas.fade;
+  const animacion =
+    animacionPersonalizada ||
+    animacionesPredefinidasFrameMotion[tipoAnimacion] ||
+    animacionesPredefinidasFrameMotion.fade;
 
-  // Configuración de transición
-  const transicion = {
-    duration: duracion,
-    delay: delay,
-    ease: 'easeOut',
-  };
+  const transicion = crearTransicionFrameMotion(duracion, delay);
 
   // Si waitForUserView es true y aún no es visible, mantenemos el estado inicial
   // (opacidad 0 y posición inicial) para que no se vea hasta que entre en el viewport

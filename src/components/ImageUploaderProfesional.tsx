@@ -1,6 +1,8 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { subirImagenProfesional } from '../data/firebase/firebase';
 
+export type VarianteImagenProfesional = 'local' | 'paseador';
+
 export interface ImageUploaderProfesionalProps {
   onImageSelect: (file: File) => void;
   onImageUploaded?: (imageUrl: string) => void;
@@ -8,6 +10,8 @@ export interface ImageUploaderProfesionalProps {
   isCargando?: boolean;
   className?: string;
   profesionalId?: string;
+  /** `local`: negocio / clínica. `paseador`: foto personal (mismo campo `fotoLocalUrl` en Firestore). */
+  varianteImagen?: VarianteImagenProfesional;
 }
 
 export const ImageUploaderProfesional: React.FC<ImageUploaderProfesionalProps> = ({
@@ -16,8 +20,13 @@ export const ImageUploaderProfesional: React.FC<ImageUploaderProfesionalProps> =
   imagenActual,
   isCargando = false,
   className = '',
-  profesionalId
+  profesionalId,
+  varianteImagen = 'local',
 }) => {
+  const esPaseador = varianteImagen === 'paseador';
+  const textoSubir = esPaseador ? 'Subir tu foto' : 'Subir foto del local';
+  const textoSubiendo = esPaseador ? 'Subiendo tu foto...' : 'Subiendo imagen del local...';
+  const altVistaPrevia = esPaseador ? 'Vista previa de tu foto' : 'Vista previa del local';
   const [isDragOver, setIsDragOver] = useState(false);
   const [vistaPrevia, setVistaPrevia] = useState<string | null>(imagenActual || null);
   const [isSubiendo, setIsSubiendo] = useState(false);
@@ -95,7 +104,7 @@ export const ImageUploaderProfesional: React.FC<ImageUploaderProfesionalProps> =
         // Notificar al componente padre con la URL
         onImageUploaded(imageUrl);
       } catch (error) {
-        console.error('❌ Error al subir imagen del local:', error);
+        console.error('❌ Error al subir imagen:', error);
         alert('Error al subir imagen: ' + error.message);
       } finally {
         setIsSubiendo(false);
@@ -178,7 +187,7 @@ export const ImageUploaderProfesional: React.FC<ImageUploaderProfesionalProps> =
             <div className="flex flex-col items-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
               <p className="mt-2 text-sm text-gray-600">
-                {isSubiendo ? 'Subiendo imagen del local...' : 'Cargando...'}
+                {isSubiendo ? textoSubiendo : 'Cargando...'}
               </p>
             </div>
           </div>
@@ -189,7 +198,7 @@ export const ImageUploaderProfesional: React.FC<ImageUploaderProfesionalProps> =
           <div className="relative">
             <img
               src={vistaPrevia}
-              alt="Vista previa del local"
+              alt={altVistaPrevia}
               className="w-full h-48 object-cover rounded-lg shadow-sm"
             />
             <button
@@ -216,7 +225,7 @@ export const ImageUploaderProfesional: React.FC<ImageUploaderProfesionalProps> =
             </div>
             <div>
               <p className="text-lg font-medium text-gray-900">
-                {isDragOver ? 'Suelta la imagen aquí' : 'Subir foto del local'}
+                {isDragOver ? 'Suelta la imagen aquí' : textoSubir}
               </p>
               <p className="text-sm text-gray-500 mt-1">
                 Arrastra y suelta una imagen aquí, o click para seleccionar

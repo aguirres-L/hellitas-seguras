@@ -120,7 +120,11 @@ const DashboardProfesional = () => {
       setArchivoImagen(null);
       setUrlImagenLocal('');
       
-      alert('¡Imagen del local actualizada exitosamente!');
+      alert(
+        datosProfesional?.tipoProfesional === 'paseador'
+          ? '¡Tu foto se actualizó correctamente!'
+          : '¡Imagen del local actualizada exitosamente!'
+      );
     } catch (error) {
       console.error('❌ Error al actualizar imagen:', error);
       alert('Error al actualizar la imagen: ' + error.message);
@@ -198,6 +202,7 @@ const DashboardProfesional = () => {
         );
       case 'veterinario':
       case 'peluquero':
+      case 'paseador':
       default:
         return renderContenidoServicios();
     }
@@ -474,7 +479,11 @@ const DashboardProfesional = () => {
         {/* Header del Dashboard */}
         <div className="text-center mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            {datosProfesional?.tipoProfesional === 'tienda' ? 'Dashboard de Tienda' : 'Dashboard Profesional'}
+            {datosProfesional?.tipoProfesional === 'tienda'
+              ? 'Dashboard de Tienda'
+              : datosProfesional?.tipoProfesional === 'paseador'
+                ? 'Dashboard Paseador'
+                : 'Dashboard Profesional'}
           </h2>
           <p className="text-gray-600 text-sm sm:text-base">
             {datosProfesional ? `${datosProfesional.tipoProfesional === 'veterinario' ? 'Dr.' : ''} ${datosProfesional.nombre} - ${datosProfesional.especialidad}` : 'Cargando...'}
@@ -488,11 +497,17 @@ const DashboardProfesional = () => {
               {datosProfesional.tipoProfesional === 'tienda' ? 'Mi Información de Tienda' : 'Mi Información Profesional'}
             </h3>
             
-            {/* Imagen del local */}
+            {/* Imagen del local o foto del paseador (mismo campo fotoLocalUrl) */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-sm font-medium text-gray-600">
-                  {datosProfesional.fotoLocalUrl ? 'Foto del local' : 'Agregar foto del local'}
+                  {datosProfesional.tipoProfesional === 'paseador'
+                    ? datosProfesional.fotoLocalUrl
+                      ? 'Tu foto'
+                      : 'Agregar tu foto'
+                    : datosProfesional.fotoLocalUrl
+                      ? 'Foto del local'
+                      : 'Agregar foto del local'}
                 </h4>
                 <button
                   onClick={() => setMostrarModalEditarImagen(true)}
@@ -511,7 +526,11 @@ const DashboardProfesional = () => {
                 <div className="relative">
                   <img 
                     src={datosProfesional.fotoLocalUrl} 
-                    alt={`Local de ${datosProfesional.nombre}`}
+                    alt={
+                      datosProfesional.tipoProfesional === 'paseador'
+                        ? `Foto de ${datosProfesional.nombre}`
+                        : `Local de ${datosProfesional.nombre}`
+                    }
                     className="w-full max-w-md h-48 object-cover rounded-lg shadow-sm"
                   />
                   <div className="absolute top-2 right-2 bg-white bg-opacity-90 rounded-full p-1">
@@ -526,7 +545,11 @@ const DashboardProfesional = () => {
                     <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
-                    <p className="text-sm text-gray-500">Sin foto del local</p>
+                    <p className="text-sm text-gray-500">
+                      {datosProfesional.tipoProfesional === 'paseador'
+                        ? 'Sin foto de perfil'
+                        : 'Sin foto del local'}
+                    </p>
                     <p className="text-xs text-gray-400">Haz clic en "Agregar" para subir una imagen</p>
                   </div>
                 </div>
@@ -597,7 +620,7 @@ const DashboardProfesional = () => {
         </div>
       )}
 
-      {/* Modal para editar imagen del local */}
+      {/* Modal para editar imagen del local o del paseador */}
       {mostrarModalEditarImagen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
@@ -605,7 +628,13 @@ const DashboardProfesional = () => {
               {/* Header */}
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-bold text-gray-900">
-                  {datosProfesional?.fotoLocalUrl ? 'Editar foto del local' : 'Agregar foto del local'}
+                  {datosProfesional?.tipoProfesional === 'paseador'
+                    ? datosProfesional?.fotoLocalUrl
+                      ? 'Editar tu foto'
+                      : 'Agregar tu foto'
+                    : datosProfesional?.fotoLocalUrl
+                      ? 'Editar foto del local'
+                      : 'Agregar foto del local'}
                 </h3>
                 <button
                   onClick={handleCancelarEdicionImagen}
@@ -623,6 +652,9 @@ const DashboardProfesional = () => {
                   isCargando={isSubiendoImagen}
                   profesionalId={usuario?.uid}
                   imagenActual={datosProfesional?.fotoLocalUrl}
+                  varianteImagen={
+                    datosProfesional?.tipoProfesional === 'paseador' ? 'paseador' : 'local'
+                  }
                 />
               </div>
 
