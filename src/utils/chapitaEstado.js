@@ -63,7 +63,7 @@ const ETIQUETAS_CORTAS = {
   disponible: 'Chapita disponible',
   completado: 'Chapita entregada',
   sin_estado: 'Sin estado',
-};
+}; 
 
 const ETIQUETAS_LARGAS = {
   pendiente:
