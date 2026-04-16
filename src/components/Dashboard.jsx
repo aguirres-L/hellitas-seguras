@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,11 +19,13 @@ import SkeletonCardPet from './uiDashboardUser/SkeletonCardPet';
 import { DashboardCitasColapsable } from './DashboardCitasColapsable';
 import ModalAlertFormularioAgregarMascota from './uiDashboardUser/ModalAlertFormulariAgregarMascota';
 import { DashboardTabBar } from './uiDashboardUser/DashboardTabBar';
+import { useNotificacionApp } from '../contexts/NotificacionAppContext';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { usuario, cerrarSesion, isCargandoLogout } = useAuth();
   const { typeTheme } = useTheme();
+  const { mostrarError, confirmar } = useNotificacionApp();
   
 
   // Estados para controlar los modales
@@ -59,6 +61,31 @@ const Dashboard = () => {
 
   /** Pestañas inferiores solo en móvil (< md) */
   const [pestanaActiva, setPestanaActiva] = useState('mascotas');
+  /** Contador para badge en TabBar "Citas" tras agendar (vet/peluquería); se limpia al abrir esa pestaña */
+  const [pendientesTabCitas, setPendientesTabCitas] = useState(0);
+  /** ID de la última cita creada: se resalta en la lista hasta que el usuario sale de la pestaña Citas tras verla */
+  const [idCitaDestacar, setIdCitaDestacar] = useState(null);
+  const visitoCitasConDestacadoRef = useRef(false);
+
+  useEffect(() => {
+    if (pestanaActiva === 'citas') {
+      setPendientesTabCitas(0);
+    }
+  }, [pestanaActiva]);
+
+  useEffect(() => {
+    if (pestanaActiva === 'citas' && idCitaDestacar) {
+      visitoCitasConDestacadoRef.current = true;
+    }
+  }, [pestanaActiva, idCitaDestacar]);
+
+  useEffect(() => {
+    if (pestanaActiva === 'citas') return;
+    if (visitoCitasConDestacadoRef.current) {
+      setIdCitaDestacar(null);
+      visitoCitasConDestacadoRef.current = false;
+    }
+  }, [pestanaActiva]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -188,7 +215,7 @@ const Dashboard = () => {
       await cerrarSesion();
       navigate('/login'); // Redirigir al login
     } catch (error) {
-      alert('Error al cerrar sesión. Inténtalo de nuevo.');
+      mostrarError('Error al cerrar sesión. Inténtalo de nuevo.');
     }
   };
 
@@ -219,6 +246,8 @@ const Dashboard = () => {
     setClinicaSeleccionada(null);
    // Marcar que las citas se actualizaron
    marcarCitasActualizadas();
+    setPendientesTabCitas((n) => Math.min(n + 1, 99));
+    if (datosCita?.id) setIdCitaDestacar(datosCita.id);
 
   };
 
@@ -229,6 +258,8 @@ const Dashboard = () => {
     setPeluqueriaSeleccionada(null);
     // Marcar que las citas se actualizaron
     marcarCitasActualizadas();
+    setPendientesTabCitas((n) => Math.min(n + 1, 99));
+    if (datosCita?.id) setIdCitaDestacar(datosCita.id);
   };
 
   // Función para cargar datos del usuario desde Firestore
@@ -279,9 +310,12 @@ const Dashboard = () => {
 
 // Función para cancelar una cita
 const handleCancelarCita = async (cita) => {
-  if (!confirm('¿Estás seguro de que quieres cancelar esta cita?')) {
-    return;
-  }
+  const ok = await confirmar('¿Estás seguro de que querés cancelar esta cita?', {
+    titulo: 'Cancelar cita',
+    textoConfirmar: 'Sí, cancelar',
+    textoCancelar: 'Volver',
+  });
+  if (!ok) return;
 
   // Agregar la cita al set de citas cancelando
   setCitasCancelando(prev => new Set(prev).add(cita.id));
@@ -306,9 +340,13 @@ const handleCancelarCita = async (cita) => {
    /*  alert('Cita cancelada exitosamente'); */
     // Marcar que las citas se actualizaron
     marcarCitasActualizadas();
+    if (cita.id === idCitaDestacar) {
+      setIdCitaDestacar(null);
+      visitoCitasConDestacadoRef.current = false;
+    }
   } catch (error) {
     console.error('Error al cancelar cita:', error);
-    alert('Error al cancelar la cita. Inténtalo de nuevo.');
+    mostrarError('Error al cancelar la cita. Inténtalo de nuevo.');
   } finally {
     // Remover la cita del set de citas cancelando
     setCitasCancelando(prev => {
@@ -522,6 +560,7 @@ const handleCancelarCita = async (cita) => {
           typeTheme={typeTheme}
           citasCancelando={citasCancelando}
           handleCancelarCita={handleCancelarCita}
+          idCitaDestacar={idCitaDestacar}
         />
               )}
 
@@ -739,6 +778,7 @@ const handleCancelarCita = async (cita) => {
           typeTheme={typeTheme}
           citasCancelando={citasCancelando}
           handleCancelarCita={handleCancelarCita}
+          idCitaDestacar={idCitaDestacar}
         />
           </div>
 
@@ -808,6 +848,7 @@ const handleCancelarCita = async (cita) => {
         pestanaActiva={pestanaActiva}
         onCambiarPestana={setPestanaActiva}
         typeTheme={typeTheme}
+        cantidadCitasNuevasEnTab={pendientesTabCitas}
       />
 
       {/* Modales de Formularios */}

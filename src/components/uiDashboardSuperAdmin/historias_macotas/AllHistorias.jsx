@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAllDataCollection, deleteDataCollection } from '../../../data/firebase/firebase';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { useNotificacionApp } from '../../../contexts/NotificacionAppContext';
 
 const imagenFallbackSvg =
   'data:image/svg+xml,' +
@@ -11,6 +12,7 @@ const imagenFallbackSvg =
 // Este componente no recibe props
 export default function AllHistorias() {
   const { typeTheme } = useTheme();
+  const { mostrarError, mostrarInfo, confirmar } = useNotificacionApp();
   const [historias, setHistorias] = useState([]);
   const [isCargando, setIsCargando] = useState(false);
   const [error, setError] = useState(null);
@@ -50,17 +52,18 @@ export default function AllHistorias() {
   };
 
   const manejarEliminar = async (historiaId) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar esta historia de rescate?')) {
-      return;
-    }
+    const ok = await confirmar('¿Estás seguro de que querés eliminar esta historia de rescate?', {
+      titulo: 'Eliminar historia',
+      textoConfirmar: 'Sí, eliminar',
+    });
+    if (!ok) return;
 
     try {
       await deleteDataCollection('historias-de-rescates', historiaId);
-      // Recargar las historias después de eliminar
       await cargarHistorias();
     } catch (err) {
       console.error('Error al eliminar historia:', err);
-      alert('Error al eliminar la historia. Inténtalo de nuevo.');
+      mostrarError('Error al eliminar la historia. Inténtalo de nuevo.');
     }
   };
 
@@ -320,7 +323,7 @@ export default function AllHistorias() {
                     className="min-h-[44px] flex-1 rounded-lg bg-purple-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-purple-600 sm:py-2"
                     onClick={() => {
                       // TODO: Implementar edición
-                      alert('Funcionalidad de edición próximamente');
+                      mostrarInfo('La edición de historias estará disponible pronto.', 'Próximamente');
                     }}
                   >
                     Editar

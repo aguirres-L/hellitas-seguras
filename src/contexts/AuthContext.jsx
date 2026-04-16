@@ -116,6 +116,11 @@ export const AuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  const recargarDatosUsuario = async () => {
+    if (!usuario?.uid) return;
+    await cargarDatosUsuario(usuario.uid);
+  };
+
   // Valor del contexto
   const valor = {
     usuario,
@@ -124,6 +129,7 @@ export const AuthProvider = ({ children }) => {
     isCargando,
     isCargandoLogout,
     cerrarSesion,
+    recargarDatosUsuario,
     isAutenticado: !!usuario,
     esProfesional: tipoUsuario === 'profesional',
     esUsuario: tipoUsuario === 'usuario'

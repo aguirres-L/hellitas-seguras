@@ -235,11 +235,31 @@ export const useDogsAPI = () => {
     return arrayCarrusel;
   }, []);
 
-  // Cargar datos iniciales
+  /**
+   * Una imagen aleatoria por ruta de API (ej. "labrador" o "spaniel/sussex").
+   * No usa el estado global `cargando` para no bloquear el input mientras cargan varias fotos.
+   */
+  const obtenerImagenAleatoriaPorRuta = useCallback(async (rutaBreed) => {
+    if (!rutaBreed || typeof rutaBreed !== 'string') return null;
+    const pathEncoded = rutaBreed.split('/').map(encodeURIComponent).join('/');
+    try {
+      const response = await fetch(
+        `https://dog.ceo/api/breed/${pathEncoded}/images/random`
+      );
+      if (!response.ok) return null;
+      const data = await response.json();
+      if (data.status === 'success' && data.message) return data.message;
+      return null;
+    } catch (err) {
+      console.error('obtenerImagenAleatoriaPorRuta:', err);
+      return null;
+    }
+  }, []);
+
+  // Cargar solo el listado de razas (las fotos se piden al escribir en BusquedaAvanzada)
   useEffect(() => {
     obtenerTodasLasRazas();
-    obtenerImagenesRandom(15, 3); // 15 imágenes en lotes de 3
-  }, [obtenerTodasLasRazas, obtenerImagenesRandom]);
+  }, [obtenerTodasLasRazas]);
 
   return {
     // Estados
@@ -258,6 +278,7 @@ export const useDogsAPI = () => {
     
     // Funciones de utilidad
     crearArrayBusqueda,
-    crearArrayCarrusel
+    crearArrayCarrusel,
+    obtenerImagenAleatoriaPorRuta
   };
 };

@@ -11,7 +11,7 @@ export default function ModalAlert({ typeAlert, mensaje, onCerrar }) {
     
     function handleButton(){
         if(mensaje?.from === 'suscripcion'){
-            navigate('/');
+            navigate('/dashboard');
         }else{
             navigate('/perfil');
         }
@@ -110,42 +110,60 @@ export default function ModalAlert({ typeAlert, mensaje, onCerrar }) {
 
     if (typeAlert === 'success') {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-            <div role="dialog" aria-modal="true" className="relative w-full max-w-lg overflow-hidden bg-white rounded-2xl shadow-2xl">
+            <div
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+                onClick={onCerrar}
+                role="presentation"
+            >
+            <div
+                role="dialog"
+                aria-modal="true"
+                className="relative w-full max-w-lg max-h-[min(90dvh,640px)] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+            >
             <DecoracionForm className="z-0" />
-                <div className="relative z-10">
+                <div className="relative z-10 flex flex-col min-h-0 flex-1">
                 
-                <div className="flex items-start justify-between p-4 bg-gray-800 bg-opacity-60">
-                    <div className="flex items-center gap-3">
-                        <span className="flex items-center justify-center w-10 h-10 rounded-full text-pink-600">
+                <div className="flex shrink-0 items-start justify-between gap-2 p-4 bg-gray-800 bg-opacity-60">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <span className="flex shrink-0 items-center justify-center w-10 h-10 rounded-full text-pink-600">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
                                 <path d="M12 2a1 1 0 01.894.553l1.618 3.236 3.57.519a1 1 0 01.554 1.705l-2.584 2.52.61 3.557a1 1 0 01-1.451 1.054L12 13.89l-3.211 1.689a1 1 0 01-1.451-1.054l.61-3.557-2.584-2.52a1 1 0 01.554-1.705l3.57-.519L11.106 2.553A1 1 0 0112 2z" />
                             </svg>
                         </span>
-                        <div>
+                        <div className="min-w-0">
                             <h3 className="text-lg font-bold text-gray-100">{mensaje?.tipo || 'Pago realizado con éxito'}</h3>
                             <p className="text-sm font-medium text-gray-200">Gracias por tu pago. Te contactaremos pronto.</p>
                         </div>
                     </div>
-                   {/*  <button
+                    <button
+                        type="button"
                         onClick={onCerrar}
                         aria-label="Cerrar"
-                        className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
-                        >
-                        x
-                    </button> */}
-                </div>
-                <div className="p-6 bg-gray-800 bg-opacity-60">
-                    <p className="text-gray-100">{mensaje?.mensaje || 'Gracias por tu pago. Te contactaremos pronto.'}</p>
-                </div>
-               {/*  <div className="flex justify-end gap-3 p-4 bg-gray-800 bg-opacity-60">
-                    <button
-                        onClick={handleButton}
-                        className="px-4 py-2 text-sm font-semibold text-white transition-colors rounded-lg bg-pink-500 hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-300"
+                        className="shrink-0 p-2 text-gray-300 hover:text-white text-2xl font-bold leading-none rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
                     >
-                        {mensaje?.from === 'suscripcion' ? 'Volver al home' : 'Volver al perfil'}
+                        ×
                     </button>
-                </div> */}
+                </div>
+                <div className="p-6 bg-gray-800 bg-opacity-60 overflow-y-auto min-h-0">
+                    <p className="text-gray-100 break-words">{mensaje?.mensaje || 'Gracias por tu pago. Te contactaremos pronto.'}</p>
+                </div>
+                <div className="shrink-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 p-4 bg-gray-800 bg-opacity-60">
+                    <button
+                        type="button"
+                        onClick={onCerrar}
+                        className="w-full sm:w-auto px-4 py-3 sm:py-2 text-sm font-semibold text-gray-100 transition-colors rounded-lg border border-gray-500 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    >
+                        Cerrar
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleButton}
+                        className="w-full sm:w-auto px-4 py-3 sm:py-2 text-sm font-semibold text-white transition-colors rounded-lg bg-pink-500 hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-300"
+                    >
+                        {mensaje?.from === 'suscripcion' ? 'Ir al dashboard' : 'Volver al perfil'}
+                    </button>
+                </div>
                 </div>
             </div>
         </div>

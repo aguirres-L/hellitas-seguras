@@ -16,6 +16,7 @@ import { etiquetaEstadoChapita, clasesBadgeEstadoChapita } from '../utils/chapit
 import QRCode from 'react-qr-code';
 import SvgAlert from './ui/svg/SvgAlert';
 import UseFrameMotion from './hook_frame_motion/UseFrameMotion';
+import { useNotificacionApp } from '../contexts/NotificacionAppContext';
 
 /** Toggle “mascota perdida”: mismo control en layout móvil compacto y en desktop. */
 function ControlTogglePerdida({ mascotaId, isPerdida, isGuardando, onCambiar }) {
@@ -71,6 +72,7 @@ const PetProfile = () => {
   const {getTipoProfesional} = typeProfesionalStore();
   const { typeTheme } = useTheme();
   const { usuario } = useAuth();
+  const { mostrarError } = useNotificacionApp();
   const [pestañaActiva, setPestañaActiva] = useState('informacion');
   const [mascota, setMascota] = useState(null);
   const [isCargando, setIsCargando] = useState(true);
@@ -340,7 +342,9 @@ const PetProfile = () => {
         isPerdida: estadoAnterior
       }));
       
-      alert(`Error al ${nuevoEstado ? 'marcar' : 'desmarcar'} la mascota como perdida. Inténtalo de nuevo.`);
+      mostrarError(
+        `Error al ${nuevoEstado ? 'marcar' : 'desmarcar'} la mascota como perdida. Inténtalo de nuevo.`
+      );
     } finally {
       setIsGuardandoEstadoPerdida(false);
     }

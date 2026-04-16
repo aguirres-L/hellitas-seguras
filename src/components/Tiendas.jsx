@@ -1,17 +1,64 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { obtenerProductosPorProfesional, obtenerDescuentosPorProfesional } from '../data/firebase/firebase';
 import { useTheme } from '../contexts/ThemeContext';
+
+const formatearPrecio = (valor) =>
+  new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: 'CLP',
+    maximumFractionDigits: 0,
+  }).format(Number(valor) || 0);
+
+/** Firestore Timestamp | Date | string ISO → texto legible o null si inválido */
+const fechaFinDescuentoLegible = (fechaFin) => {
+  if (fechaFin == null) return null;
+  let d;
+  if (typeof fechaFin?.seconds === 'number') {
+    d = new Date(fechaFin.seconds * 1000);
+  } else if (fechaFin instanceof Date) {
+    d = fechaFin;
+  } else {
+    d = new Date(fechaFin);
+  }
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString('es-CL', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+};
+
+function ImagenProductoConFallback({ src, alt, className }) {
+  const [fallo, setFallo] = useState(false);
+  if (!src || fallo) {
+    return (
+      <div className={`flex items-center justify-center rounded-lg bg-gray-100 text-gray-400 ${className || ''}`} aria-hidden>
+        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      onError={() => setFallo(true)}
+      loading="lazy"
+    />
+  );
+}
 
 export default function Tiendas({ tiendas, isCargando = false }) {
   const [tiendasConDatos, setTiendasConDatos] = useState([]);
   const [isCargandoDatos, setIsCargandoDatos] = useState(false);
-const { typeTheme } = useTheme();
+  const { typeTheme } = useTheme();
 
-  // Cargar productos y descuentos para cada tienda
   useEffect(() => {
     const cargarDatosTiendas = async () => {
       if (!tiendas || tiendas.length === 0) return;
-      
+
       setIsCargandoDatos(true);
       try {
         const tiendasConDatosCompletos = await Promise.all(
@@ -19,25 +66,25 @@ const { typeTheme } = useTheme();
             try {
               const [productos, descuentos] = await Promise.all([
                 obtenerProductosPorProfesional(tienda.id),
-                obtenerDescuentosPorProfesional(tienda.id)
+                obtenerDescuentosPorProfesional(tienda.id),
               ]);
-              
+
               return {
                 ...tienda,
                 productos: productos || [],
-                descuentos: descuentos || []
+                descuentos: descuentos || [],
               };
             } catch (error) {
               console.error(`Error al cargar datos de tienda ${tienda.id}:`, error);
               return {
                 ...tienda,
                 productos: [],
-                descuentos: []
+                descuentos: [],
               };
             }
           })
         );
-        
+
         setTiendasConDatos(tiendasConDatosCompletos);
       } catch (error) {
         console.error('Error al cargar datos de tiendas:', error);
@@ -50,304 +97,373 @@ const { typeTheme } = useTheme();
   }, [tiendas]);
 
   const [tiendaSeleccionada, setTiendaSeleccionada] = useState(null);
+  const [pestanaModal, setPestanaModal] = useState('productos');
 
-  const manejarVerDetalles = (tienda) => {
+  useEffect(() => {
+    if (tiendaSeleccionada) {
+      setPestanaModal('productos');
+    }
+  }, [tiendaSeleccionada?.id]);
+
+  const manejarVerDetalles = useCallback((tienda) => {
     setTiendaSeleccionada(tienda);
-  };
+  }, []);
 
-  const cerrarDetalles = () => {
+  const cerrarDetalles = useCallback(() => {
     setTiendaSeleccionada(null);
-  };
+  }, []);
+
+  const tituloSeccion =
+    typeTheme === 'dark' ? 'text-2xl font-bold mb-6 text-white' : 'text-2xl font-bold mb-6 text-gray-900';
 
   return (
     <div className="mt-12">
-      <h3 className={typeTheme === 'dark'
-  ? "text-2xl font-bold mb-6 text-white"
-  : "text-2xl font-bold mb-6 text-gray-900"
-}>Tiendas Registradas</h3>
-      
-      {isCargando ? (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
-          <p className="mt-2 text-gray-600">Cargando tiendas...</p>
+      <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <h3 className={tituloSeccion}>Tiendas registradas</h3>
+        <p className="text-sm text-gray-500">
+          Productos y promociones publicados por cada tienda asociada.
+        </p>
+      </div>
+
+      {isCargando || isCargandoDatos ? (
+        <div className="text-center py-10">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
+          <p className="mt-3 text-gray-600">Cargando tiendas…</p>
         </div>
       ) : tiendas.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-600">No hay tiendas disponibles en este momento.</p>
+        <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/80 py-12 text-center">
+          <p className="text-gray-600">Todavía no hay tiendas para mostrar en tu zona.</p>
         </div>
       ) : (
-        <div className="flex overflow-x-auto gap-6 pb-4">
-          {tiendasConDatos.map((tienda) => (
-            <div key={tienda.id} className="bg-white p-6 rounded-lg shadow-sm min-w-[300px] flex-shrink-0 overflow-hidden">
-              {/* Imagen del local */}
-              <div 
-                className="mb-4 overflow-hidden rounded-lg relative" 
-                style={{ 
-                  width: '100%', 
-                  height: '128px', 
-                  minHeight: '128px',
-                  maxHeight: '128px',
-                  flexShrink: 0
-                }}
+        <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible md:pb-0">
+          {tiendasConDatos.map((tienda) => {
+            const nProd = tienda.productos?.length ?? 0;
+            const nDesc = tienda.descuentos?.length ?? 0;
+            return (
+              <article
+                key={tienda.id}
+                className="snap-center shrink-0 w-[min(100%,320px)] md:w-auto flex flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-sm md:min-w-0"
               >
-                {tienda.fotoLocalUrl ? (
-                  <img 
-                    src={tienda.fotoLocalUrl} 
-                    alt={`Local de ${tienda.nombre}`}
-                    className="rounded-lg shadow-sm"
-                    style={{ 
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '128px',
-                      minWidth: '100%',
-                      maxWidth: '100%',
-                      minHeight: '128px',
-                      maxHeight: '128px',
-                      objectFit: 'cover',
-                      display: 'block'
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-32 bg-green-50 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <svg className="w-12 h-12 text-green-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                      <p className="text-xs text-green-400">Sin foto del local</p>
+                <div className="relative mb-4 h-36 w-full overflow-hidden rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50">
+                  {tienda.fotoLocalUrl ? (
+                    <img
+                      src={tienda.fotoLocalUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    className={`flex h-full w-full flex-col items-center justify-center text-emerald-600/70 ${tienda.fotoLocalUrl ? 'hidden' : ''}`}
+                  >
+                    <svg className="mb-1 h-10 w-10 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <span className="text-xs font-medium">Sin foto del local</span>
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <h4 className="text-lg font-bold text-emerald-700">{tienda.nombre}</h4>
+                  {tienda.especialidad ? (
+                    <p className="text-sm text-gray-500">{tienda.especialidad}</p>
+                  ) : null}
+                </div>
+
+                <dl className="space-y-2 text-sm text-gray-700 mb-4">
+                  {tienda.direccion ? (
+                    <div className="flex gap-2">
+                      <span className="shrink-0" aria-hidden>
+                        📍
+                      </span>
+                      <span>{tienda.direccion}</span>
                     </div>
+                  ) : null}
+                  {tienda.telefono ? (
+                    <div className="flex gap-2">
+                      <span className="shrink-0" aria-hidden>
+                        📞
+                      </span>
+                      <a href={`tel:${String(tienda.telefono).replace(/\s/g, '')}`} className="text-emerald-700 underline-offset-2 hover:underline">
+                        {tienda.telefono}
+                      </a>
+                    </div>
+                  ) : null}
+                  {tienda.horario ? (
+                    <div className="flex gap-2">
+                      <span className="shrink-0" aria-hidden>
+                        🕒
+                      </span>
+                      <span>{tienda.horario}</span>
+                    </div>
+                  ) : null}
+                </dl>
+
+                <p className="mb-4 text-xs text-gray-500">
+                  <span className="font-semibold text-gray-700">{nProd}</span> producto{nProd !== 1 ? 's' : ''} ·{' '}
+                  <span className="font-semibold text-gray-700">{nDesc}</span> descuento{nDesc !== 1 ? 's' : ''}
+                </p>
+
+                {nProd > 0 && (
+                  <div className="mb-3 rounded-lg bg-gray-50 px-3 py-2">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Vista rápida</p>
+                    <ul className="space-y-1.5">
+                      {tienda.productos.slice(0, 2).map((producto) => (
+                        <li key={producto.id} className="flex items-center justify-between gap-2 text-sm">
+                          <span className="truncate text-gray-800">{producto.nombre}</span>
+                          <span className="shrink-0 font-semibold text-emerald-700">{formatearPrecio(producto.precio)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {nProd > 2 && <p className="mt-2 text-xs text-gray-400">+{nProd - 2} más en el detalle</p>}
                   </div>
                 )}
-              </div>
-              
-              <div className="flex items-start justify-between mb-3">
-                <h4 className="font-bold text-lg text-green-600">{tienda.nombre}</h4>
-                <span className="text-sm text-gray-500">{tienda.especialidad}</span>
-              </div>
-              
-              <div className="space-y-2 mb-4">
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">📍</span> {tienda.direccion}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">📞</span> {tienda.telefono}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">🕒</span> {tienda.horario}
-                </p>
-              </div>
 
-              {/* Estadísticas rápidas */}
-              <div className="mb-4">
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div className="bg-green-50 p-2 rounded">
-                    <div className="text-lg font-bold text-green-600">{tienda.productos.length}</div>
-                    <div className="text-xs text-gray-600">Productos</div>
-                  </div>
-                  <div className="bg-blue-50 p-2 rounded">
-                    <div className="text-lg font-bold text-blue-600">{tienda.descuentos.length}</div>
-                    <div className="text-xs text-gray-600">Descuentos</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Productos destacados (máximo 3) */}
-              {tienda.productos.length > 0 && (
-                <div className="mb-4">
-                  <h5 className="text-sm font-medium text-gray-700 mb-2">Productos destacados:</h5>
-                  <div className="space-y-1">
-                    {tienda.productos.slice(0, 3).map((producto) => (
-                      <div key={producto.id} className="flex justify-between items-center text-xs">
-                        <span className="text-gray-600 truncate">{producto.nombre}</span>
-                        <span className="font-medium text-green-600">${producto.precio}</span>
-                      </div>
+                {nDesc > 0 && nProd === 0 && (
+                  <div className="mb-3 rounded-lg border border-amber-100 bg-amber-50/80 px-3 py-2 text-sm text-amber-900">
+                    {tienda.descuentos.slice(0, 1).map((d) => (
+                      <span key={d.id}>
+                        {d.nombre} · {d.porcentaje}% OFF
+                      </span>
                     ))}
-                    {tienda.productos.length > 3 && (
-                      <p className="text-xs text-gray-500">+{tienda.productos.length - 3} más productos</p>
-                    )}
+                    {nDesc > 1 && <span className="text-xs text-amber-800"> (+{nDesc - 1})</span>}
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Descuentos activos */}
-              {tienda.descuentos.length > 0 && (
-                <div className="mb-4">
-                  <h5 className="text-sm font-medium text-gray-700 mb-2">Descuentos activos:</h5>
-                  <div className="space-y-1">
-                    {tienda.descuentos.slice(0, 2).map((descuento) => (
-                      <div key={descuento.id} className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">
-                        {descuento.nombre} - {descuento.porcentaje}% OFF
-                      </div>
-                    ))}
-                    {tienda.descuentos.length > 2 && (
-                      <p className="text-xs text-gray-500">+{tienda.descuentos.length - 2} más descuentos</p>
-                    )}
-                  </div>
+                <div className="mt-auto flex flex-col gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => manejarVerDetalles(tienda)}
+                    className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                  >
+                    Ver catálogo y ofertas
+                  </button>
+                  {tienda.telefono ? (
+                    <a
+                      href={`tel:${String(tienda.telefono).replace(/\s/g, '')}`}
+                      className="block w-full rounded-xl border border-emerald-600 py-2.5 text-center text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                    >
+                      Llamar a la tienda
+                    </a>
+                  ) : (
+                    <span className="block w-full rounded-xl border border-gray-200 py-2.5 text-center text-sm text-gray-400">
+                      Sin teléfono registrado
+                    </span>
+                  )}
                 </div>
-              )}
-
-              <div className="space-y-2">
-                <button 
-                  onClick={() => manejarVerDetalles(tienda)}
-                  className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors duration-200"
-                >
-                  Ver Productos y Descuentos
-                </button>
-                <button className="w-full border border-green-600 text-green-600 py-2 rounded-lg hover:bg-green-50 transition-colors duration-200">
-                  Contactar Tienda
-                </button>
-              </div>
-            </div>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
 
-      {/* Modal de detalles de la tienda */}
       {tiendaSeleccionada && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              {/* Header */}
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-gray-900">{tiendaSeleccionada.nombre}</h3>
-                  <p className="text-gray-600">{tiendaSeleccionada.especialidad}</p>
-                  
-                  {/* Imagen del local en el modal */}
-                  {tiendaSeleccionada.fotoLocalUrl && (
-                    <div className="mt-4">
-                      <img 
-                        src={tiendaSeleccionada.fotoLocalUrl} 
-                        alt={`Local de ${tiendaSeleccionada.nombre}`}
-                        className="w-full max-w-md h-48 object-cover rounded-lg shadow-sm"
-                      />
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={cerrarDetalles}
-                  className="text-gray-400 hover:text-gray-600 text-2xl ml-4"
-                >
-                  ×
-                </button>
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-tienda-titulo"
+        >
+          <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-gray-100 bg-white px-4 py-4 sm:px-6">
+              <div className="min-w-0">
+                <h3 id="modal-tienda-titulo" className="text-xl font-bold text-gray-900 sm:text-2xl">
+                  {tiendaSeleccionada.nombre}
+                </h3>
+                {tiendaSeleccionada.especialidad ? (
+                  <p className="text-sm text-gray-600">{tiendaSeleccionada.especialidad}</p>
+                ) : null}
+                <p className="mt-2 text-sm text-gray-500">
+                  {tiendaSeleccionada.productos.length} producto{tiendaSeleccionada.productos.length !== 1 ? 's' : ''} ·{' '}
+                  {tiendaSeleccionada.descuentos.length} promoción{tiendaSeleccionada.descuentos.length !== 1 ? 'es' : ''}
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={cerrarDetalles}
+                className="shrink-0 rounded-lg p-2 text-2xl leading-none text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
 
-              {/* Información de contacto */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 mb-3">Información de contacto</h4>
-                  <div className="space-y-2 text-sm">
-                    <p><span className="font-medium">📍</span> {tiendaSeleccionada.direccion}</p>
-                    <p><span className="font-medium">📞</span> {tiendaSeleccionada.telefono}</p>
-                    <p><span className="font-medium">🕒</span> {tiendaSeleccionada.horario}</p>
-                    <p><span className="font-medium">📧</span> {tiendaSeleccionada.email}</p>
-                  </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 sm:px-6">
+              {tiendaSeleccionada.fotoLocalUrl ? (
+                <div className="mb-5 overflow-hidden rounded-xl">
+                  <img
+                    src={tiendaSeleccionada.fotoLocalUrl}
+                    alt=""
+                    className="max-h-52 w-full object-cover sm:max-h-56"
+                  />
                 </div>
-                
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 mb-3">Estadísticas</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">{tiendaSeleccionada.productos.length}</div>
-                      <div className="text-sm text-gray-600">Productos</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">{tiendaSeleccionada.descuentos.length}</div>
-                      <div className="text-sm text-gray-600">Descuentos</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              ) : null}
 
-              {/* Pestañas */}
-              <div className="border-b border-gray-200 mb-6">
-                <div className="flex space-x-8">
-                  <button className="pb-2 font-medium text-green-600 border-b-2 border-green-500">
+              <section className="mb-6 rounded-xl border border-gray-100 bg-gray-50/90 p-4">
+                <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">Contacto</h4>
+                <ul className="space-y-2 text-sm text-gray-800">
+                  {tiendaSeleccionada.direccion ? (
+                    <li className="flex gap-2">
+                      <span className="shrink-0">📍</span>
+                      <span>{tiendaSeleccionada.direccion}</span>
+                    </li>
+                  ) : null}
+                  {tiendaSeleccionada.telefono ? (
+                    <li className="flex gap-2">
+                      <span className="shrink-0">📞</span>
+                      <a
+                        href={`tel:${String(tiendaSeleccionada.telefono).replace(/\s/g, '')}`}
+                        className="font-medium text-emerald-700 hover:underline"
+                      >
+                        {tiendaSeleccionada.telefono}
+                      </a>
+                    </li>
+                  ) : null}
+                  {tiendaSeleccionada.horario ? (
+                    <li className="flex gap-2">
+                      <span className="shrink-0">🕒</span>
+                      <span>{tiendaSeleccionada.horario}</span>
+                    </li>
+                  ) : null}
+                  {tiendaSeleccionada.email ? (
+                    <li className="flex gap-2">
+                      <span className="shrink-0">📧</span>
+                      <a href={`mailto:${tiendaSeleccionada.email}`} className="break-all text-emerald-700 hover:underline">
+                        {tiendaSeleccionada.email}
+                      </a>
+                    </li>
+                  ) : null}
+                </ul>
+                {!tiendaSeleccionada.direccion &&
+                !tiendaSeleccionada.telefono &&
+                !tiendaSeleccionada.horario &&
+                !tiendaSeleccionada.email ? (
+                  <p className="text-sm text-gray-500">Esta tienda aún no cargó datos de contacto.</p>
+                ) : null}
+              </section>
+
+              <div className="mb-4 border-b border-gray-200">
+                <div className="flex gap-1" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={pestanaModal === 'productos'}
+                    onClick={() => setPestanaModal('productos')}
+                    className={`flex-1 rounded-t-lg px-3 py-3 text-sm font-semibold transition sm:flex-none sm:px-5 ${
+                      pestanaModal === 'productos'
+                        ? 'border-b-2 border-emerald-600 text-emerald-800'
+                        : 'text-gray-500 hover:text-gray-800'
+                    }`}
+                  >
                     Productos ({tiendaSeleccionada.productos.length})
                   </button>
-                  <button className="pb-2 font-medium text-gray-600 hover:text-gray-800">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={pestanaModal === 'descuentos'}
+                    onClick={() => setPestanaModal('descuentos')}
+                    className={`flex-1 rounded-t-lg px-3 py-3 text-sm font-semibold transition sm:flex-none sm:px-5 ${
+                      pestanaModal === 'descuentos'
+                        ? 'border-b-2 border-emerald-600 text-emerald-800'
+                        : 'text-gray-500 hover:text-gray-800'
+                    }`}
+                  >
                     Descuentos ({tiendaSeleccionada.descuentos.length})
                   </button>
                 </div>
               </div>
 
-              {/* Lista de productos */}
-              <div className="mb-8">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Productos disponibles</h4>
-                {tiendaSeleccionada.productos.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">Esta tienda aún no tiene productos registrados.</p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {tiendaSeleccionada.productos.map((producto) => (
-                      <div key={producto.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <div className="flex items-center space-x-3 mb-3">
-                          {producto.imagenUrl ? (
-                            <img 
-                              src={producto.imagenUrl} 
-                              alt={producto.nombre}
-                              className="w-12 h-12 rounded-lg object-cover"
+              {pestanaModal === 'productos' && (
+                <div role="tabpanel">
+                  {tiendaSeleccionada.productos.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-gray-200 py-10 text-center text-gray-500">
+                      No hay productos publicados todavía.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      {tiendaSeleccionada.productos.map((producto) => (
+                        <div
+                          key={producto.id}
+                          className="flex flex-col rounded-xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100"
+                        >
+                          <div className="mb-3 flex gap-3">
+                            <ImagenProductoConFallback
+                              src={producto.imagenUrl}
+                              alt=""
+                              className="h-16 w-16 shrink-0 rounded-lg object-cover"
                             />
-                          ) : (
-                            <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                              </svg>
+                            <div className="min-w-0 flex-1">
+                              <h5 className="font-semibold text-gray-900 leading-tight">{producto.nombre}</h5>
+                              {producto.categoria ? (
+                                <p className="mt-0.5 text-xs text-gray-500">{producto.categoria}</p>
+                              ) : null}
                             </div>
-                          )}
-                          <div className="flex-1">
-                            <h5 className="font-semibold text-gray-900 text-sm">{producto.nombre}</h5>
-                            <p className="text-xs text-gray-600">{producto.categoria}</p>
+                          </div>
+                          {producto.descripcion ? (
+                            <p className="mb-3 line-clamp-3 text-sm text-gray-600">{producto.descripcion}</p>
+                          ) : null}
+                          <div className="mt-auto flex items-end justify-between border-t border-gray-50 pt-3">
+                            <span className="text-lg font-bold text-emerald-700">{formatearPrecio(producto.precio)}</span>
+                            <span className="text-xs text-gray-500">Stock: {producto.stock ?? '—'}</span>
                           </div>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">{producto.descripcion}</p>
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-green-600">${producto.precio}</span>
-                          <span className="text-xs text-gray-500">Stock: {producto.stock}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
-              {/* Lista de descuentos */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Descuentos activos</h4>
-                {tiendaSeleccionada.descuentos.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">Esta tienda no tiene descuentos activos en este momento.</p>
-                ) : (
-                  <div className="space-y-4">
-                    {tiendaSeleccionada.descuentos.map((descuento) => (
-                      <div key={descuento.id} className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h5 className="font-semibold text-orange-800">{descuento.nombre}</h5>
-                            <p className="text-lg font-bold text-orange-600">{descuento.porcentaje}% OFF</p>
-                            <p className="text-sm text-orange-700">
-                              Válido hasta: {new Date(descuento.fechaFin).toLocaleDateString()}
-                            </p>
-                            {descuento.productosAplicables.length > 0 && (
-                              <p className="text-xs text-orange-600 mt-1">
-                                Aplica a {descuento.productosAplicables.length} productos
+              {pestanaModal === 'descuentos' && (
+                <div role="tabpanel">
+                  {tiendaSeleccionada.descuentos.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-gray-200 py-10 text-center text-gray-500">
+                      No hay descuentos activos en este momento.
+                    </p>
+                  ) : (
+                    <ul className="space-y-3">
+                      {tiendaSeleccionada.descuentos.map((descuento) => {
+                        const hasta = fechaFinDescuentoLegible(descuento.fechaFin);
+                        const nAplica = Array.isArray(descuento.productosAplicables)
+                          ? descuento.productosAplicables.length
+                          : 0;
+                        return (
+                          <li
+                            key={descuento.id}
+                            className="flex flex-col gap-2 rounded-xl border border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50/50 p-4 sm:flex-row sm:items-start sm:justify-between"
+                          >
+                            <div>
+                              <h5 className="font-semibold text-amber-950">{descuento.nombre}</h5>
+                              <p className="text-2xl font-bold text-amber-700">{descuento.porcentaje}% OFF</p>
+                              <p className="text-sm text-amber-900/90">
+                                {hasta ? (
+                                  <>
+                                    Válido hasta <span className="font-medium">{hasta}</span>
+                                  </>
+                                ) : (
+                                  <span className="text-amber-800/80">Vigencia: consultar en tienda</span>
+                                )}
                               </p>
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <div className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">
-                              Activo
+                              {nAplica > 0 ? (
+                                <p className="mt-1 text-xs text-amber-800/90">Aplica a {nAplica} producto{nAplica !== 1 ? 's' : ''}</p>
+                              ) : null}
                             </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                            <span className="inline-flex w-fit shrink-0 items-center rounded-full bg-amber-200/90 px-2.5 py-1 text-xs font-semibold text-amber-950">
+                              Activo
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
     </div>
   );
-} 
+}

@@ -45,6 +45,11 @@ export interface ImageUploaderProps {
   petId?: string;
   /** Si es true, al tocar el área se abre un modal para elegir galería o cámara (móvil). */
   usarModalOrigenFoto?: boolean;
+  /**
+   * Placeholder compacto para flujos tipo wizard (círculo): icono + texto “tocá aquí”.
+   * Evita depender de copy largo que no entra en el área circular.
+   */
+  variant?: 'default' | 'conversational';
 }
 
 export const ImageUploader: React.FC<ImageUploaderProps> = ({
@@ -56,6 +61,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   userId,
   petId,
   usarModalOrigenFoto = false,
+  variant = 'default',
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [vistaPrevia, setVistaPrevia] = useState<string | null>(imagenActual || null);
@@ -216,6 +222,13 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        aria-label={
+          !vistaPrevia
+            ? variant === 'conversational'
+              ? 'Elegir foto de la mascota: tocá para abrir galería o cámara'
+              : 'Subir imagen: tocá o arrastrá un archivo aquí'
+            : 'Cambiar foto de la mascota'
+        }
         className={`
           relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
           transition-all duration-300 ease-in-out
@@ -259,8 +272,33 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               Click para cambiar imagen
             </div>
           </div>
+        ) : variant === 'conversational' ? (
+          <div className="flex flex-col items-center justify-center gap-1.5 px-2 text-center">
+            <span
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600 ring-2 ring-orange-200/70 ${
+                isDragOver ? 'scale-105 ring-orange-400' : ''
+              }`}
+              aria-hidden
+            >
+              <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </span>
+            <span className="text-[13px] font-semibold leading-tight text-gray-800">
+              {isDragOver ? 'Soltá acá' : 'Tocá para elegir foto'}
+            </span>
+            <span className="max-w-[11rem] text-[11px] leading-snug text-gray-500">
+              {usarModalOrigenFoto ? 'Galería o cámara · JPG o PNG · máx. 5 MB' : 'O arrastrá una imagen aquí'}
+            </span>
+          </div>
         ) : (
-          // Área de carga vacía
+          // Área de carga vacía (layout completo escritorio / genérico)
           <div className="space-y-3">
             <div className="mx-auto w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
               <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

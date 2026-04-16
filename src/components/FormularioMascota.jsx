@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ImageUploader } from './ImageUploader';
 import { useAuth } from '../contexts/AuthContext';
 import BusquedaAvanzada from './uiDashboardUser/BusquedaAvanzada';
 import BusquedaAvanzadaGatos from './uiDashboardUser/BusquedaAvanzadaGatos';
 import BusquedaOtrosAnimales from './uiDashboardUser/BusquedaOtrosAnimales';
+import { useFormularioMascotaStore } from '../stores/useFormularioMascotaStore';
 
 const TOTAL_PASOS = 6;
 
@@ -55,36 +56,52 @@ const mensajesPaso = [
 export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
   const { usuario } = useAuth();
 
-  const [paso, setPaso] = useState(0);
-  /** null | 'perros' | 'gatos' | 'otros' — vista secundaria dentro del paso de raza */
-  const [vistaCatalogoRaza, setVistaCatalogoRaza] = useState(null);
-
-  const [nombre, setNombre] = useState('');
-  const [razaSeleccionada, setRazaSeleccionada] = useState('');
-  const [raza, setRaza] = useState('');
-  const [fechaNacimiento, setFechaNacimiento] = useState('');
-  /** 'fechaExacta' | 'edadAproximada' */
-  const [modoNacimiento, setModoNacimiento] = useState('edadAproximada');
-  const [añosAproximados, setAñosAproximados] = useState('');
-  const [mesesAdicionales, setMesesAdicionales] = useState('');
-  const [edadCalculada, setEdadCalculada] = useState('');
-  const [color, setColor] = useState('');
+  /** File no es serializable: solo vive en memoria mientras el modal está montado */
   const [archivoImagen, setArchivoImagen] = useState(null);
-  const [urlImagenMascota, setUrlImagenMascota] = useState('');
-  const [contacto, setContacto] = useState('');
+  const [persistListo, setPersistListo] = useState(() =>
+    typeof useFormularioMascotaStore.persist?.hasHydrated === 'function'
+      ? useFormularioMascotaStore.persist.hasHydrated()
+      : true
+  );
 
-  const [vacunas, setVacunas] = useState([{ nombre: '', fecha: '' }]);
-  const [alergias, setAlergias] = useState('');
-  const [enfermedades, setEnfermedades] = useState('');
-  const [notas, setNotas] = useState('');
+  const {
+    paso,
+    vistaCatalogoRaza,
+    nombre,
+    razaSeleccionada,
+    raza,
+    fechaNacimiento,
+    modoNacimiento,
+    añosAproximados,
+    mesesAdicionales,
+    color,
+    urlImagenMascota,
+    contacto,
+    vacunas,
+    alergias,
+    enfermedades,
+    notas,
+    mascotaId,
+    actualizar,
+    resetearFormularioMascota,
+    asegurarMascotaId,
+  } = useFormularioMascotaStore();
 
-  const generarIdUnico = () => {
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substr(2, 9);
-    return `${timestamp}-${random}`;
-  };
+  useEffect(() => {
+    const api = useFormularioMascotaStore.persist;
+    if (typeof api?.hasHydrated === 'function' && api.hasHydrated()) {
+      setPersistListo(true);
+      return;
+    }
+    const unsub = api?.onFinishHydration?.(() => setPersistListo(true));
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
+  }, []);
 
-  const [mascotaId] = useState(() => generarIdUnico());
+  useEffect(() => {
+    asegurarMascotaId();
+  }, [asegurarMascotaId]);
 
   const calcularEdad = (fechaNac) => {
     if (!fechaNac) return '';
@@ -137,10 +154,7 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
     return Math.round(años * 10) / 10;
   };
 
-  useEffect(() => {
-    const edad = calcularEdad(fechaNacimiento);
-    setEdadCalculada(edad);
-  }, [fechaNacimiento]);
+  const edadCalculada = useMemo(() => calcularEdad(fechaNacimiento), [fechaNacimiento]);
 
   useEffect(() => {
     if (modoNacimiento !== 'edadAproximada') return;
@@ -149,21 +163,20 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
     const meses = Math.max(0, Math.min(11, parseInt(String(mesesAdicionales), 10) || 0));
 
     if (años === 0 && meses === 0) {
-      setFechaNacimiento('');
+      actualizar({ fechaNacimiento: '' });
       return;
     }
 
     const añosLimitados = Math.min(años, 50);
     const fecha = calcularFechaNacimientoDesdeEdadAproximada(añosLimitados, meses);
-    setFechaNacimiento(fecha);
-  }, [modoNacimiento, añosAproximados, mesesAdicionales]);
+    actualizar({ fechaNacimiento: fecha });
+  }, [modoNacimiento, añosAproximados, mesesAdicionales, actualizar]);
 
   useEffect(() => {
     if (razaSeleccionada) {
-      setRaza(razaSeleccionada);
-      setVistaCatalogoRaza(null);
+      actualizar({ raza: razaSeleccionada, vistaCatalogoRaza: null });
     }
-  }, [razaSeleccionada]);
+  }, [razaSeleccionada, actualizar]);
 
   const isRazaCompleta = Boolean(
     (raza && raza.trim()) || (razaSeleccionada && razaSeleccionada.trim())
@@ -216,15 +229,15 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
 
   const onContinuar = () => {
     if (!puedeAvanzar() || vistaCatalogoRaza) return;
-    setPaso((p) => Math.min(p + 1, TOTAL_PASOS - 1));
+    actualizar({ paso: Math.min(paso + 1, TOTAL_PASOS - 1) });
   };
 
   const onAtras = () => {
     if (vistaCatalogoRaza) {
-      setVistaCatalogoRaza(null);
+      actualizar({ vistaCatalogoRaza: null });
       return;
     }
-    setPaso((p) => Math.max(p - 1, 0));
+    actualizar({ paso: Math.max(paso - 1, 0) });
   };
 
   const handleSubmit = async (e) => {
@@ -252,7 +265,8 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
     const resultado = await Promise.resolve(onAgregarMascota(mascotaConId));
     if (resultado === false) return;
 
-    /* Éxito: el modal se cierra desde el padre y este formulario se desmonta; no hace falta resetear estado aquí. */
+    resetearFormularioMascota();
+    setArchivoImagen(null);
   };
 
   const progreso = ((paso + 1) / TOTAL_PASOS) * 100;
@@ -289,29 +303,38 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
   const contenidoCatalogo =
     vistaCatalogoRaza === 'perros' ? (
       <div className="space-y-4 animate-fade-in">
-        <button type="button" className={botonSecundarioClass + ' w-full sm:w-auto'} onClick={() => setVistaCatalogoRaza(null)}>
+        <button type="button" className={botonSecundarioClass + ' w-full sm:w-auto'} onClick={() => actualizar({ vistaCatalogoRaza: null })}>
           ← Volver a la pregunta
         </button>
-        <BusquedaAvanzada onRazaSeleccionada={setRazaSeleccionada} razaSeleccionada={razaSeleccionada} />
+        <BusquedaAvanzada onRazaSeleccionada={(v) => actualizar({ razaSeleccionada: v })} razaSeleccionada={razaSeleccionada} />
         {renderIndicadorRazaSeleccionada()}
       </div>
     ) : vistaCatalogoRaza === 'gatos' ? (
       <div className="space-y-4 animate-fade-in">
-        <button type="button" className={botonSecundarioClass + ' w-full sm:w-auto'} onClick={() => setVistaCatalogoRaza(null)}>
+        <button type="button" className={botonSecundarioClass + ' w-full sm:w-auto'} onClick={() => actualizar({ vistaCatalogoRaza: null })}>
           ← Volver a la pregunta
         </button>
-        <BusquedaAvanzadaGatos onRazaSeleccionada={setRazaSeleccionada} razaSeleccionada={razaSeleccionada} />
+        <BusquedaAvanzadaGatos onRazaSeleccionada={(v) => actualizar({ razaSeleccionada: v })} razaSeleccionada={razaSeleccionada} />
         {renderIndicadorRazaSeleccionada()}
       </div>
     ) : vistaCatalogoRaza === 'otros' ? (
       <div className="space-y-4 animate-fade-in">
-        <button type="button" className={botonSecundarioClass + ' w-full sm:w-auto'} onClick={() => setVistaCatalogoRaza(null)}>
+        <button type="button" className={botonSecundarioClass + ' w-full sm:w-auto'} onClick={() => actualizar({ vistaCatalogoRaza: null })}>
           ← Volver a la pregunta
         </button>
-        <BusquedaOtrosAnimales onRazaSeleccionada={setRazaSeleccionada} razaSeleccionada={razaSeleccionada} />
+        <BusquedaOtrosAnimales onRazaSeleccionada={(v) => actualizar({ razaSeleccionada: v })} razaSeleccionada={razaSeleccionada} />
         {renderIndicadorRazaSeleccionada()}
       </div>
     ) : null;
+
+  if (!persistListo) {
+    return (
+      <div className="flex min-h-[320px] w-full max-w-2xl flex-col items-center justify-center gap-3 rounded-2xl bg-white p-8 shadow-lg mx-auto">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500" aria-hidden />
+        <p className="text-sm text-gray-600">Cargando tu progreso…</p>
+      </div>
+    );
+  }
 
   return (
     <form
@@ -368,13 +391,14 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
                 <div className="relative avatar-conversation mx-auto">
                   <ImageUploader
                     onImageSelect={setArchivoImagen}
-                    onImageUploaded={setUrlImagenMascota}
+                    onImageUploaded={(url) => actualizar({ urlImagenMascota: url })}
                     isCargando={isCargando}
                     userId={usuario?.uid}
                     petId={mascotaId}
                     imagenActual={urlImagenMascota}
                     className="avatar-upload-conversational"
                     usarModalOrigenFoto
+                    variant="conversational"
                   />
                 </div>
                 {urlImagenMascota && (
@@ -388,7 +412,7 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
                 className={inputClass}
                 placeholder="Ej: Luna, Max, Mishi…"
                 value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
+                onChange={(e) => actualizar({ nombre: e.target.value })}
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -405,7 +429,7 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
                   className={`${inputClass} ${razaSeleccionada ? 'border-green-400 bg-green-50' : ''}`}
                   placeholder="Escribí la raza o tipo"
                   value={raza}
-                  onChange={(e) => setRaza(e.target.value)}
+                  onChange={(e) => actualizar({ raza: e.target.value })}
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && isRazaCompleta) {
@@ -419,21 +443,21 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
                   <button
                     type="button"
                     className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-orange-100 text-orange-800 font-semibold hover:bg-orange-200 transition-colors"
-                    onClick={() => setVistaCatalogoRaza('perros')}
+                    onClick={() => actualizar({ vistaCatalogoRaza: 'perros' })}
                   >
                     Razas de perros
                   </button>
                   <button
                     type="button"
                     className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-orange-100 text-orange-800 font-semibold hover:bg-orange-200 transition-colors"
-                    onClick={() => setVistaCatalogoRaza('gatos')}
+                    onClick={() => actualizar({ vistaCatalogoRaza: 'gatos' })}
                   >
                     Razas de gatos
                   </button>
                   <button
                     type="button"
                     className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-orange-100 text-orange-800 font-semibold hover:bg-orange-200 transition-colors"
-                    onClick={() => setVistaCatalogoRaza('otros')}
+                    onClick={() => actualizar({ vistaCatalogoRaza: 'otros' })}
                   >
                     Otros animales
                   </button>
@@ -457,10 +481,12 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                     onClick={() => {
-                      setModoNacimiento('edadAproximada');
-                      setFechaNacimiento('');
-                      setAñosAproximados('');
-                      setMesesAdicionales('');
+                      actualizar({
+                        modoNacimiento: 'edadAproximada',
+                        fechaNacimiento: '',
+                        añosAproximados: '',
+                        mesesAdicionales: '',
+                      });
                     }}
                   >
                     Edad aproximada
@@ -473,9 +499,11 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                     onClick={() => {
-                      setModoNacimiento('fechaExacta');
-                      setAñosAproximados('');
-                      setMesesAdicionales('');
+                      actualizar({
+                        modoNacimiento: 'fechaExacta',
+                        añosAproximados: '',
+                        mesesAdicionales: '',
+                      });
                     }}
                   >
                     Fecha exacta
@@ -502,7 +530,7 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
                           max={50}
                           placeholder="Ej: 3"
                           value={añosAproximados}
-                          onChange={(e) => setAñosAproximados(e.target.value)}
+                          onChange={(e) => actualizar({ añosAproximados: e.target.value })}
                           autoFocus
                         />
                       </div>
@@ -519,7 +547,7 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
                           max={11}
                           placeholder="Ej: 6"
                           value={mesesAdicionales}
-                          onChange={(e) => setMesesAdicionales(e.target.value)}
+                          onChange={(e) => actualizar({ mesesAdicionales: e.target.value })}
                         />
                       </div>
                     </div>
@@ -533,7 +561,7 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
                       className={inputClass}
                       type="date"
                       value={fechaNacimiento}
-                      onChange={(e) => setFechaNacimiento(e.target.value)}
+                      onChange={(e) => actualizar({ fechaNacimiento: e.target.value })}
                       max={new Date().toISOString().split('T')[0]}
                       autoFocus
                     />
@@ -584,7 +612,7 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
                 className={inputClass}
                 placeholder="Ej: negro con manchas blancas, dorado…"
                 value={color}
-                onChange={(e) => setColor(e.target.value)}
+                onChange={(e) => actualizar({ color: e.target.value })}
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -601,7 +629,7 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
                 placeholder="Ejemplo: es perro guía y necesita estar cerca mío al moverse."
                 name="notas"
                 value={notas}
-                onChange={(e) => setNotas(e.target.value)}
+                onChange={(e) => actualizar({ notas: e.target.value })}
                 rows={4}
                 autoFocus
               />
@@ -714,15 +742,6 @@ export const FormularioMascota = ({ onAgregarMascota, isCargando }) => {
             height: 200px !important;
             border-radius: 50% !important;
             overflow: hidden !important;
-          }
-
-          .avatar-upload-conversational .space-y-3,
-          .avatar-upload-conversational .text-lg,
-          .avatar-upload-conversational .text-sm,
-          .avatar-upload-conversational .text-xs,
-          .avatar-upload-conversational p,
-          .avatar-upload-conversational .mt-2 {
-            display: none !important;
           }
 
           .avatar-upload-conversational button[type="button"] {

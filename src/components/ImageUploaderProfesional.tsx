@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { subirImagenProfesional } from '../data/firebase/firebase';
+import { useNotificacionApp } from '../contexts/NotificacionAppContext';
 
 export type VarianteImagenProfesional = 'local' | 'paseador';
 
@@ -23,6 +24,7 @@ export const ImageUploaderProfesional: React.FC<ImageUploaderProfesionalProps> =
   profesionalId,
   varianteImagen = 'local',
 }) => {
+  const { mostrarError } = useNotificacionApp();
   const esPaseador = varianteImagen === 'paseador';
   const textoSubir = esPaseador ? 'Subir tu foto' : 'Subir foto del local';
   const textoSubiendo = esPaseador ? 'Subiendo tu foto...' : 'Subiendo imagen del local...';
@@ -44,7 +46,10 @@ export const ImageUploaderProfesional: React.FC<ImageUploaderProfesionalProps> =
           const MAX_HEIGHT = 1080; // Máximo 1080px de alto
           
           if (img.width > MAX_WIDTH || img.height > MAX_HEIGHT) {
-            alert(`La imagen es muy grande. Máximo permitido: ${MAX_WIDTH}x${MAX_HEIGHT}px. Tu imagen: ${img.width}x${img.height}px`);
+            mostrarError(
+              `La imagen es muy grande. Máximo: ${MAX_WIDTH}×${MAX_HEIGHT}px. Tu imagen: ${img.width}×${img.height}px.`,
+              'Imagen demasiado grande'
+            );
             resolve(false);
           } else {
             resolve(true);
@@ -52,7 +57,7 @@ export const ImageUploaderProfesional: React.FC<ImageUploaderProfesionalProps> =
         };
         
         img.onerror = () => {
-          alert('Error al cargar la imagen');
+          mostrarError('No se pudo leer la imagen. Probá con otro archivo.');
           resolve(false);
         };
         
@@ -69,13 +74,12 @@ export const ImageUploaderProfesional: React.FC<ImageUploaderProfesionalProps> =
   const handleFileSelect = useCallback(async (file: File) => {
     // Validar tipo de archivo
     if (!file.type.startsWith('image/')) {
-      alert('Por favor selecciona solo archivos de imagen');
+      mostrarError('Seleccioná solo archivos de imagen.', 'Tipo de archivo');
       return;
     }
 
-    // Validar tamaño (máximo 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('La imagen debe ser menor a 5MB');
+      mostrarError('La imagen debe pesar menos de 5 MB.', 'Archivo muy pesado');
       return;
     }
 
@@ -103,14 +107,15 @@ export const ImageUploaderProfesional: React.FC<ImageUploaderProfesionalProps> =
         
         // Notificar al componente padre con la URL
         onImageUploaded(imageUrl);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('❌ Error al subir imagen:', error);
-        alert('Error al subir imagen: ' + error.message);
+        const msg = error instanceof Error ? error.message : String(error);
+        mostrarError('Error al subir la imagen: ' + msg);
       } finally {
         setIsSubiendo(false);
       }
     }
-  }, [onImageSelect, onImageUploaded, profesionalId]);
+  }, [onImageSelect, onImageUploaded, profesionalId, mostrarError]);
 
   // Manejar drag & drop
   const handleDragOver = useCallback((e: React.DragEvent) => {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotificacionApp } from '../contexts/NotificacionAppContext';
 import { agregarCitaAProfesional, agregarCitaAUsuario } from '../data/firebase/firebase';
 
 export const FormularioCitaPeluqueria = ({
@@ -9,6 +10,7 @@ export const FormularioCitaPeluqueria = ({
   onEnviar
 }) => {
   const { usuario, datosUsuario } = useAuth();
+  const { mostrarError } = useNotificacionApp();
   
   const [formData, setFormData] = useState({
     peluqueriaId: peluqueria.id,
@@ -66,9 +68,15 @@ export const FormularioCitaPeluqueria = ({
       // Obtener datos de la mascota seleccionada
       const mascotaSeleccionada = mascotas.find(m => m.id == formData.mascotaId);
       
+      const idCita =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+
       // Preparar datos de la cita
       const datosCita = {
         ...formData,
+        id: idCita,
         mascotaNombre: mascotaSeleccionada?.nombre || '',
         mascotaRaza: mascotaSeleccionada?.raza || '',
         mascotaEdad: mascotaSeleccionada?.edad || '',
@@ -91,7 +99,7 @@ export const FormularioCitaPeluqueria = ({
       
     } catch (error) {
       console.error('Error al enviar cita:', error);
-      alert('Error al reservar la cita. Inténtalo de nuevo.');
+      mostrarError('Error al reservar la cita. Inténtalo de nuevo.');
     } finally {
       setIsCargando(false);
     }

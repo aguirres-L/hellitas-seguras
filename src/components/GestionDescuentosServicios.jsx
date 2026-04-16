@@ -7,8 +7,10 @@ import {
   actualizarDescuento,
   eliminarDescuento,
 } from '../data/firebase/firebase';
+import { useNotificacionApp } from '../contexts/NotificacionAppContext';
 
 const GestionDescuentosServicios = ({ profesionalId, datosProfesional }) => {
+  const { mostrarError, confirmar } = useNotificacionApp();
   const [servicios, setServicios] = useState([]);
   const [productos, setProductos] = useState([]);
   const [descuentos, setDescuentos] = useState([]);
@@ -41,7 +43,7 @@ const GestionDescuentosServicios = ({ profesionalId, datosProfesional }) => {
         setDescuentos(dsc || []);
       } catch (e) {
         console.error('Error cargando datos de descuentos:', e);
-        alert('Error al cargar datos de descuentos');
+        mostrarError('Error al cargar datos de descuentos');
       } finally {
         setIsCargando(false);
       }
@@ -80,13 +82,17 @@ const GestionDescuentosServicios = ({ profesionalId, datosProfesional }) => {
   };
 
   const onEliminar = async (id) => {
-    if (!confirm('¿Eliminar este descuento?')) return;
+    const ok = await confirmar('¿Eliminar este descuento?', {
+      titulo: 'Eliminar descuento',
+      textoConfirmar: 'Sí, eliminar',
+    });
+    if (!ok) return;
     try {
       await eliminarDescuento(profesionalId, id);
       setDescuentos((prev) => prev.filter((x) => x.id !== id));
     } catch (e) {
       console.error(e);
-      alert('Error eliminando el descuento');
+      mostrarError('Error al eliminar el descuento');
     }
   };
 
@@ -97,12 +103,12 @@ const GestionDescuentosServicios = ({ profesionalId, datosProfesional }) => {
     // Validaciones mínimas
     const porcentajeNum = Number(formDescuento.porcentaje);
     if (!formDescuento.nombre.trim() || isNaN(porcentajeNum) || porcentajeNum <= 0 || porcentajeNum > 90) {
-      alert('Completa nombre y porcentaje válido (1-90).');
+      mostrarError('Completá el nombre y un porcentaje válido (1-90).', 'Datos incompletos');
       setIsGuardando(false);
       return;
     }
     if (!formDescuento.fechaInicio || !formDescuento.fechaFin || new Date(formDescuento.fechaFin) < new Date(formDescuento.fechaInicio)) {
-      alert('Rango de fechas inválido.');
+      mostrarError('Rango de fechas inválido.', 'Fechas');
       setIsGuardando(false);
       return;
     }
@@ -131,7 +137,7 @@ const GestionDescuentosServicios = ({ profesionalId, datosProfesional }) => {
       limpiarForm();
     } catch (e) {
       console.error(e);
-      alert('Error guardando el descuento');
+      mostrarError('Error al guardar el descuento');
     } finally {
       setIsGuardando(false);
     }

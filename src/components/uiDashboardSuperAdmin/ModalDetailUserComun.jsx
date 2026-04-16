@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useNotificacionApp } from '../../contexts/NotificacionAppContext';
 import UiLiquidacionesUserComun from './UiLiquidacionUserComun';
 import { getAllDataCollection } from '../../data/firebase/firebase';
 
@@ -10,6 +11,7 @@ export default function ModalDetailUserComun({
   onEditarUsuario 
 }) {
   const { typeTheme } = useTheme();
+  const { confirmar } = useNotificacionApp();
   
 
    // controles para la vista del modal de liquidaciones
@@ -25,6 +27,7 @@ export default function ModalDetailUserComun({
 
 
   const [allChapitaUser, setAllChapitaUser] = useState([]);
+  const [isConfirmandoTransferencia, setIsConfirmandoTransferencia] = useState(false);
 
 // Función para cargar pagos del usuario
 const getAllChapitasUsuario = async () => {
@@ -99,10 +102,14 @@ const getAllChapitasUsuario = async () => {
 
   // Función para guardar cambios
   const handleGuardarCambios = async () => {
-    if (window.confirm('¿Estás seguro de que quieres guardar estos cambios?')) {
-      await onEditarUsuario(usuario.id, datosEditados);
-      setIsEditando(false);
-    }
+    const ok = await confirmar('¿Estás seguro de que querés guardar estos cambios?', {
+      titulo: 'Guardar cambios',
+      textoConfirmar: 'Guardar',
+      textoCancelar: 'Cancelar',
+    });
+    if (!ok) return;
+    await onEditarUsuario(usuario.id, datosEditados);
+    setIsEditando(false);
   };
 
   // Función para cambiar estado
@@ -121,10 +128,28 @@ const getAllChapitasUsuario = async () => {
     }));
   };
 
-
-  
-  
-  
+  const handleConfirmarPagoTransferenciaVerificado = async () => {
+    const ok = await confirmar(
+      '¿Confirmás que revisaste el banco y el pago por transferencia está acreditado? Se quitará la etiqueta «Pendiente verificación».',
+      {
+        titulo: 'Verificar transferencia',
+        textoConfirmar: 'Sí, verificar',
+        textoCancelar: 'Cancelar',
+      }
+    );
+    if (!ok) return;
+    setIsConfirmandoTransferencia(true);
+    try {
+      await onEditarUsuario(usuario.id, {
+        membresiaTransferenciaPendienteVerificacion: false,
+        membresiaTransferenciaVerificadaEn: new Date(),
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsConfirmandoTransferencia(false);
+    }
+  };
 
   return (
     <div className="fixed h-screen w-screen inset-0 z-50 overflow-y-auto">
@@ -373,6 +398,59 @@ const getAllChapitasUsuario = async () => {
                       {formatearFecha(usuario.fechaActualizacion)}
                     </p>
                   </div>
+                  {(usuario.membresiaDeclaracionTransferenciaEn || usuario.membresiaUltimoMetodoPago === 'transferencia') && (
+                    <div className={`mt-4 rounded-lg p-4 border ${
+                      typeTheme === 'light' ? 'bg-amber-50 border-amber-200' : 'bg-amber-900/20 border-amber-700'
+                    }`}>
+                      <h4 className={`text-sm font-semibold mb-2 ${
+                        typeTheme === 'light' ? 'text-amber-900' : 'text-amber-100'
+                      }`}>
+                        Declaración de pago por transferencia (membresía)
+                      </h4>
+                      <p className={`text-sm ${
+                        typeTheme === 'light' ? 'text-gray-800' : 'text-gray-200'
+                      }`}>
+                        Fecha y hora declarada: {formatearFecha(usuario.membresiaDeclaracionTransferenciaEn)}
+                      </p>
+                      {usuario.membresiaIdPagoSuscripcion && (
+                        <p className={`text-xs mt-1 ${
+                          typeTheme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                        }`}>
+                          Ref. registro pago: {usuario.membresiaIdPagoSuscripcion}
+                        </p>
+                      )}
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        {usuario.membresiaTransferenciaPendienteVerificacion !== false ? (
+                          <>
+                            <span className="inline-flex w-fit px-2 py-1 text-xs font-semibold rounded-full bg-amber-200 text-amber-900">
+                              Pendiente de verificación en banco
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleConfirmarPagoTransferenciaVerificado}
+                              disabled={isConfirmandoTransferencia}
+                              className="inline-flex min-h-[40px] items-center justify-center rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isConfirmandoTransferencia ? 'Guardando…' : 'Confirmar pago verificado'}
+                            </button>
+                          </>
+                        ) : (
+                          <div className="space-y-1">
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-900 border border-green-200">
+                              Transferencia verificada
+                            </span>
+                            {usuario.membresiaTransferenciaVerificadaEn && (
+                              <p className={`text-xs ${
+                                typeTheme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                              }`}>
+                                Confirmado el: {formatearFecha(usuario.membresiaTransferenciaVerificadaEn)}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

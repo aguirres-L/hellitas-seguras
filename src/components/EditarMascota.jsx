@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { actualizarMascota, eliminarMascota } from '../data/firebase/firebase';
+import { useNotificacionApp } from '../contexts/NotificacionAppContext';
 
 const inputClass =
   'w-full px-4 py-2.5 text-base border border-gray-200 rounded-xl bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400/80 focus:border-orange-400 transition-shadow';
@@ -26,6 +27,7 @@ export const EditarMascota = ({
   onEliminar,
   isCargando,
 }) => {
+  const { mostrarError } = useNotificacionApp();
   const [formData, setFormData] = useState({
     nombre: mascota.nombre || '',
     raza: mascota.raza || '',
@@ -84,7 +86,7 @@ export const EditarMascota = ({
         ...prev,
         [name]: !checked,
       }));
-      alert(
+      mostrarError(
         `Error al ${checked ? 'marcar' : 'desmarcar'} la mascota como perdida. Inténtalo de nuevo.`
       );
     } finally {
@@ -105,7 +107,7 @@ export const EditarMascota = ({
       onGuardar();
     } catch (error) {
       console.error('Error al actualizar mascota:', error);
-      alert('Error al actualizar la mascota. Inténtalo de nuevo.');
+      mostrarError('Error al actualizar la mascota. Inténtalo de nuevo.');
     }
   };
 
@@ -126,7 +128,7 @@ export const EditarMascota = ({
       onEliminar();
     } catch (error) {
       console.error('Error al eliminar mascota:', error);
-      alert('Error al eliminar la mascota. Inténtalo de nuevo.');
+      mostrarError('Error al eliminar la mascota. Inténtalo de nuevo.');
     }
   };
 

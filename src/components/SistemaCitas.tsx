@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotificacionApp } from '../contexts/NotificacionAppContext';
 import { agregarCita, obtenerCitasProfesional, actualizarCita, eliminarCita } from '../data/firebase/firebase';
 
 interface Cita {
@@ -40,6 +41,7 @@ export const SistemaCitas: React.FC<SistemaCitasProps> = ({
   onCerrar
 }) => {
   const { datosUsuario } = useAuth();
+  const { mostrarError, confirmar } = useNotificacionApp();
   const [citas, setCitas] = useState<Cita[]>([]);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null);
@@ -80,7 +82,7 @@ export const SistemaCitas: React.FC<SistemaCitasProps> = ({
     e.preventDefault();
     
     if (!datosUsuario?.uid || !mascotaId || !propietarioId) {
-      alert('Faltan datos necesarios para crear la cita');
+      mostrarError('Faltan datos necesarios para crear la cita.', 'Datos incompletos');
       return;
     }
 
@@ -126,7 +128,7 @@ export const SistemaCitas: React.FC<SistemaCitasProps> = ({
       await cargarCitas();
     } catch (error) {
       console.error('Error al guardar cita:', error);
-      alert('Error al guardar la cita. Inténtalo de nuevo.');
+      mostrarError('Error al guardar la cita. Inténtalo de nuevo.');
     } finally {
       setIsCargando(false);
     }
@@ -151,19 +153,23 @@ export const SistemaCitas: React.FC<SistemaCitasProps> = ({
       await cargarCitas();
     } catch (error) {
       console.error('Error al cambiar estado:', error);
-      alert('Error al cambiar el estado de la cita.');
+      mostrarError('Error al cambiar el estado de la cita.');
     }
   };
 
   const handleEliminarCita = async (citaId: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta cita?')) return;
-    
+    const ok = await confirmar('¿Estás seguro de que querés eliminar esta cita?', {
+      titulo: 'Eliminar cita',
+      textoConfirmar: 'Sí, eliminar',
+    });
+    if (!ok) return;
+
     try {
       await eliminarCita(citaId);
       await cargarCitas();
     } catch (error) {
       console.error('Error al eliminar cita:', error);
-      alert('Error al eliminar la cita.');
+      mostrarError('Error al eliminar la cita.');
     }
   };
 

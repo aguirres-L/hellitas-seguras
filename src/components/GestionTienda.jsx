@@ -9,8 +9,10 @@ import {
   eliminarDescuento,
   obtenerDescuentosPorProfesional
 } from '../data/firebase/firebase';
+import { useNotificacionApp } from '../contexts/NotificacionAppContext';
 
 const GestionTienda = ({ datosTienda, onActualizarTienda, profesionalId }) => {
+  const { mostrarError, mostrarInfo, confirmar } = useNotificacionApp();
   const [productos, setProductos] = useState([]);
   const [descuentos, setDescuentos] = useState([]);
   const [pestañaActiva, setPestañaActiva] = useState('productos');
@@ -39,7 +41,7 @@ const GestionTienda = ({ datosTienda, onActualizarTienda, profesionalId }) => {
         setDescuentos(descuentosCargados);
       } catch (error) {
         console.error('Error al cargar datos:', error);
-        alert('Error al cargar los datos');
+        mostrarError('Error al cargar los datos');
       } finally {
         setIsCargandoProductos(false);
       }
@@ -91,7 +93,10 @@ const GestionTienda = ({ datosTienda, onActualizarTienda, profesionalId }) => {
   // Abrir formulario para agregar producto
   const abrirFormularioProducto = () => {
     if (productos.length >= LIMITE_PRODUCTOS_GRATIS) {
-      alert(`Has alcanzado el límite de ${LIMITE_PRODUCTOS_GRATIS} productos. Considera actualizar tu plan para agregar más productos.`);
+      mostrarInfo(
+        `Alcanzaste el límite de ${LIMITE_PRODUCTOS_GRATIS} productos. Considerá actualizar tu plan para agregar más.`,
+        'Límite de productos'
+      );
       return;
     }
     setMostrarFormularioProducto(true);
@@ -177,7 +182,7 @@ const GestionTienda = ({ datosTienda, onActualizarTienda, profesionalId }) => {
       limpiarFormularios();
     } catch (error) {
       console.error('Error al guardar producto:', error);
-      alert('Error al guardar el producto');
+      mostrarError('Error al guardar el producto');
     } finally {
       setIsGuardando(false);
     }
@@ -185,29 +190,35 @@ const GestionTienda = ({ datosTienda, onActualizarTienda, profesionalId }) => {
 
   // Eliminar producto
   const handleEliminarProducto = async (id) => {
-    if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
-      try {
-        await eliminarProducto(profesionalId, id);
-        const productosActualizados = productos.filter(p => p.id !== id);
-        setProductos(productosActualizados);
-      } catch (error) {
-        console.error('Error al eliminar producto:', error);
-        alert('Error al eliminar el producto');
-      }
+    const ok = await confirmar('¿Estás seguro de que querés eliminar este producto?', {
+      titulo: 'Eliminar producto',
+      textoConfirmar: 'Sí, eliminar',
+    });
+    if (!ok) return;
+    try {
+      await eliminarProducto(profesionalId, id);
+      const productosActualizados = productos.filter(p => p.id !== id);
+      setProductos(productosActualizados);
+    } catch (error) {
+      console.error('Error al eliminar producto:', error);
+      mostrarError('Error al eliminar el producto');
     }
   };
 
   // Eliminar descuento
   const handleEliminarDescuento = async (id) => {
-    if (confirm('¿Estás seguro de que quieres eliminar este descuento?')) {
-      try {
-        await eliminarDescuento(profesionalId, id);
-        const descuentosActualizados = descuentos.filter(d => d.id !== id);
-        setDescuentos(descuentosActualizados);
-      } catch (error) {
-        console.error('Error al eliminar descuento:', error);
-        alert('Error al eliminar el descuento');
-      }
+    const ok = await confirmar('¿Estás seguro de que querés eliminar este descuento?', {
+      titulo: 'Eliminar descuento',
+      textoConfirmar: 'Sí, eliminar',
+    });
+    if (!ok) return;
+    try {
+      await eliminarDescuento(profesionalId, id);
+      const descuentosActualizados = descuentos.filter(d => d.id !== id);
+      setDescuentos(descuentosActualizados);
+    } catch (error) {
+      console.error('Error al eliminar descuento:', error);
+      mostrarError('Error al eliminar el descuento');
     }
   };
 
@@ -255,7 +266,7 @@ const GestionTienda = ({ datosTienda, onActualizarTienda, profesionalId }) => {
       limpiarFormularios();
     } catch (error) {
       console.error('Error al guardar descuento:', error);
-      alert('Error al guardar el descuento');
+      mostrarError('Error al guardar el descuento');
     } finally {
       setIsGuardando(false);
     }

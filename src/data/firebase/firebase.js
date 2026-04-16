@@ -439,7 +439,7 @@ export const agregarCitaAProfesional = async (profesionalId, cita) => {
     await updateDoc(profesionalRef, {
       citas: arrayUnion({
         ...cita,
-        id: Date.now().toString(), // ID temporal para la cita
+        id: cita.id || Date.now().toString(),
         fechaCreacion: new Date(),
         estado: 'pendiente'
       })
@@ -462,7 +462,7 @@ export const agregarCitaAUsuario = async (usuarioId, cita) => {
     await updateDoc(usuarioRef, {
       citas: arrayUnion({
         ...cita,
-        id: Date.now().toString(), // ID temporal para la cita
+        id: cita.id || Date.now().toString(),
         fechaCreacion: new Date(),
         estado: 'pendiente'
       })

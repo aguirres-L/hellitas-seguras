@@ -16,12 +16,14 @@ import { TrendingUp } from 'lucide-react';
 import DecoracionForm from './decoracionUi/DecoracionForm';
 import GraficoComponente from './uiDashboardSuperAdmin/GraficoComponente';
 import { getAllChapitas } from '../data/hook/getAllChapitas';
+import { useNotificacionApp } from '../contexts/NotificacionAppContext';
 
 // Este componente no recibe props
 const DashboardSuperAdmin = () => {
   const navigate = useNavigate();
   const { usuario, cerrarSesion, isCargandoLogout } = useAuth();
   const { typeTheme } = useTheme();
+  const { mostrarExito, mostrarError } = useNotificacionApp();
   
   // Estados para datos del super admin
   const [datosUsuario, setDatosUsuario] = useState(null);
@@ -130,7 +132,7 @@ const DashboardSuperAdmin = () => {
       await cerrarSesion();
       navigate('/login');
     } catch (error) {
-      alert('Error al cerrar sesión. Inténtalo de nuevo.');
+      mostrarError('Error al cerrar sesión. Inténtalo de nuevo.');
     }
   };
 
@@ -285,6 +287,20 @@ const DashboardSuperAdmin = () => {
     }).format(valor);
   };
 
+  const formatearFechaHoraDeclaracion = (timestamp) => {
+    if (!timestamp) return '—';
+    const fecha = timestamp.seconds
+      ? new Date(timestamp.seconds * 1000)
+      : new Date(timestamp);
+    return fecha.toLocaleString('es-CL', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   // Función para obtener el color del estado
   const obtenerColorEstado = (estado) => {
     switch (estado) {
@@ -330,7 +346,8 @@ const DashboardSuperAdmin = () => {
   };
 
   // Función para verificar mensualidades
-  const handleVerificarMensualidades = async () => {
+  const handleVerificarMensualidades = async (opciones = {}) => {
+    const { mostrarResumen = true } = opciones;
     setIsVerificandoMensualidades(true);
     try {
       const resultado = await mensualidadController.ejecutarVerificacionCompleta();
@@ -342,13 +359,18 @@ const DashboardSuperAdmin = () => {
         // Recargar usuarios comunes para mostrar cambios
         await cargarUsuariosComunes();
         
-        alert(`✅ Verificación completada:\n- ${resultado.alertas.mensualidadesVencidas.cantidad} mensualidades vencidas\n- ${resultado.alertas.mensualidadesProximasVencer.cantidad} próximas a vencer`);
+        if (mostrarResumen) {
+          mostrarExito(
+            `Verificación completada:\n• ${resultado.alertas.mensualidadesVencidas.cantidad} mensualidades vencidas\n• ${resultado.alertas.mensualidadesProximasVencer.cantidad} próximas a vencer`,
+            'Verificación de mensualidades'
+          );
+        }
       } else {
-        alert('❌ Error al verificar mensualidades: ' + resultado.error);
+        mostrarError('Error al verificar mensualidades: ' + resultado.error);
       }
     } catch (error) {
       console.error('Error al verificar mensualidades:', error);
-      alert('❌ Error al verificar mensualidades');
+      mostrarError('Error al verificar mensualidades');
     } finally {
       setIsVerificandoMensualidades(false);
     }
@@ -360,17 +382,18 @@ const DashboardSuperAdmin = () => {
       const resultado = await mensualidadController.renovarMensualidadUsuario(usuarioId);
       
       if (resultado.exitoso) {
-        alert(`✅ Mensualidad renovada exitosamente para ${resultado.usuario.displayName || resultado.usuario.email}\n${resultado.mensaje}`);
-        // Recargar usuarios comunes
+        mostrarExito(
+          `Mensualidad renovada para ${resultado.usuario.displayName || resultado.usuario.email}\n${resultado.mensaje}`,
+          'Renovación exitosa'
+        );
         await cargarUsuariosComunes();
-        // Actualizar alertas
-        await handleVerificarMensualidades();
+        await handleVerificarMensualidades({ mostrarResumen: false });
       } else {
-        alert('❌ Error al renovar mensualidad: ' + resultado.error);
+        mostrarError('Error al renovar mensualidad: ' + resultado.error);
       }
     } catch (error) {
       console.error('Error al renovar mensualidad:', error);
-      alert('❌ Error al renovar mensualidad');
+      mostrarError('Error al renovar mensualidad');
     }
   };
 
@@ -380,19 +403,16 @@ const DashboardSuperAdmin = () => {
       const resultado = await mensualidadController.actualizarUsuarioEnBaseDatos(usuarioId, nuevosDatos);
       
       if (resultado) {
-        alert(`✅ Usuario actualizado exitosamente`);
-        // Recargar usuarios comunes
+        mostrarExito('Usuario actualizado exitosamente', 'Cambios guardados');
         await cargarUsuariosComunes();
-        // Actualizar alertas
-        await handleVerificarMensualidades();
-        // Cerrar modal
+        await handleVerificarMensualidades({ mostrarResumen: false });
         handleCerrarModal();
       } else {
-        alert('❌ Error al actualizar usuario');
+        mostrarError('Error al actualizar usuario');
       }
     } catch (error) {
       console.error('Error al editar usuario:', error);
-      alert('❌ Error al editar usuario'); 
+      mostrarError('Error al editar usuario');
     }
   };
 
@@ -745,6 +765,7 @@ const DashboardSuperAdmin = () => {
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mascotas</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Citas</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registro</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transferencia membresía</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                         </tr>
                       </thead>
@@ -788,6 +809,33 @@ const DashboardSuperAdmin = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {usuario.fechaCreacion ? new Date(usuario.fechaCreacion.seconds * 1000).toLocaleDateString('es-CL') : 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900 max-w-[200px]">
+                              {usuario.membresiaDeclaracionTransferenciaEn ? (
+                                <div className="space-y-1">
+                                  <p className="text-xs text-gray-600">
+                                    {formatearFechaHoraDeclaracion(usuario.membresiaDeclaracionTransferenciaEn)}
+                                  </p>
+                                  {usuario.membresiaTransferenciaPendienteVerificacion !== false ? (
+                                    <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                                      Pendiente verificación
+                                    </span>
+                                  ) : (
+                                    <div className="space-y-0.5">
+                                      <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-900 border border-green-200">
+                                        Verificado
+                                      </span>
+                                      {usuario.membresiaTransferenciaVerificadaEn && (
+                                        <p className="text-[10px] text-gray-500 leading-tight">
+                                          {formatearFechaHoraDeclaracion(usuario.membresiaTransferenciaVerificadaEn)}
+                                        </p>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">—</span>
+                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <div className="flex space-x-2">

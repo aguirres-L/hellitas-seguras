@@ -10,11 +10,13 @@ import { ImageUploaderProfesional } from './ImageUploaderProfesional';
 import DecoracionForm from './decoracionUi/DecoracionForm';
 import AddServicesProfecional from './dashboardProfesional/AddServicesProfecional';
 import { useTheme } from '../contexts/ThemeContext';
+import { useNotificacionApp } from '../contexts/NotificacionAppContext';
 
 // Este componente no recibe props
 const DashboardProfesional = () => {
   const navigate = useNavigate();
   const { typeTheme } = useTheme();
+  const { mostrarExito, mostrarError, confirmar } = useNotificacionApp();
 
   const { usuario, cerrarSesion, isCargandoLogout } = useAuth();
   const [datosProfesional, setDatosProfesional] = useState(null);
@@ -68,7 +70,7 @@ const DashboardProfesional = () => {
       await cerrarSesion();
       navigate('/login-profesional');
     } catch (error) {
-      alert('Error al cerrar sesión. Inténtalo de nuevo.');
+      mostrarError('Error al cerrar sesión. Inténtalo de nuevo.');
     }
   };
 
@@ -87,7 +89,7 @@ const DashboardProfesional = () => {
       setDatosProfesional(datosActualizados);
     } catch (error) {
       console.error('Error al actualizar tienda:', error);
-      alert('Error al actualizar la tienda');
+      mostrarError('Error al actualizar la tienda');
     } finally {
       setIsActualizandoTienda(false);
     }
@@ -96,7 +98,7 @@ const DashboardProfesional = () => {
   // Función para manejar la actualización de imagen
   const handleActualizarImagen = async () => {
     if (!archivoImagen) {
-      alert('Por favor selecciona una imagen');
+      mostrarError('Por favor seleccioná una imagen', 'Falta imagen');
       return;
     }
 
@@ -120,14 +122,15 @@ const DashboardProfesional = () => {
       setArchivoImagen(null);
       setUrlImagenLocal('');
       
-      alert(
+      mostrarExito(
         datosProfesional?.tipoProfesional === 'paseador'
-          ? '¡Tu foto se actualizó correctamente!'
-          : '¡Imagen del local actualizada exitosamente!'
+          ? 'Tu foto se actualizó correctamente.'
+          : 'Imagen del local actualizada exitosamente.',
+        'Listo'
       );
     } catch (error) {
       console.error('❌ Error al actualizar imagen:', error);
-      alert('Error al actualizar la imagen: ' + error.message);
+      mostrarError('Error al actualizar la imagen: ' + error.message);
     } finally {
       setIsSubiendoImagen(false);
     }
@@ -163,17 +166,20 @@ const DashboardProfesional = () => {
   };
 
   const handleEliminarServicio = async (servicioId) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este servicio?')) {
-      try {
-        await eliminarServicio(usuario.uid, servicioId);
-        // Recargar datos del profesional
-        const datos = await obtenerProfesionalPorUid(usuario.uid);
-        setDatosProfesional(datos);
-        alert('Servicio eliminado exitosamente');
-      } catch (error) {
-        console.error('Error al eliminar servicio:', error);
-        alert('Error al eliminar el servicio');
-      }
+    const ok = await confirmar('¿Estás seguro de que querés eliminar este servicio?', {
+      titulo: 'Eliminar servicio',
+      textoConfirmar: 'Sí, eliminar',
+      textoCancelar: 'Cancelar',
+    });
+    if (!ok) return;
+    try {
+      await eliminarServicio(usuario.uid, servicioId);
+      const datos = await obtenerProfesionalPorUid(usuario.uid);
+      setDatosProfesional(datos);
+      mostrarExito('Servicio eliminado correctamente.', 'Listo');
+    } catch (error) {
+      console.error('Error al eliminar servicio:', error);
+      mostrarError('Error al eliminar el servicio');
     }
   };
 

@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { actualizarEstadoChapita } from '../../../data/firebase/firebase';
 import ModalAlert from '../../ui/svg/uiPetProfile/uiMetodoDePago/ModalAlert';
 import { descargarQRCode, mostrarPreviewQR } from '../../genertaQR/QrComponent';
+import { useNotificacionApp } from '../../../contexts/NotificacionAppContext';
 
 export default function DetailPagoChapita({ obtenerColorEstado, pagosChapitas, typeTheme, isCargandoPagos, formatearMoneda, formatearFecha, onEstadoActualizado }){
+    const { mostrarError } = useNotificacionApp();
     
     // Estados para el modal de confirmación
     const [mostrarModal, setMostrarModal] = useState(false);
@@ -24,7 +26,7 @@ export default function DetailPagoChapita({ obtenerColorEstado, pagosChapitas, t
             }
         } catch (error) {
             console.error('Error al actualizar estado:', error);
-            alert('Error al actualizar el estado de la chapita');
+            mostrarError('Error al actualizar el estado de la chapita');
         }
     };
 
@@ -103,7 +105,7 @@ export default function DetailPagoChapita({ obtenerColorEstado, pagosChapitas, t
         if (nuevaVentana) {
             // Mostrar mensaje de ayuda
         } else {
-            alert('No se pudo abrir la imagen. Verifica que tu navegador permita ventanas emergentes.');
+            mostrarError('No se pudo abrir la imagen. Verificá que el navegador permita ventanas emergentes.');
         }
     };
 

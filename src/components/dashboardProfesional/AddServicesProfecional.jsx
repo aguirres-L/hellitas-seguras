@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { agregarServicio, actualizarServicio } from '../../data/firebase/firebase';
+import { useNotificacionApp } from '../../contexts/NotificacionAppContext';
 
 // Este componente recibe props
 
@@ -12,6 +13,7 @@ export default function AddServicesProfecional({
   servicioExistente = null,
   onServicioGuardado
 }) {
+  const { mostrarExito, mostrarError } = useNotificacionApp();
   const [formulario, setFormulario] = useState({
     nombre: servicioExistente?.nombre || '',
     descripcion: servicioExistente?.descripcion || '',
@@ -73,13 +75,11 @@ export default function AddServicesProfecional({
     setIsCargando(true);
     try {
       if (servicioExistente) {
-        // Actualizar servicio existente
         await actualizarServicio(profesionalId, servicioExistente.id, formulario);
-        alert('¡Servicio actualizado exitosamente!');
+        mostrarExito('Servicio actualizado correctamente.', 'Listo');
       } else {
-        // Crear nuevo servicio
         await agregarServicio(profesionalId, formulario);
-        alert('¡Servicio creado exitosamente!');
+        mostrarExito('Servicio creado correctamente.', 'Listo');
       }
       
       // Limpiar formulario y cerrar modal
@@ -94,7 +94,7 @@ export default function AddServicesProfecional({
       onCerrar();
     } catch (error) {
       console.error('Error al guardar servicio:', error);
-      alert('Error al guardar el servicio. Inténtalo de nuevo.');
+      mostrarError('Error al guardar el servicio. Inténtalo de nuevo.');
     } finally {
       setIsCargando(false);
     }

@@ -10,6 +10,7 @@ import AllHistorias from './uiDashboardSuperAdmin/historias_macotas/AllHistorias
 import NewHistoria from './uiDashboardSuperAdmin/historias_macotas/NewHistoria';
 import InformationOfOng from './uiDashboardSuperAdmin/data_of_ong/InformationOfOng';
 import { AdminDashboardTabBar } from './uiDashboardSuperAdmin/AdminDashboardTabBar';
+import { useNotificacionApp } from '../contexts/NotificacionAppContext';
 
 // Constantes financieras configurables
 const VALOR_MENSUALIDAD = 3000; // CLP
@@ -23,6 +24,7 @@ const DashboardAdmin = () => {
   const navigate = useNavigate();
   const { usuario, cerrarSesion, isCargandoLogout } = useAuth();
   const { typeTheme } = useTheme();
+  const { mostrarError } = useNotificacionApp();
   
   // Estados para datos administrativos
   const [datosUsuario, setDatosUsuario] = useState(null);
@@ -61,7 +63,7 @@ const DashboardAdmin = () => {
       await cerrarSesion();
       navigate('/login');
     } catch (error) {
-      alert('Error al cerrar sesión. Inténtalo de nuevo.');
+      mostrarError('Error al cerrar sesión. Inténtalo de nuevo.');
     }
   };
 

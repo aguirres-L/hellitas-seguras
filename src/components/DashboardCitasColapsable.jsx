@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 // Componente separado para la sección de citas colapsables
@@ -7,7 +7,9 @@ export const DashboardCitasColapsable = ({
   isCargandoUsuario, 
   typeTheme, 
   citasCancelando, 
-  handleCancelarCita 
+  handleCancelarCita,
+  /** ID de la cita recién creada: se resalta una vez hasta que el usuario sale de la pestaña Citas */
+  idCitaDestacar = null,
 }) => {
   // Estados para citas colapsables y scroll infinito
   const [citasExpandidas, setCitasExpandidas] = useState(false);
@@ -44,6 +46,26 @@ export const DashboardCitasColapsable = ({
     const totalCitas = datosUsuario?.citas?.length || 0;
     return citasVisibles < totalCitas;
   };
+
+  // Si la cita nueva no entra en el primer bloque colapsado, expandir para que sea visible
+  useEffect(() => {
+    if (!idCitaDestacar || !datosUsuario?.citas?.length) return;
+    const idx = datosUsuario.citas.findIndex((c) => String(c.id) === String(idCitaDestacar));
+    if (idx < 0) return;
+    if (idx >= 3) {
+      setCitasExpandidas(true);
+      setCitasVisibles((prev) => Math.max(prev, idx + 1, 5));
+    }
+  }, [idCitaDestacar, datosUsuario?.citas]);
+
+  useEffect(() => {
+    if (!idCitaDestacar) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(`cita-resaltada-${idCitaDestacar}`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 350);
+    return () => window.clearTimeout(t);
+  }, [idCitaDestacar, datosUsuario?.citas]);
 
   return (
     <div className={typeTheme === 'light'
@@ -104,12 +126,23 @@ export const DashboardCitasColapsable = ({
           {(datosUsuario?.citas && datosUsuario.citas.length > 0) ? (
             <div className="space-y-4">
               {/* Mostrar solo las citas visibles */}
-              {datosUsuario.citas.slice(0, citasExpandidas ? citasVisibles : Math.min(3, datosUsuario.citas.length)).map((cita, index) => (
-                <div key={cita.id || index} className={`rounded-lg shadow-sm border transition-all duration-200 hover:shadow-md ${
-                  typeTheme === 'light' 
-                    ? 'bg-white border-gray-200' 
-                    : 'bg-gray-700 border-gray-600'
-                }`}>
+              {datosUsuario.citas.slice(0, citasExpandidas ? citasVisibles : Math.min(3, datosUsuario.citas.length)).map((cita, index) => {
+                const esRecienAgregada = idCitaDestacar != null && String(cita.id) === String(idCitaDestacar);
+                return (
+                <div
+                  key={cita.id || index}
+                  id={esRecienAgregada ? `cita-resaltada-${cita.id}` : undefined}
+                  aria-live={esRecienAgregada ? 'polite' : undefined}
+                  className={`rounded-lg shadow-sm border transition-all duration-200 hover:shadow-md ${
+                    esRecienAgregada
+                      ? typeTheme === 'light'
+                        ? 'bg-orange-50/95 border-orange-300 ring-2 ring-orange-400/85 ring-offset-2 ring-offset-white'
+                        : 'bg-gray-700 border-orange-500/90 ring-2 ring-orange-400/75 ring-offset-2 ring-offset-gray-900'
+                      : typeTheme === 'light'
+                        ? 'bg-white border-gray-200'
+                        : 'bg-gray-700 border-gray-600'
+                  }`}
+                >
                   <div className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -130,12 +163,17 @@ export const DashboardCitasColapsable = ({
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2 mb-1">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
                               <h5 className={`font-semibold truncate ${
                                 typeTheme === 'light' ? 'text-gray-900' : 'text-white'
                               }`}>
                                 {cita.mascotaNombre || 'Mascota no especificada'}
                               </h5>
+                              {esRecienAgregada && (
+                                <span className="inline-block shrink-0 rounded-full bg-orange-500 px-2 py-0.5 text-[11px] font-semibold text-white">
+                                  Recién agregada
+                                </span>
+                              )}
                               <span className={`inline-block px-2 py-1 text-xs rounded-full ${
                                 cita.estado === 'confirmada' ? 'bg-green-100 text-green-800' :
                                 cita.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
@@ -182,7 +220,8 @@ export const DashboardCitasColapsable = ({
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+              })}
               
               {/* Botón de Cargar Más */}
               {citasExpandidas && hayMasCitas() && (

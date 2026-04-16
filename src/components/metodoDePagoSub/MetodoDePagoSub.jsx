@@ -3,10 +3,11 @@ import UiPasosTranferencia from "../metodoDePago/UiPasosTranferencia";
 import { useState } from "react";
 import ModalAlert from "../ui/svg/uiPetProfile/uiMetodoDePago/ModalAlert";
 import { useAuth } from "../../contexts/AuthContext";
-import { addDataCollection } from "../../data/firebase";
+import { addDataCollection, updateDataCollection } from "../../data/firebase";
+import { mensualidadController } from "../../controllers/mensualidadController";
 
 export default function MetodoDePagoSub(){
-    const { usuario } = useAuth();
+    const { usuario, recargarDatosUsuario } = useAuth();
     const [metodoSeleccionado, setMetodoSeleccionado] = useState('transferencia');
     const [isTransferenciaConfirmada, setIsTransferenciaConfirmada] = useState(false);
     const [isProcesando, setIsProcesando] = useState(false);
@@ -29,10 +30,8 @@ export default function MetodoDePagoSub(){
         setIsProcesando(true);
         
         try {
-            // Simular procesamiento
             await new Promise(resolve => setTimeout(resolve, 2000));
 
-            // Datos de la suscripción
             const datosSuscripcion = {
                 usuarioId: usuario.uid,
                 usuarioEmail: usuario.email,
@@ -49,17 +48,33 @@ export default function MetodoDePagoSub(){
                 })
             };
 
-            
             const idSuscripcion = await addDataCollection('pagoSuscripciones', datosSuscripcion);
-            
-            
-            // Mostrar modal de éxito
+
+            if (metodoSeleccionado === 'transferencia') {
+                const resultadoRenovacion = await mensualidadController.renovarMensualidadUsuario(usuario.uid);
+                if (!resultadoRenovacion.exitoso) {
+                    throw new Error(resultadoRenovacion.error || 'No se pudo activar la membresía');
+                }
+
+                const fechaDeclaracion = new Date();
+                await updateDataCollection('usuarios', usuario.uid, {
+                    membresiaUltimoMetodoPago: 'transferencia',
+                    membresiaDeclaracionTransferenciaEn: fechaDeclaracion,
+                    membresiaTransferenciaPendienteVerificacion: true,
+                    membresiaIdPagoSuscripcion: idSuscripcion
+                });
+
+                await recargarDatosUsuario?.();
+            }
+
             setIsModalAlert(true);
             setTipoAlert('success');
             setMensaje({
                 tipo: 'Éxito',
                 from: 'suscripcion',
-                mensaje: `Suscripción procesada correctamente. ID: ${idSuscripcion}. Te contactaremos pronto.`
+                mensaje: metodoSeleccionado === 'transferencia'
+                    ? `Listo: registramos tu transferencia (ref. ${idSuscripcion}). Ya tenés acceso mientras verificamos el pago en el banco. Si algo no coincide, podemos ajustar tu cuenta desde administración.`
+                    : `Suscripción procesada correctamente. ID: ${idSuscripcion}. Te contactaremos pronto.`
             });
             
         } catch (error) {

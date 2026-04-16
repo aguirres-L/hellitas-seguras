@@ -3,13 +3,52 @@
  * Los estados vienen de `pagoChapita` (MetodoDePago / admin).
  */
 
+/** Quita tildes para que "fabricación" y "fabricacion" mapeen igual. */
+function sinAcentos(str) {
+  return String(str)
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '');
+}
+
 function normalizarEstadoChapita(estado) {
   if (estado == null || estado === '') return '';
-  const s = String(estado).trim().toLowerCase().replace(/_/g, ' ');
-  if (s === 'en viaje' || s === 'en transito' || s === 'transito') return 'en_viaje';
-  if (s === 'en produccion') return 'fabricacion';
-  if (s === 'sin estado' || s === 'sin_estado') return 'sin_estado';
-  return String(estado).trim().toLowerCase().replace(/\s+/g, '_');
+
+  const plano = sinAcentos(String(estado).trim()).toLowerCase();
+  const conEspacios = plano.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+  const slug = conEspacios.replace(/\s+/g, '_');
+
+  if (
+    conEspacios === 'en viaje' ||
+    conEspacios === 'en transito' ||
+    conEspacios === 'transito' ||
+    conEspacios === 'en camino'
+  ) {
+    return 'en_viaje';
+  }
+
+  if (conEspacios === 'en produccion') return 'fabricacion';
+
+  if (
+    conEspacios === 'en fabricacion' ||
+    slug === 'en_fabricacion'
+  ) {
+    return 'fabricacion';
+  }
+
+  if (conEspacios === 'sin estado' || slug === 'sin_estado') return 'sin_estado';
+
+  if (conEspacios === 'fabricacion' || slug === 'fabricacion') return 'fabricacion';
+
+  if (conEspacios === 'pendiente' || slug === 'pendiente') return 'pendiente';
+  if (conEspacios === 'confirmado' || slug === 'confirmado') return 'confirmado';
+  if (conEspacios === 'aprobado' || slug === 'aprobado') return 'aprobado';
+  if (conEspacios === 'entregado' || slug === 'entregado') return 'entregado';
+  if (conEspacios === 'rechazado' || slug === 'rechazado') return 'rechazado';
+  if (conEspacios === 'cancelado' || slug === 'cancelado') return 'cancelado';
+  if (conEspacios === 'disponible' || slug === 'disponible') return 'disponible';
+  if (conEspacios === 'completado' || slug === 'completado') return 'completado';
+
+  return slug;
 }
 
 const ETIQUETAS_CORTAS = {
@@ -64,25 +103,25 @@ export function clasesBadgeEstadoChapita(estado) {
   const n = normalizarEstadoChapita(estado);
   switch (n) {
     case 'pendiente':
-      return 'bg-amber-50 text-amber-900 border-amber-200';
+      return 'bg-amber-100 text-amber-900 border-amber-200';
     case 'confirmado':
     case 'aprobado':
-      return 'bg-blue-50 text-blue-900 border-blue-200';
+      return 'bg-blue-100 text-blue-900 border-blue-200';
     case 'fabricacion':
-      return 'bg-orange-50 text-orange-900 border-orange-200';
+      return 'bg-orange-100 text-orange-900 border-orange-200';
     case 'en_viaje':
-      return 'bg-violet-50 text-violet-900 border-violet-200';
+      return 'bg-violet-100 text-violet-900 border-violet-200';
     case 'entregado':
     case 'completado':
     case 'disponible':
-      return 'bg-green-50 text-green-900 border-green-200';
+      return 'bg-green-100 text-green-900 border-green-200';
     case 'rechazado':
     case 'cancelado':
-      return 'bg-red-50 text-red-900 border-red-200';
+      return 'bg-red-100 text-red-900 border-red-200';
     case 'sin_estado':
       return 'bg-gray-100 text-gray-700 border-gray-200';
     default:
-      return 'bg-gray-50 text-gray-800 border-gray-200';
+      return 'bg-gray-100 text-gray-800 border-gray-200';
   }
 }
 
