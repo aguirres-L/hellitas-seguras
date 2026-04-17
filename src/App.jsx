@@ -22,6 +22,7 @@ import ProtectedRouteMember from './components/ProtectedRouteMember';
 import AccesoBloqueado from './components/AccesoBloqueado';
 import ProtectedRouteSuperAdmin from './components/ProtectedRouteSuperAdmin';
 import DashboardSuperAdmin from './components/DashboardSuperAdmin';
+import OnboardingMvp from './components/onboarding/OnboardingMvp';
 import { inicializarTokensDesdeFirebase } from './config/apiKeys';
 
 function App() {
@@ -49,6 +50,7 @@ function App() {
               <Route path="/login-profesional" element={<LoginProfesional />} />
               <Route path="/register-profesional" element={<RegisterProfesional />} />
               <Route path="/about" element={<About />} />
+              <Route path="/onboarding" element={<OnboardingMvp />} />
               
               {/* Ruta de acceso bloqueado */}
               <Route path="/acceso-bloqueado" element={

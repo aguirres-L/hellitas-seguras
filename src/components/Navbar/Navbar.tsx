@@ -13,6 +13,7 @@ import { CloseMenu } from '../ui/svg/CloseMenu';
 import { NotificacionesChapitas } from '../NotificacionesChapitas';
 import UseFrameMotion from '../hook_frame_motion/UseFrameMotion';
 import { MobileMenuDrawer } from './MobileMenuDrawer';
+import ModalSugerenciasMejoras from './ModalSugerenciasMejoras';
 // Importar video como módulo desde src/assets (Vite lo procesará correctamente)
 // @ts-ignore - Vite procesa archivos .mp4 y devuelve la URL como string
 import videoLogo from '../../assets/pets/milo9.mp4';
@@ -44,6 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { usuario, datosUsuario } = useAuth();
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [notificacionesAbiertas, setNotificacionesAbiertas] = useState(false);
+  const [modalSugerenciasAbierto, setModalSugerenciasAbierto] = useState(false);
 
   const { typeTheme, toggleTheme } = useTheme();
   
@@ -312,6 +314,39 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       )}
 
+      {mostrarConfiguracion && usuario && (
+        <button
+          type="button"
+          onClick={() => {
+            setModalSugerenciasAbierto(true);
+            setMenuAbierto(false);
+            setNotificacionesAbiertas(false);
+          }}
+          className={
+            typeTheme === 'dark'
+              ? 'text-gray-200 hover:text-orange-400 transition-colors duration-200 text-sm gap-2 flex items-center'
+              : 'text-gray-600 hover:text-orange-600 transition-colors duration-200 text-sm gap-2 flex items-center'
+          }
+          aria-label="Enviar sugerencia o mejora"
+        >
+          <svg
+            className="h-4 w-4 shrink-0 text-current"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+            />
+          </svg>
+          <span>Sugerencia/Mejoras</span>
+        </button>
+      )}
+
       {mostrarCerrarSesion && (
         <button
           type="button"
@@ -410,6 +445,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           </MobileMenuDrawer>
         </div>
       </div>
+
+      <ModalSugerenciasMejoras
+        isAbierto={modalSugerenciasAbierto}
+        onCerrar={() => setModalSugerenciasAbierto(false)}
+        typeTheme={typeTheme}
+      />
     </nav>
   );
 }; 

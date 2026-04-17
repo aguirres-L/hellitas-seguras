@@ -15,6 +15,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import DecoracionForm from './decoracionUi/DecoracionForm';
 import GraficoComponente from './uiDashboardSuperAdmin/GraficoComponente';
+import SugerenciasMejorasPanel from './uiDashboardSuperAdmin/SugerenciasMejorasPanel';
 import { getAllChapitas } from '../data/hook/getAllChapitas';
 import { useNotificacionApp } from '../contexts/NotificacionAppContext';
 
@@ -46,6 +47,9 @@ const DashboardSuperAdmin = () => {
   // Estados para chapitas
   const [chapitas, setChapitas] = useState([ ]);
   const [isCargandoChapitas, setIsCargandoChapitas] = useState(false);
+
+  const [sugerenciasMejoras, setSugerenciasMejoras] = useState([]);
+  const [isCargandoSugerencias, setIsCargandoSugerencias] = useState(false);
 
 
   // Función para cargar chapitas
@@ -212,6 +216,29 @@ const DashboardSuperAdmin = () => {
     }
   };
 
+  const msDesdeFechaCreacion = (fc) => {
+    if (!fc) return 0;
+    if (typeof fc.seconds === 'number') return fc.seconds * 1000;
+    if (typeof fc.toDate === 'function') return fc.toDate().getTime();
+    return 0;
+  };
+
+  const cargarSugerenciasMejoras = async () => {
+    setIsCargandoSugerencias(true);
+    try {
+      const lista = await getAllDataCollection('sugerenciasMejoras');
+      const ordenada = [...lista].sort(
+        (a, b) => msDesdeFechaCreacion(b.fechaCreacion) - msDesdeFechaCreacion(a.fechaCreacion)
+      );
+      setSugerenciasMejoras(ordenada);
+    } catch (error) {
+      console.error('Error al cargar sugerencias:', error);
+      mostrarError('No se pudieron cargar las sugerencias. Revisá permisos de Firestore.');
+    } finally {
+      setIsCargandoSugerencias(false);
+    }
+  };
+
   // Función para cargar estadísticas generales
   const cargarEstadisticas = async () => {
     setIsCargandoEstadisticas(true);
@@ -270,6 +297,9 @@ const DashboardSuperAdmin = () => {
         break;
       case 'administradores':
         cargarAdministradores();
+        break;
+      case 'sugerencias':
+        cargarSugerenciasMejoras();
         break;
       case 'estadisticas':
         cargarEstadisticas();
@@ -645,6 +675,16 @@ const DashboardSuperAdmin = () => {
               >
                 Administradores
               </button>
+              <button 
+                onClick={() => setPestañaActiva('sugerencias')}
+                className={`pb-2 font-medium transition-colors duration-200 whitespace-nowrap ${
+                  pestañaActiva === 'sugerencias' 
+                    ? 'border-b-2 border-red-500 text-red-600' 
+                    : 'text-gray-600 hover:text-gray-800 hover:border-b-2 hover:border-gray-300'
+                }`}
+              >
+                Sugerencias / Mejoras
+              </button>
             </div>
           </div>
 
@@ -946,6 +986,16 @@ const DashboardSuperAdmin = () => {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Sugerencias y mejoras (feedback usuarios) */}
+          {pestañaActiva === 'sugerencias' && (
+            <SugerenciasMejorasPanel
+              lista={sugerenciasMejoras}
+              isCargando={isCargandoSugerencias}
+              typeTheme={typeTheme}
+              onRefrescar={cargarSugerenciasMejoras}
+            />
           )}
 
           {/* Contenido de Administradores */}
