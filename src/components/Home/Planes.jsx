@@ -16,7 +16,7 @@ export default function Planes(){
          <UseFrameMotion tipoAnimacion="slideRight" duracion={1} delay={0.5} waitForUserView={true}>
           <div className="bg-white rounded-2xl p-8 shadow-xl border-2 border-orange-200">
             <h3 className="text-2xl font-bold text-gray-800 mb-4">Plaquita QR</h3>
-            <div className="text-4xl font-bold text-orange-600 mb-2">$7.000</div>
+            <div className="text-4xl font-bold text-orange-600 mb-2">$10.000</div>
             <p className="text-gray-600 mb-6">Pago único</p>
             <ul className="space-y-3 text-left mb-8">
               <li className="flex items-center">
@@ -53,7 +53,7 @@ export default function Planes(){
               <span className="bg-yellow-400 text-gray-800 px-4 py-1 rounded-full text-sm font-bold">Más popular</span>
             </div>
             <h3 className="text-2xl font-bold mb-4">Plan Mensual</h3>
-            <div className="text-4xl font-bold mb-2">$3.000</div>
+            <div className="text-4xl font-bold mb-2">$5.000</div>
             <p className="text-orange-100 mb-6">Tu mensualidad representa donaciones a centros de rescate</p>
             <ul className="space-y-3 text-left mb-8">
             

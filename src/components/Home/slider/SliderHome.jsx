@@ -71,18 +71,19 @@ const urlImages4= [rescate1,rescate2,rescate3]
 
 // Datos de los slides
 const datosSlides = [
+
   {
     id: 1,
-    titulo: "Identidad para quien más querés",
-    descripcion: "Placas únicas grabadas con láser, donde el nombre y la silueta de tu mascota se convierten en arte.",
+    titulo: "Cuidado completo en una plataforma",
+    descripcion: "Acceso a nuestro sistema de citas con profesionales registrados en nuestra plataforma.",
     caracteristicas: [
-      "Personalización exacta: Transformamos una foto en una ilustración grabada para siempre.",
-      "Durabilidad premium: Materiales resistentes a agua, sol y arañazos.",
-      "Más que un accesorio: un tributo a su esencia."
+      "Consejos con IA: Recibe recomendaciones personalizadas para el cuidado de tu mascota.",
+      "Citas profesionales: Agenda con veterinarios y peluqueros registrados en la plataforma.",
+      "Tienda virtual: Explora y compra productos de petshop con descuentos exclusivos."
     ],
-    imagenUrl: urlImages,
+    imagenUrl: urlImages3,
     isVideo: false,
-   // imagenAlt: "Placa grabada con láser personalizada"
+    imagenAlt: "App mostrando agenda de citas veterinarias"
   },
   {
     id: 2,
@@ -99,16 +100,16 @@ const datosSlides = [
   },
   {
     id: 3,
-    titulo: "Cuidado completo en una plataforma",
-    descripcion: "Acceso a nuestro sistema de citas con profesionales registrados en nuestra plataforma.",
+    titulo: "Identidad para quien más querés",
+    descripcion: "Placas únicas grabadas con láser, donde el nombre y la silueta de tu mascota se convierten en arte.",
     caracteristicas: [
-      "Consejos con IA: Recibe recomendaciones personalizadas para el cuidado de tu mascota.",
-      "Citas profesionales: Agenda con veterinarios y peluqueros registrados en la plataforma.",
-      "Tienda virtual: Explora y compra productos de petshop con descuentos exclusivos."
+      "Personalización exacta: Transformamos una foto en una ilustración grabada para siempre.",
+      "Durabilidad premium: Materiales resistentes a agua, sol y arañazos.",
+      "Más que un accesorio: un tributo a su esencia."
     ],
-    imagenUrl: urlImages3,
+    imagenUrl: urlImages,
     isVideo: false,
-    imagenAlt: "App mostrando agenda de citas veterinarias"
+   // imagenAlt: "Placa grabada con láser personalizada"
   },
   {
     id: 4,
