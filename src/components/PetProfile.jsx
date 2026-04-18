@@ -957,7 +957,8 @@ const PetProfile = () => {
           <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               
-              <EditarMascota 
+              <EditarMascota
+                key={mascota.id}
                 mascota={mascota}
                 tipoProfesional={usuario?.tipoProfesional}
                 onGuardar={handleGuardarMascota}

@@ -6,9 +6,9 @@ function enlaceTelefono(telefono) {
 }
 
 /**
- * Listado de paseadores (sin flujo de citas en app: contacto por teléfono).
+ * Listado de paseadores: solicitud de cita en app o contacto por teléfono.
  */
-export default function Paseadores({ paseadores, isCargando = false }) {
+export default function Paseadores({ paseadores, isCargando = false, onSolicitarCita }) {
   const { typeTheme } = useTheme();
 
   const tituloClase =
@@ -105,16 +105,27 @@ export default function Paseadores({ paseadores, isCargando = false }) {
                   </div>
                 )}
 
-                {hrefTel ? (
-                  <a
-                    href={hrefTel}
-                    className="block w-full text-center bg-amber-600 text-white py-2 rounded-lg hover:bg-amber-700 transition-colors font-medium"
-                  >
-                    Llamar para coordinar
-                  </a>
-                ) : (
-                  <p className="text-xs text-gray-500 text-center">Teléfono no disponible</p>
-                )}
+                <div className="flex flex-col gap-2">
+                  {typeof onSolicitarCita === 'function' && (
+                    <button
+                      type="button"
+                      onClick={() => onSolicitarCita(p)}
+                      className="w-full text-center bg-amber-600 text-white py-2.5 rounded-lg hover:bg-amber-700 transition-colors font-medium"
+                    >
+                      Solicitar cita
+                    </button>
+                  )}
+                  {hrefTel ? (
+                    <a
+                      href={hrefTel}
+                      className="block w-full text-center border-2 border-amber-600 text-amber-800 py-2 rounded-lg hover:bg-amber-50 transition-colors font-medium text-sm"
+                    >
+                      Llamar para coordinar
+                    </a>
+                  ) : (
+                    <p className="text-xs text-gray-500 text-center">Teléfono no disponible</p>
+                  )}
+                </div>
               </div>
             );
           })}

@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Navbar } from './Navbar';
 import { FormularioCitaVeterinaria } from './FormularioCitaVeterinaria';
 import { FormularioCitaPeluqueria } from './FormularioCitaPeluqueria';
+import { FormularioCitaPaseador } from './FormularioCitaPaseador';
 import Peluquerias from './Peluquerias';
 import Veterinarias from './Veterinarias';
 import { agregarMascotaAUsuario, obtenerUsuarioPorUid,
@@ -25,14 +26,16 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { usuario, cerrarSesion, isCargandoLogout } = useAuth();
   const { typeTheme } = useTheme();
-  const { mostrarError, confirmar } = useNotificacionApp();
+  const { mostrarError, mostrarExito, confirmar } = useNotificacionApp();
   
 
   // Estados para controlar los modales
   const [mostrarFormularioVeterinaria, setMostrarFormularioVeterinaria] = useState(false);
   const [mostrarFormularioPeluqueria, setMostrarFormularioPeluqueria] = useState(false);
+  const [mostrarFormularioPaseador, setMostrarFormularioPaseador] = useState(false);
   const [clinicaSeleccionada, setClinicaSeleccionada] = useState(null);
   const [peluqueriaSeleccionada, setPeluqueriaSeleccionada] = useState(null);
+  const [paseadorSeleccionado, setPaseadorSeleccionado] = useState(null);
   const [isCargandoMascota, setIsCargandoMascota] = useState(false);
   const [datosUsuario, setDatosUsuario] = useState(null);
   const [isCargandoUsuario, setIsCargandoUsuario] = useState(false);
@@ -192,7 +195,7 @@ const Dashboard = () => {
       const tiendasMapeadas = tiendaData.map(mapearProfesionalATienda);
       setTiendas(tiendasMapeadas);
 
-      // Paseadores (contacto directo; sin citas en app)
+      // Paseadores (citas vía FormularioCitaPaseador + contacto telefónico)
       const paseadoresData = await obtenerProfesionalesPorTipo('paseador');
       setPaseadoresRaw(paseadoresData);
     } catch (error) {
@@ -239,6 +242,15 @@ const Dashboard = () => {
     setMostrarFormularioPeluqueria(true);
   };
 
+  const manejarAbrirFormularioPaseador = (paseador) => {
+    if (!datosUsuario?.infoMascotas?.length) {
+      mostrarError('Necesitás tener al menos una mascota registrada para solicitar un paseo.');
+      return;
+    }
+    setPaseadorSeleccionado(paseador);
+    setMostrarFormularioPaseador(true);
+  };
+
   const manejarEnviarCitaVeterinaria = (datosCita) => {
     // Aquí iría la lógica para enviar a la API
    // alert('¡Cita veterinaria agendada exitosamente!');
@@ -257,6 +269,14 @@ const Dashboard = () => {
     setMostrarFormularioPeluqueria(false);
     setPeluqueriaSeleccionada(null);
     // Marcar que las citas se actualizaron
+    marcarCitasActualizadas();
+    setPendientesTabCitas((n) => Math.min(n + 1, 99));
+    if (datosCita?.id) setIdCitaDestacar(datosCita.id);
+  };
+
+  const manejarEnviarCitaPaseador = (datosCita) => {
+    setMostrarFormularioPaseador(false);
+    setPaseadorSeleccionado(null);
     marcarCitasActualizadas();
     setPendientesTabCitas((n) => Math.min(n + 1, 99));
     if (datosCita?.id) setIdCitaDestacar(datosCita.id);
@@ -310,6 +330,11 @@ const Dashboard = () => {
 
 // Función para cancelar una cita
 const handleCancelarCita = async (cita) => {
+  if (cita?.id == null || cita.id === '') {
+    mostrarError('No se pudo identificar la cita. Recargá la página e intentá de nuevo.');
+    return;
+  }
+
   const ok = await confirmar('¿Estás seguro de que querés cancelar esta cita?', {
     titulo: 'Cancelar cita',
     textoConfirmar: 'Sí, cancelar',
@@ -317,12 +342,14 @@ const handleCancelarCita = async (cita) => {
   });
   if (!ok) return;
 
+  const idCita = String(cita.id);
+
   // Agregar la cita al set de citas cancelando
-  setCitasCancelando(prev => new Set(prev).add(cita.id));
+  setCitasCancelando((prev) => new Set(prev).add(idCita));
 
   try {
-    // Usar la nueva función que elimina la cita completamente
-    await eliminarCitaCompleta(cita);
+    // Quita la cita del usuario (y del profesional si hay clinicaId / peluqueriaId)
+    await eliminarCitaCompleta(cita, { clienteIdFallback: usuario?.uid || null });
     
     // Actualizar el estado local inmediatamente para mejor UX
     // Filtrar la cita eliminada del array de citas
@@ -330,17 +357,17 @@ const handleCancelarCita = async (cita) => {
       if (!prev || !prev.citas) return prev;
       return {
         ...prev,
-        citas: prev.citas.filter(c => c.id !== cita.id)
+        citas: prev.citas.filter((c) => String(c.id) !== idCita)
       };
     });
     
     // Recargar datos del usuario para asegurar sincronización completa
     await cargarDatosUsuario();
     
-   /*  alert('Cita cancelada exitosamente'); */
+    mostrarExito('La cita se canceló correctamente.', 'Listo');
     // Marcar que las citas se actualizaron
     marcarCitasActualizadas();
-    if (cita.id === idCitaDestacar) {
+    if (String(cita.id) === String(idCitaDestacar)) {
       setIdCitaDestacar(null);
       visitoCitasConDestacadoRef.current = false;
     }
@@ -351,11 +378,19 @@ const handleCancelarCita = async (cita) => {
     // Remover la cita del set de citas cancelando
     setCitasCancelando(prev => {
       const nuevoSet = new Set(prev);
-      nuevoSet.delete(cita.id);
+      nuevoSet.delete(idCita);
       return nuevoSet;
     });
   }
 };
+
+  const irAProfesionalesDesdeCitas = () => {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+      setPestanaActiva('profesionales');
+      return;
+    }
+    document.getElementById('panel-profesionales')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   // Función para agregar mascota usando la función centralizada
   const handleAgregarMascota = async (mascota) => {
@@ -561,6 +596,7 @@ const handleCancelarCita = async (cita) => {
           citasCancelando={citasCancelando}
           handleCancelarCita={handleCancelarCita}
           idCitaDestacar={idCitaDestacar}
+          onIrAProfesionales={irAProfesionalesDesdeCitas}
         />
               )}
 
@@ -646,7 +682,11 @@ const handleCancelarCita = async (cita) => {
               </button>
             </div>
           </div>
-          <Paseadores paseadores={paseadoresParaMostrar} isCargando={isCargandoPaseadores} />
+          <Paseadores
+            paseadores={paseadoresParaMostrar}
+            isCargando={isCargandoPaseadores}
+            onSolicitarCita={manejarAbrirFormularioPaseador}
+          />
                 </>
               )}
             </motion.div>
@@ -779,6 +819,7 @@ const handleCancelarCita = async (cita) => {
           citasCancelando={citasCancelando}
           handleCancelarCita={handleCancelarCita}
           idCitaDestacar={idCitaDestacar}
+          onIrAProfesionales={irAProfesionalesDesdeCitas}
         />
           </div>
 
@@ -839,7 +880,11 @@ const handleCancelarCita = async (cita) => {
             role="tabpanel"
             aria-labelledby="tab-dashboard-paseadores"
           >
-          <Paseadores paseadores={paseadoresParaMostrar} isCargando={isCargandoPaseadores} />
+          <Paseadores
+            paseadores={paseadoresParaMostrar}
+            isCargando={isCargandoPaseadores}
+            onSolicitarCita={manejarAbrirFormularioPaseador}
+          />
           </div>
         </div>
       </div>
@@ -873,6 +918,18 @@ const handleCancelarCita = async (cita) => {
             setPeluqueriaSeleccionada(null);
           }}
           onEnviar={manejarEnviarCitaPeluqueria}
+        />
+      )}
+
+      {mostrarFormularioPaseador && paseadorSeleccionado && (
+        <FormularioCitaPaseador
+          paseador={paseadorSeleccionado}
+          mascotas={datosUsuario?.infoMascotas || []}
+          onCerrar={() => {
+            setMostrarFormularioPaseador(false);
+            setPaseadorSeleccionado(null);
+          }}
+          onEnviar={manejarEnviarCitaPaseador}
         />
       )}
 

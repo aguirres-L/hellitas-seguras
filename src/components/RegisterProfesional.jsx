@@ -10,6 +10,8 @@ import DecoracionForm from './decoracionUi/DecoracionForm';
 import { ImageUploaderProfesional } from './ImageUploaderProfesional';
 import UseFrameMotion from './hook_frame_motion/UseFrameMotion';
 import logo11 from '../assets/modeloMilo1.png';
+import See from './ui/svg/See';
+import SeeNot from './ui/svg/SeeNot';
 
 // Este componente no recibe props
 
@@ -126,7 +128,9 @@ const RegisterProfesional = () => {
   });
   const [isRegistrando, setIsRegistrando] = useState(false);
   const [error, setError] = useState('');
-  
+  const [mostrarPassword, setMostrarPassword] = useState(false);
+  const [mostrarConfirmPassword, setMostrarConfirmPassword] = useState(false);
+
   // Estados para manejo de imagen
   const [archivoImagen, setArchivoImagen] = useState(null);
   const [urlImagenLocal, setUrlImagenLocal] = useState('');
@@ -840,14 +844,26 @@ const RegisterProfesional = () => {
               <input
                 id="password"
                 name="password"
-                type="password"
+                type={mostrarPassword ? 'text' : 'password'}
                 required
-                className="appearance-none relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                autoComplete="new-password"
+                className="appearance-none relative block w-full pl-10 pr-11 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 placeholder="Mínimo 6 caracteres"
                 value={formData.password}
                 onChange={handleChange}
                 disabled={isRegistrando}
               />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400 rounded-md"
+                onClick={() => setMostrarPassword((v) => !v)}
+                aria-label={mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                disabled={isRegistrando}
+              >
+                <span className="flex h-9 w-9 items-center justify-center [&_svg]:h-5 [&_svg]:w-5 [&_svg]:max-w-[1.25rem]">
+                  {mostrarPassword ? <SeeNot /> : <See />}
+                </span>
+              </button>
             </div>
             </div>
           </UseFrameMotion>
@@ -873,14 +889,26 @@ const RegisterProfesional = () => {
               <input
                 id="confirmPassword"
                 name="confirmPassword"
-                type="password"
+                type={mostrarConfirmPassword ? 'text' : 'password'}
                 required
-                className="appearance-none relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                autoComplete="new-password"
+                className="appearance-none relative block w-full pl-10 pr-11 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 placeholder="Repite tu contraseña"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 disabled={isRegistrando}
               />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400 rounded-md"
+                onClick={() => setMostrarConfirmPassword((v) => !v)}
+                aria-label={mostrarConfirmPassword ? 'Ocultar confirmación' : 'Mostrar confirmación'}
+                disabled={isRegistrando}
+              >
+                <span className="flex h-9 w-9 items-center justify-center [&_svg]:h-5 [&_svg]:w-5 [&_svg]:max-w-[1.25rem]">
+                  {mostrarConfirmPassword ? <SeeNot /> : <See />}
+                </span>
+              </button>
             </div>
             </div>
           </UseFrameMotion>

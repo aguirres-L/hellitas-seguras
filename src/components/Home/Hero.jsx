@@ -12,16 +12,15 @@ export default function Hero(){
      <UseFrameMotion tipoAnimacion="slideLeft" duracion={1} delay={0.5}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
 
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-6 font-bold text-gray-800 leading-tight sm:leading-snug md:leading-tight break-words hyphens-auto">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 font-bold text-gray-800 leading-tight sm:leading-snug md:leading-tight break-words hyphens-auto max-w-4xl mx-auto">
+            La seguridad de{' '}
             <span className="bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
-              Chapitas QR
-            </span>{' '}
-            que salvan vidas, Identifica a tu mascota y{' '}
-            <span className="bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
-              financia rescates
-            </span>{' '}
-           
+              volver a verte
+            </span>
           </h1>
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-6 leading-relaxed">
+            Identificación con QR y un perfil listo para cuando alguien la escaneé: menos estrés para vos, más chances de reencontrarse.
+          </p>
        
         </div>
         </UseFrameMotion>

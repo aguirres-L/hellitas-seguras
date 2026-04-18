@@ -10,6 +10,8 @@ export const DashboardCitasColapsable = ({
   handleCancelarCita,
   /** ID de la cita recién creada: se resalta una vez hasta que el usuario sale de la pestaña Citas */
   idCitaDestacar = null,
+  /** Ir a la sección Profesionales (cambia pestaña en móvil o hace scroll en desktop) */
+  onIrAProfesionales,
 }) => {
   // Estados para citas colapsables y scroll infinito
   const [citasExpandidas, setCitasExpandidas] = useState(false);
@@ -128,6 +130,8 @@ export const DashboardCitasColapsable = ({
               {/* Mostrar solo las citas visibles */}
               {datosUsuario.citas.slice(0, citasExpandidas ? citasVisibles : Math.min(3, datosUsuario.citas.length)).map((cita, index) => {
                 const esRecienAgregada = idCitaDestacar != null && String(cita.id) === String(idCitaDestacar);
+                const idCitaKey = cita.id != null ? String(cita.id) : String(index);
+                const isCancelandoEsta = citasCancelando.has(idCitaKey);
                 return (
                 <div
                   key={cita.id || index}
@@ -148,16 +152,27 @@ export const DashboardCitasColapsable = ({
                       <div className="flex-1">
                         <div className="flex items-center space-x-3">
                           <div className="flex-shrink-0">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              cita.tipoProfesional === 'veterinario' 
-                                ? 'bg-blue-100' 
-                                : 'bg-purple-100'
-                            }`}>
-                              <svg className={`w-5 h-5 ${
-                                cita.tipoProfesional === 'veterinario' 
-                                  ? 'text-blue-600' 
-                                  : 'text-purple-600'
-                              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div
+                              className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                cita.tipoProfesional === 'veterinario'
+                                  ? 'bg-blue-100'
+                                  : cita.tipoProfesional === 'paseador'
+                                    ? 'bg-amber-100'
+                                    : 'bg-purple-100'
+                              }`}
+                            >
+                              <svg
+                                className={`w-5 h-5 ${
+                                  cita.tipoProfesional === 'veterinario'
+                                    ? 'text-blue-600'
+                                    : cita.tipoProfesional === 'paseador'
+                                      ? 'text-amber-700'
+                                      : 'text-purple-600'
+                                }`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
                             </div>
@@ -191,7 +206,10 @@ export const DashboardCitasColapsable = ({
                             <p className={`text-xs ${
                               typeTheme === 'light' ? 'text-gray-500' : 'text-gray-400'
                             }`}>
-                              {cita.peluqueriaNombre || cita.veterinariaNombre || 'Profesional no especificado'}
+                              {cita.peluqueriaNombre ||
+                                cita.veterinariaNombre ||
+                                cita.paseadorNombre ||
+                                'Profesional no especificado'}
                             </p>
                           </div>
                         </div>
@@ -205,17 +223,20 @@ export const DashboardCitasColapsable = ({
                             Ver Mascota
                           </Link>
                         )}
+                        {cita.estado !== 'cancelada' && (
                         <button 
+                          type="button"
                           className={`px-3 py-1 rounded text-xs transition-colors duration-200 ${
-                            citasCancelando.has(cita.id) 
+                            isCancelandoEsta
                               ? 'bg-gray-400 text-white cursor-not-allowed' 
                               : 'bg-red-500 text-white hover:bg-red-600'
                           }`}
                           onClick={() => handleCancelarCita(cita)}
-                          disabled={citasCancelando.has(cita.id)}
+                          disabled={isCancelandoEsta}
                         >
-                          {citasCancelando.has(cita.id) ? 'Cancelando...' : 'Cancelar'}
+                          {isCancelandoEsta ? 'Cancelando...' : 'Cancelar'}
                         </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -259,14 +280,46 @@ export const DashboardCitasColapsable = ({
               )}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <div className="text-gray-400 mb-4">
-                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+            <div className="py-6 sm:py-8">
+              <div className="text-center">
+                <div className={`mb-4 ${typeTheme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className={`font-semibold ${typeTheme === 'light' ? 'text-gray-800' : 'text-white'}`}>
+                  No tenés citas programadas
+                </p>
+                <p className={`text-sm mt-2 max-w-md mx-auto leading-relaxed ${typeTheme === 'light' ? 'text-gray-600' : 'text-gray-300'}`}>
+                  Acá vas a ver los turnos que reserves desde la app.
+                </p>
               </div>
-              <p className="text-gray-600">No tienes citas programadas</p>
-              <p className="text-sm text-gray-500 mt-1">Agenda una cita con un veterinario o peluquero</p>
+
+              <div
+                className={`mt-6 rounded-2xl border p-4 sm:p-5 text-left max-w-lg mx-auto ${
+                  typeTheme === 'light'
+                    ? 'border-orange-200/80 bg-gradient-to-br from-orange-50/90 to-amber-50/50'
+                    : 'border-orange-500/30 bg-gray-700/50'
+                }`}
+              >
+                <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${typeTheme === 'light' ? 'text-orange-800' : 'text-orange-200'}`}>
+                  ¿Dónde las agendo?
+                </p>
+                <p className={`text-sm leading-relaxed ${typeTheme === 'light' ? 'text-gray-800' : 'text-gray-100'}`}>
+                  En la pestaña <strong className="font-semibold">Profesionales</strong> (menú inferior). Desde ahí podés solicitar turnos con{' '}
+                  <strong className="font-semibold">veterinarios</strong>, <strong className="font-semibold">peluqueros</strong> y{' '}
+                  <strong className="font-semibold">paseadores</strong>.
+                </p>
+                {typeof onIrAProfesionales === 'function' && (
+                  <button
+                    type="button"
+                    onClick={onIrAProfesionales}
+                    className="mt-4 w-full sm:w-auto rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:from-orange-600 hover:to-pink-600 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"
+                  >
+                    Ir a Profesionales
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>

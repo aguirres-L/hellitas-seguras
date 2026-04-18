@@ -9,8 +9,8 @@ const pasosFlujo = [
     texto: 'Registrate con tu email y completá los datos básicos. Es rápido y nos ayuda a conocerte.',
   },
   {
-    titulo: 'Activá la chapita QR',
-    texto: 'Asociá la chapita a tu mascota para que tenga perfil digital y esté identificada.',
+    titulo: 'Crea el perfil de tu mascota',
+    texto: 'Registra los datos completos de tu mascota.',
   },
   {
     titulo: 'Explorá y contanos',
@@ -23,29 +23,28 @@ export default function OnboardingMvp() {
   const [isImagenFlyerVisible, setIsImagenFlyerVisible] = useState(true);
 
   return (
-    <div className="min-h-screen bg-[#FDF6E9] px-4 py-8 sm:py-12">
-      <div className="mx-auto max-w-lg">
-        <header className="mb-6 flex items-center justify-center gap-3">
-         
-          <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-[#4A90E2] to-[#E67E22] p-0.5">
-              <img src={logo11} alt="" className="h-full w-full rounded-full object-cover" />
-            </div>
-            <span className="text-lg font-bold">
-              <span className="text-[#1e3a5f]">Huellitas</span>{' '}
-              <span className="text-[#E67E22]">Seguras</span>
-            </span>
-          </div>
-          <span className="w-14 sm:w-20" aria-hidden />
-        </header>
 
-        <main
-          className="rounded-[2rem] border-4 border-[#4A90E2] bg-[#FFFBF5] px-5 py-8 shadow-lg sm:px-8 sm:py-10"
+        <div
+          className="rounded-[2rem]  min-h-screen mx-auto max-w-lg bg-[#FFFBF5] px-5 py-2 shadow-lg sm:px-8 sm:py-10"
           style={{ boxShadow: '0 12px 40px rgba(74, 144, 226, 0.15)' }}
         >
-          <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-[#4A90E2]">
+             <header className="mb-2 mt-2 flex items-center justify-center gap-3">
+         
+         <div className="flex items-center gap-2">
+           <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-[#4A90E2] to-[#E67E22] p-0.5">
+             <img src={logo11} alt="" className="h-full w-full rounded-full object-cover" />
+           </div>
+           <span className="text-lg font-bold">
+             <span className="text-[#1e3a5f]">Huellitas</span>{' '}
+             <span className="text-[#E67E22]">Seguras</span>
+             <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-[#4A90E2]">
             MVP · Feedback
           </p>
+           </span>
+         </div>
+         <span className="w-14 sm:w-20" aria-hidden />
+       </header>
+          
           <h1 className="mb-2 text-center text-2xl font-extrabold leading-tight text-[#E67E22] sm:text-3xl">
             Ayudanos a mejorar
             <span className="ml-1 inline-block" aria-hidden>
@@ -57,33 +56,12 @@ export default function OnboardingMvp() {
             registrarte.
           </p>
 
-          <div className="mb-8 overflow-hidden rounded-2xl border-2 border-[#4A90E2]/30 bg-white shadow-inner">
-            {isImagenFlyerVisible ? (
-              <img
-                src="/onboarding-mvp-flyer.png"
-                alt="Huellitas Seguras — escaneá y participá"
-                className="h-auto w-full object-cover"
-                onError={() => setIsImagenFlyerVisible(false)}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-[#4A90E2]/10 to-transparent px-6 py-12 text-center">
-                <span className="text-4xl" aria-hidden>
-                  🐕 🐈
-                </span>
-                <p className="text-sm text-[#1e3a5f]/85">
-                  Gracias por sumarte al MVP de <span className="font-semibold text-[#E67E22]">Huellitas Seguras</span>.
-                </p>
-              </div>
-            )}
-         
-          </div>
-
-          <h2 className="mb-4 text-lg font-bold text-[#1e3a5f]">Cómo funciona</h2>
+          <h2 className="mb-2 text-lg font-bold text-[#1e3a5f]">Cómo funciona</h2>
           <ol className="mb-10 space-y-4">
             {pasosFlujo.map((paso, indice) => (
               <li
                 key={paso.titulo}
-                className="flex gap-4 rounded-2xl border border-[#4A90E2]/20 bg-white/90 px-4 py-3 shadow-sm"
+                className="flex gap-4 rounded-2xl border border-[#4A90E2]/20 bg-white/90 px-4 py-1 shadow-sm"
               >
                 <span
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#4A90E2] text-base font-bold text-white"
@@ -107,18 +85,22 @@ export default function OnboardingMvp() {
               Ir a registrarme
             </Link>
             <Link
-              to="/about"
+              to="/"
               className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border-2 border-[#4A90E2] bg-white px-6 py-3 text-center text-base font-semibold text-[#4A90E2] transition hover:bg-[#4A90E2]/5"
             >
               Conocé el proyecto
             </Link>
           </div>
-        </main>
-
-        <p className="mt-6 text-center text-xs text-[#1e3a5f]/60">
+          <p className="mt-6 text-center text-s text-[#1e3a5f]/60">
           Gracias por ser parte de Huellitas Seguras 💛
         </p>
-      </div>
-    </div>
+      
+        <p className="mt-6 text-center text-xs text-[#1e3a5f]/60">
+        © 2024 Huellitas Seguras. Todos los derechos reservados. Haciendo del mundo un lugar mejor para las mascotas .
+        </p>
+
+        </div>
+
+      
   );
 }

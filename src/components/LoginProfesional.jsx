@@ -8,6 +8,8 @@ import DecoracionForm from './decoracionUi/DecoracionForm';
 import ModalRecuperarPassword from './registers/ModalRecuperarPassword';
 import UseFrameMotion from './hook_frame_motion/UseFrameMotion';
 import logo11 from '../assets/modeloMilo1.png';
+import See from './ui/svg/See';
+import SeeNot from './ui/svg/SeeNot';
 
 // Este componente no recibe props
 const LoginProfesional = () => {
@@ -20,6 +22,7 @@ const LoginProfesional = () => {
   const [isCargando, setIsCargando] = useState(false);
   const [error, setError] = useState('');
   const [mostrarModalRecuperar, setMostrarModalRecuperar] = useState(false);
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const { setTypeProfesional } = typeProfesionalStore();
   // Redirigir si ya está autenticado
  /*  useEffect(() => {
@@ -225,14 +228,26 @@ const LoginProfesional = () => {
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={mostrarPassword ? 'text' : 'password'}
                   required
-                  className="appearance-none relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  autoComplete="current-password"
+                  className="appearance-none relative block w-full pl-10 pr-11 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   placeholder="Tu contraseña"
                   value={formData.password}
                   onChange={handleChange}
                   disabled={isCargando}
                 />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400 rounded-md"
+                  onClick={() => setMostrarPassword((v) => !v)}
+                  aria-label={mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  disabled={isCargando}
+                >
+                  <span className="flex h-9 w-9 items-center justify-center [&_svg]:h-5 [&_svg]:w-5 [&_svg]:max-w-[1.25rem]">
+                    {mostrarPassword ? <SeeNot /> : <See />}
+                  </span>
+                </button>
               </div>
             </div>
           </UseFrameMotion>

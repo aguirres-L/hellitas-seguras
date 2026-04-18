@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { actualizarMascota, eliminarMascota } from '../data/firebase/firebase';
+import { subirImagenImgbb } from '../data/imgbb/imgbb-upload';
 import { useNotificacionApp } from '../contexts/NotificacionAppContext';
 
 const inputClass =
@@ -27,9 +28,10 @@ export const EditarMascota = ({
   onEliminar,
   isCargando,
 }) => {
-  const { mostrarError } = useNotificacionApp();
+  const { mostrarError, mostrarExito } = useNotificacionApp();
   const [formData, setFormData] = useState({
     nombre: mascota.nombre || '',
+    fotoUrl: mascota.fotoUrl || '',
     raza: mascota.raza || '',
     edad: mascota.edad || 0,
     color: mascota.color || '',
@@ -49,6 +51,7 @@ export const EditarMascota = ({
   const [vacunas, setVacunas] = useState(mascota.vacunas || []);
   const [mostrarConfirmacionEliminar, setMostrarConfirmacionEliminar] = useState(false);
   const [isGuardandoEstado, setIsGuardandoEstado] = useState(false);
+  const [isSubiendoFoto, setIsSubiendoFoto] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -130,6 +133,39 @@ export const EditarMascota = ({
       console.error('Error al eliminar mascota:', error);
       mostrarError('Error al eliminar la mascota. Inténtalo de nuevo.');
     }
+  };
+
+  const maxBytesFoto = 5 * 1024 * 1024;
+
+  const handleSeleccionFotoMascota = async (e) => {
+    const archivo = e.target.files?.[0];
+    e.target.value = '';
+    if (!archivo) return;
+    if (!archivo.type.startsWith('image/')) {
+      mostrarError('Elegí un archivo de imagen (JPG, PNG, etc.).');
+      return;
+    }
+    if (archivo.size > maxBytesFoto) {
+      mostrarError('La imagen no puede superar 5 MB.');
+      return;
+    }
+    setIsSubiendoFoto(true);
+    try {
+      const url = await subirImagenImgbb(archivo, {
+        nombre: `mascota-${mascota.id}-${Date.now()}`,
+      });
+      setFormData((prev) => ({ ...prev, fotoUrl: url }));
+      mostrarExito('Foto actualizada. Recordá guardar cambios si editaste otros datos.', 'Imagen lista');
+    } catch (err) {
+      console.error(err);
+      mostrarError(err?.message || 'No se pudo subir la imagen. Revisá tu conexión y la clave imgBB (.env).');
+    } finally {
+      setIsSubiendoFoto(false);
+    }
+  };
+
+  const handleQuitarFoto = () => {
+    setFormData((prev) => ({ ...prev, fotoUrl: '' }));
   };
 
   return (
@@ -230,6 +266,58 @@ export const EditarMascota = ({
             </label>
           </div>
         </div>
+
+        <SeccionFormulario
+          titulo="Foto de la mascota"
+          descripcion="La imagen se sube a imgBB y guardamos la URL en Firebase al pulsar «Guardar cambios» (o podés subir ahora y luego guardar el resto del formulario)."
+        >
+          <div className="flex flex-col sm:flex-row gap-5 sm:items-center">
+            <div className="flex-shrink-0 mx-auto sm:mx-0">
+              <div className="h-28 w-28 sm:h-32 sm:w-32 rounded-2xl border-2 border-gray-100 bg-gray-50 overflow-hidden shadow-inner">
+                {formData.fotoUrl ? (
+                  <img
+                    src={formData.fotoUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-gray-400 text-xs text-center px-2">
+                    Sin foto
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex-1 min-w-0 space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <label className="inline-flex">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={handleSeleccionFotoMascota}
+                    disabled={isSubiendoFoto || isCargando}
+                  />
+                  <span className="inline-flex cursor-pointer items-center justify-center rounded-xl border-2 border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-semibold text-orange-800 hover:bg-orange-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    {isSubiendoFoto ? 'Subiendo…' : 'Elegir nueva foto'}
+                  </span>
+                </label>
+                {formData.fotoUrl ? (
+                  <button
+                    type="button"
+                    onClick={handleQuitarFoto}
+                    disabled={isSubiendoFoto || isCargando}
+                    className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Quitar foto
+                  </button>
+                ) : null}
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Formatos de imagen habituales, máx. 5 MB. La URL pública queda asociada al perfil de la mascota.
+              </p>
+            </div>
+          </div>
+        </SeccionFormulario>
 
         <SeccionFormulario
           titulo="Datos generales"
