@@ -1,5 +1,98 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
+
+const ETIQUETA_TIPO_SERVICIO = {
+  veterinario: 'Veterinario',
+  peluquero: 'Peluquería',
+  paseador: 'Paseador',
+  tienda: 'Tienda',
+};
+
+/** Usa tipoProfesional guardado en la cita o infiere por campos de nombre (citas antiguas). */
+function resolverTipoServicioCita(cita) {
+  const raw = String(cita.tipoProfesional || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '');
+  if (raw === 'veterinario' || raw === 'veterinaria') return 'veterinario';
+  if (raw === 'peluquero' || raw === 'peluqueria' || raw === 'peluquería') return 'peluquero';
+  if (raw === 'paseador') return 'paseador';
+  if (raw === 'tienda') return 'tienda';
+  if (cita.veterinariaNombre) return 'veterinario';
+  if (cita.peluqueriaNombre) return 'peluquero';
+  if (cita.paseadorNombre) return 'paseador';
+  return '';
+}
+
+function clasesBadgeTipoServicio(slug, typeTheme) {
+  const base = 'inline-block shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold';
+  const porTipo = {
+    veterinario:
+      typeTheme === 'light' ? 'bg-blue-100 text-blue-900' : 'bg-blue-900/45 text-blue-100',
+    peluquero:
+      typeTheme === 'light' ? 'bg-purple-100 text-purple-900' : 'bg-purple-900/45 text-purple-100',
+    paseador:
+      typeTheme === 'light' ? 'bg-amber-100 text-amber-950' : 'bg-amber-900/40 text-amber-100',
+    tienda:
+      typeTheme === 'light' ? 'bg-emerald-100 text-emerald-900' : 'bg-emerald-900/45 text-emerald-100',
+  };
+  return `${base} ${porTipo[slug] || (typeTheme === 'light' ? 'bg-gray-100 text-gray-800' : 'bg-gray-600 text-gray-100')}`;
+}
+
+function normalizarEstadoCita(raw) {
+  return String(raw || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '');
+}
+
+/** Texto legible para el chip de estado (confirmación, reprogramación, cancelación, etc.) */
+function etiquetaEstadoCita(estado) {
+  const e = normalizarEstadoCita(estado);
+  const map = {
+    pendiente: 'Pendiente',
+    confirmada: 'Confirmada',
+    cancelada: 'Cancelada',
+    reprogramada: 'Cambio de horario',
+    reprogramacion: 'Cambio de horario',
+    reprogramación: 'Cambio de horario',
+    reprogramado: 'Cambio de horario',
+    completada: 'Completada',
+    programada: 'Programada',
+  };
+  if (map[e]) return map[e];
+  if (!estado) return 'Sin estado';
+  return String(estado).charAt(0).toUpperCase() + String(estado).slice(1);
+}
+
+function clasesBadgeEstadoCita(estado, typeTheme) {
+  const e = normalizarEstadoCita(estado);
+  const light = {
+    confirmada: 'bg-green-100 text-green-800',
+    pendiente: 'bg-yellow-100 text-yellow-800',
+    cancelada: 'bg-red-100 text-red-800',
+    reprogramada: 'bg-sky-100 text-sky-900',
+    reprogramacion: 'bg-sky-100 text-sky-900',
+    reprogramación: 'bg-sky-100 text-sky-900',
+    reprogramado: 'bg-sky-100 text-sky-900',
+  };
+  const dark = {
+    confirmada: 'bg-green-900/45 text-green-100',
+    pendiente: 'bg-amber-900/40 text-amber-100',
+    cancelada: 'bg-red-900/45 text-red-100',
+    reprogramada: 'bg-sky-900/45 text-sky-100',
+    reprogramacion: 'bg-sky-900/45 text-sky-100',
+    reprogramación: 'bg-sky-900/45 text-sky-100',
+    reprogramado: 'bg-sky-900/45 text-sky-100',
+  };
+  const palette = typeTheme === 'light' ? light : dark;
+  return (
+    palette[e] ||
+    (typeTheme === 'light' ? 'bg-gray-100 text-gray-800' : 'bg-gray-600 text-gray-100')
+  );
+}
 
 // Componente separado para la sección de citas colapsables
 export const DashboardCitasColapsable = ({ 
@@ -12,6 +105,10 @@ export const DashboardCitasColapsable = ({
   idCitaDestacar = null,
   /** Ir a la sección Profesionales (cambia pestaña en móvil o hace scroll en desktop) */
   onIrAProfesionales,
+  /** IDs de citas cuyo estado cambió respecto a la última vez que el usuario revisó la lista */
+  idsConNovedadEstado = [],
+  /** Sincroniza estados vistos (oculta badge / novedades). Opcional: en desktop conviene ofrecerlo en la cinta. */
+  onMarcarNovedadesEstadoVistas,
 }) => {
   // Estados para citas colapsables y scroll infinito
   const [citasExpandidas, setCitasExpandidas] = useState(false);
@@ -69,6 +166,51 @@ export const DashboardCitasColapsable = ({
     return () => window.clearTimeout(t);
   }, [idCitaDestacar, datosUsuario?.citas]);
 
+  const ultimaFirmaScrollNovedadRef = useRef('');
+
+  /** Si la cita con cambio de estado está fuera del bloque colapsado, expandir y hacer scroll (una vez por conjunto de IDs) */
+  useEffect(() => {
+    const lista = idsConNovedadEstado || [];
+    const firma = lista.length ? [...lista].map(String).sort().join('|') : '';
+    if (!firma) {
+      ultimaFirmaScrollNovedadRef.current = '';
+      return;
+    }
+    if (!datosUsuario?.citas?.length) return;
+    if (ultimaFirmaScrollNovedadRef.current === firma) return;
+    ultimaFirmaScrollNovedadRef.current = firma;
+
+    const firstId = lista[0];
+    const idx = datosUsuario.citas.findIndex((c) => String(c.id) === String(firstId));
+    if (idx < 0) return;
+    if (idx >= 3) {
+      setCitasExpandidas(true);
+      setCitasVisibles((prev) => Math.max(prev, idx + 1, 5));
+    }
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(`cita-novedad-estado-${firstId}`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [idsConNovedadEstado, datosUsuario?.citas]);
+
+  const fotoUrlPorMascotaId = useMemo(() => {
+    const map = new Map();
+    (datosUsuario?.infoMascotas || []).forEach((m) => {
+      if (m?.id == null) return;
+      const url = m.fotoUrl || m.foto || null;
+      if (url) map.set(String(m.id), url);
+    });
+    return map;
+  }, [datosUsuario?.infoMascotas]);
+
+  const idsNovedadEstadoSet = useMemo(
+    () => new Set((idsConNovedadEstado || []).map((id) => String(id))),
+    [idsConNovedadEstado],
+  );
+
+  const cantidadNovedadesEstado = idsNovedadEstadoSet.size;
+
   return (
     <div className={typeTheme === 'light'
       ? "bg-white/80 backdrop-blur-sm rounded-xl shadow-lg px-6 pt-8 pb-6 mb-8 max-md:pt-9"
@@ -117,6 +259,38 @@ export const DashboardCitasColapsable = ({
           </button>
         )}
       </div>
+
+      {cantidadNovedadesEstado > 0 && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`mb-4 flex flex-col gap-3 rounded-lg border px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${
+            typeTheme === 'light'
+              ? 'border-sky-200 bg-sky-50 text-sky-950'
+              : 'border-sky-700/60 bg-sky-950/35 text-sky-100'
+          }`}
+        >
+          <p className="text-sm leading-snug">
+            <span className="font-semibold">Actualización del profesional.</span>{' '}
+            {cantidadNovedadesEstado === 1
+              ? 'Una cita cambió de estado (confirmación, horario o cancelación). Revisá el detalle abajo.'
+              : `${cantidadNovedadesEstado} citas cambiaron de estado. Revisá el detalle abajo.`}
+          </p>
+          {typeof onMarcarNovedadesEstadoVistas === 'function' && (
+            <button
+              type="button"
+              onClick={() => onMarcarNovedadesEstadoVistas()}
+              className={`shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                typeTheme === 'light'
+                  ? 'bg-sky-600 text-white hover:bg-sky-700'
+                  : 'bg-sky-500 text-white hover:bg-sky-400'
+              }`}
+            >
+              Listo, ya las vi
+            </button>
+          )}
+        </div>
+      )}
       
       {isCargandoUsuario ? (
         <div className="text-center py-8">
@@ -131,20 +305,36 @@ export const DashboardCitasColapsable = ({
               {datosUsuario.citas.slice(0, citasExpandidas ? citasVisibles : Math.min(3, datosUsuario.citas.length)).map((cita, index) => {
                 const esRecienAgregada = idCitaDestacar != null && String(cita.id) === String(idCitaDestacar);
                 const idCitaKey = cita.id != null ? String(cita.id) : String(index);
+                const tieneNovedadEstado =
+                  cita.id != null && idsNovedadEstadoSet.has(String(cita.id));
                 const isCancelandoEsta = citasCancelando.has(idCitaKey);
+                const urlFotoMascota =
+                  cita.fotoMascota ||
+                  (cita.mascotaId != null ? fotoUrlPorMascotaId.get(String(cita.mascotaId)) : null);
+                const tipoServicio = resolverTipoServicioCita(cita);
                 return (
                 <div
                   key={cita.id || index}
-                  id={esRecienAgregada ? `cita-resaltada-${cita.id}` : undefined}
-                  aria-live={esRecienAgregada ? 'polite' : undefined}
+                  id={
+                    esRecienAgregada
+                      ? `cita-resaltada-${cita.id}`
+                      : tieneNovedadEstado
+                        ? `cita-novedad-estado-${cita.id}`
+                        : undefined
+                  }
+                  aria-live={esRecienAgregada || tieneNovedadEstado ? 'polite' : undefined}
                   className={`rounded-lg shadow-sm border transition-all duration-200 hover:shadow-md ${
                     esRecienAgregada
                       ? typeTheme === 'light'
                         ? 'bg-orange-50/95 border-orange-300 ring-2 ring-orange-400/85 ring-offset-2 ring-offset-white'
                         : 'bg-gray-700 border-orange-500/90 ring-2 ring-orange-400/75 ring-offset-2 ring-offset-gray-900'
-                      : typeTheme === 'light'
-                        ? 'bg-white border-gray-200'
-                        : 'bg-gray-700 border-gray-600'
+                      : tieneNovedadEstado
+                        ? typeTheme === 'light'
+                          ? 'bg-sky-50/90 border-sky-300 ring-2 ring-sky-400/70 ring-offset-2 ring-offset-white'
+                          : 'bg-gray-700 border-sky-500/80 ring-2 ring-sky-400/55 ring-offset-2 ring-offset-gray-900'
+                        : typeTheme === 'light'
+                          ? 'bg-white border-gray-200'
+                          : 'bg-gray-700 border-gray-600'
                   }`}
                 >
                   <div className="p-4">
@@ -152,30 +342,43 @@ export const DashboardCitasColapsable = ({
                       <div className="flex-1">
                         <div className="flex items-center space-x-3">
                           <div className="flex-shrink-0">
-                            <div
-                              className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                cita.tipoProfesional === 'veterinario'
-                                  ? 'bg-blue-100'
-                                  : cita.tipoProfesional === 'paseador'
-                                    ? 'bg-amber-100'
-                                    : 'bg-purple-100'
-                              }`}
-                            >
-                              <svg
-                                className={`w-5 h-5 ${
-                                  cita.tipoProfesional === 'veterinario'
-                                    ? 'text-blue-600'
-                                    : cita.tipoProfesional === 'paseador'
-                                      ? 'text-amber-700'
-                                      : 'text-purple-600'
+                            {urlFotoMascota ? (
+                              <img
+                                src={urlFotoMascota}
+                                alt={cita.mascotaNombre || 'Mascota'}
+                                className={`h-12 w-12 rounded-full object-cover shadow-sm ${
+                                  typeTheme === 'light'
+                                    ? 'border-2 border-orange-100'
+                                    : 'border-2 border-gray-500'
                                 }`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                              />
+                            ) : (
+                              <div
+                                className={`flex h-12 w-12 items-center justify-center rounded-full ${
+                                  cita.tipoProfesional === 'veterinario'
+                                    ? 'bg-blue-100'
+                                    : cita.tipoProfesional === 'paseador'
+                                      ? 'bg-amber-100'
+                                      : 'bg-purple-100'
+                                }`}
+                                aria-hidden
                               >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                            </div>
+                                <svg
+                                  className={`h-5 w-5 ${
+                                    cita.tipoProfesional === 'veterinario'
+                                      ? 'text-blue-600'
+                                      : cita.tipoProfesional === 'paseador'
+                                        ? 'text-amber-700'
+                                        : 'text-purple-600'
+                                  }`}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -189,20 +392,48 @@ export const DashboardCitasColapsable = ({
                                   Recién agregada
                                 </span>
                               )}
-                              <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                                cita.estado === 'confirmada' ? 'bg-green-100 text-green-800' :
-                                cita.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                                cita.estado === 'cancelada' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {cita.estado}
+                              {tieneNovedadEstado && (
+                                <span
+                                  className={`inline-block shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                                    typeTheme === 'light'
+                                      ? 'bg-sky-600 text-white'
+                                      : 'bg-sky-500 text-white'
+                                  }`}
+                                >
+                                  Actualización
+                                </span>
+                              )}
+                              <span
+                                className={`inline-block px-2 py-1 text-xs rounded-full ${clasesBadgeEstadoCita(
+                                  cita.estado,
+                                  typeTheme,
+                                )}`}
+                              >
+                                {etiquetaEstadoCita(cita.estado)}
                               </span>
+                              {tipoServicio && (
+                                <span
+                                  className={clasesBadgeTipoServicio(tipoServicio, typeTheme)}
+                                  title="Tipo de servicio"
+                                >
+                                  {ETIQUETA_TIPO_SERVICIO[tipoServicio] || tipoServicio}
+                                </span>
+                              )}
                             </div>
                             <p className={`text-sm ${
                               typeTheme === 'light' ? 'text-gray-600' : 'text-gray-300'
                             }`}>
                               {cita.fecha} • {cita.hora} • {cita.duracion}min
                             </p>
+                            {cita.tipoCita ? (
+                              <p
+                                className={`text-xs ${
+                                  typeTheme === 'light' ? 'text-gray-600' : 'text-gray-300'
+                                }`}
+                              >
+                                <span className="font-medium">Motivo / servicio:</span> {cita.tipoCita}
+                              </p>
+                            ) : null}
                             <p className={`text-xs ${
                               typeTheme === 'light' ? 'text-gray-500' : 'text-gray-400'
                             }`}>

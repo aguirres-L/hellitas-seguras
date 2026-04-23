@@ -11,6 +11,7 @@ import Campana from '../ui/svg/Campana';
 import { OpenMenu } from '../ui/svg/OpenMenu';
 import { CloseMenu } from '../ui/svg/CloseMenu';
 import { NotificacionesChapitas } from '../NotificacionesChapitas';
+import { usePagoChapitaNotificaciones } from '../../hooks/usePagoChapitaNotificaciones';
 import UseFrameMotion from '../hook_frame_motion/UseFrameMotion';
 import { MobileMenuDrawer } from './MobileMenuDrawer';
 import ModalSugerenciasMejoras from './ModalSugerenciasMejoras';
@@ -48,7 +49,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [modalSugerenciasAbierto, setModalSugerenciasAbierto] = useState(false);
 
   const { typeTheme, toggleTheme } = useTheme();
-  
+
+  const {
+    pagoChapitas,
+    cargandoPagoChapitas,
+    idsAvisoPagoNuevo,
+    cantidadSinLeerAvisoPago,
+    marcarAvisosPagoVistos
+  } = usePagoChapitaNotificaciones(tipo === 'home' ? undefined : usuario?.uid);
+
   // Estado para controlar si mostramos el video o la imagen
   const [mostrarVideo, setMostrarVideo] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -294,22 +303,64 @@ export const Navbar: React.FC<NavbarProps> = ({
             type="button"
             onClick={() => setNotificacionesAbiertas(!notificacionesAbiertas)}
             className={
-              typeTheme === 'dark'
-                ? 'text-gray-200 hover:text-orange-400 transition-colors duration-200 text-sm gap-2'
-                : 'text-gray-600 hover:text-orange-600 transition-colors duration-200 text-sm gap-2'
+              (typeTheme === 'dark'
+                ? 'text-gray-200 hover:text-orange-400'
+                : 'text-gray-600 hover:text-orange-600') +
+              ' transition-colors duration-200 text-sm w-full min-w-0 ' +
+              (isNotificacionesInline && cantidadSinLeerAvisoPago > 0
+                ? 'rounded-lg border border-orange-300 bg-orange-50/80 p-2 dark:border-orange-500/50 dark:bg-orange-950/30'
+                : '') +
+              (isNotificacionesInline ? ' flex flex-col items-stretch text-left' : ' flex items-center gap-2')
             }
-            aria-label="Notificaciones de las chapitas"
+            aria-label={
+              cantidadSinLeerAvisoPago > 0
+                ? `Chapitas: ${cantidadSinLeerAvisoPago} novedad${
+                    cantidadSinLeerAvisoPago > 1 ? 'es' : ''
+                  } de estado por revisar`
+                : 'Chapitas: estado de tus pedidos (sin novedad nueva)'
+            }
             aria-expanded={notificacionesAbiertas}
           >
-            <Campana />
-            <span>Chapitas</span>
+            <div className={isNotificacionesInline ? 'flex w-full min-w-0 items-start gap-2' : 'flex items-center gap-2'}>
+              <span className="relative inline-flex shrink-0">
+                <Campana />
+                {cantidadSinLeerAvisoPago > 0 && (
+                  <span
+                    className="absolute -right-2.5 -top-1.5 min-h-[1.1rem] min-w-[1.1rem] rounded-full bg-red-500 px-1 text-center text-[0.65rem] font-bold leading-tight text-white"
+                    aria-hidden
+                  >
+                    {cantidadSinLeerAvisoPago > 9 ? '9+' : cantidadSinLeerAvisoPago}
+                  </span>
+                )}
+              </span>
+              <div className="min-w-0 text-left">
+                <span>Chapitas</span>
+                {isNotificacionesInline && cantidadSinLeerAvisoPago > 0 && (
+                  <p className="mt-0.5 text-xs font-medium leading-tight text-orange-700 dark:text-orange-200">
+                    Ver estado de tus chapitas sin abrir el perfil
+                  </p>
+                )}
+                {!isNotificacionesInline && cantidadSinLeerAvisoPago > 0 && (
+                  <span className="ml-1.5 text-xs font-medium text-orange-600 dark:text-orange-300">
+                    · {cantidadSinLeerAvisoPago} novedad
+                    {cantidadSinLeerAvisoPago > 1 ? 'es' : ''}
+                  </span>
+                )}
+              </div>
+            </div>
           </button>
 
           <NotificacionesChapitas
             isAbierto={notificacionesAbiertas}
-            onCerrar={() => setNotificacionesAbiertas(false)}
+            onCerrar={() => {
+              marcarAvisosPagoVistos();
+              setNotificacionesAbiertas(false);
+            }}
             typeTheme={typeTheme}
             isModoInline={isNotificacionesInline}
+            pagoChapitas={pagoChapitas}
+            isCargandoPagoChapitas={cargandoPagoChapitas}
+            idsAvisoPagoNuevo={idsAvisoPagoNuevo}
           />
         </div>
       )}
@@ -413,16 +464,32 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
 
 
-        {/* Botón hamburguesa */}
+        {/* Botón hamburguesa (badge si hay novedades en chapitas: guía a abrir Chapitas en el menú) */}
         <button
           type="button"
           className={typeTheme === 'dark'
-            ? 'sm:hidden flex items-center justify-center px-3 py-2 border rounded text-orange-200 border-orange-400'
-            : 'sm:hidden flex items-center justify-center px-3 py-2 border rounded text-orange-600 border-orange-400'}
+            ? 'relative sm:hidden flex items-center justify-center px-3 py-2 border rounded text-orange-200 border-orange-400'
+            : 'relative sm:hidden flex items-center justify-center px-3 py-2 border rounded text-orange-600 border-orange-400'}
           onClick={() => setMenuAbierto(!menuAbierto)}
           aria-expanded={menuAbierto}
-          aria-label={menuAbierto ? 'Cerrar menú' : 'Abrir menú'}
+          aria-label={
+            menuAbierto
+              ? 'Cerrar menú'
+              : cantidadSinLeerAvisoPago > 0
+                ? `Abrir menú. Hay ${cantidadSinLeerAvisoPago} novedad${
+                    cantidadSinLeerAvisoPago > 1 ? 'es' : ''
+                  } en tus chapitas (toca Chapitas abajo).`
+                : 'Abrir menú'
+          }
         >
+          {cantidadSinLeerAvisoPago > 0 && (
+            <span
+              className="absolute right-0.5 top-0.5 z-10 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[0.6rem] font-bold leading-none text-white shadow"
+              aria-hidden
+            >
+              {cantidadSinLeerAvisoPago > 9 ? '9+' : cantidadSinLeerAvisoPago}
+            </span>
+          )}
           <span className="h-6 w-6 flex items-center justify-center [&_svg]:block" aria-hidden>
             {menuAbierto ? <CloseMenu /> : <OpenMenu />}
           </span>

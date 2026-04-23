@@ -16,7 +16,7 @@ export default function Planes(){
          <UseFrameMotion tipoAnimacion="slideRight" duracion={1} delay={0.5} waitForUserView={true}>
           <div className="bg-white rounded-2xl p-8 shadow-xl border-2 border-orange-200">
             <h3 className="text-2xl font-bold text-gray-800 mb-4">Plaquita QR</h3>
-            <div className="text-4xl font-bold text-orange-600 mb-2">$10.000</div>
+            <div className="text-4xl font-bold text-orange-600 mb-2">$14.000</div>
             <p className="text-gray-600 mb-6">Pago único</p>
             <ul className="space-y-3 text-left mb-8">
               <li className="flex items-center">
@@ -31,6 +31,10 @@ export default function Planes(){
                 <span className="text-green-500 mr-2">✓</span>
                 2 meses de membresía gratis
               </li>
+              <li className="flex items-center">
+                <span className="text-green-500 mr-2">✓</span>
+                Envío a domicilio
+                </li>
             </ul>
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
               <p className="text-sm text-orange-800 font-medium mb-2">Durante tu membresía gratuita disfrutarás de:</p>

@@ -2,7 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Navbar } from './Navbar';
-import { obtenerProfesionalPorUid, buscarMascotasPorChip, subirImagenProfesional, updateDataCollection, eliminarServicio } from '../data/firebase/firebase';
+import {
+  obtenerProfesionalPorUid,
+  buscarMascotasPorChip,
+  subirImagenProfesional,
+  updateDataCollection,
+  eliminarServicio,
+  actualizarCitaEnAmbosLados,
+} from '../data/firebase/firebase';
 import { SistemaCitas } from './SistemaCitas';
 import GestionTienda from './GestionTienda';
 import GestionDescuentosServicios from './GestionDescuentosServicios';
@@ -27,6 +34,14 @@ const DashboardProfesional = () => {
   const [pestañaActiva, setPestañaActiva] = useState('historial');
   const [mostrarCitas, setMostrarCitas] = useState(false);
   const [isActualizandoTienda, setIsActualizandoTienda] = useState(false);
+  /** Modal reprogramación: misma cita en arrays usuario + profesional */
+  const [citaReprogramando, setCitaReprogramando] = useState(null);
+  const [formReprogramar, setFormReprogramar] = useState({
+    fecha: '',
+    hora: '',
+    duracion: 60,
+  });
+  const [citasMutando, setCitasMutando] = useState(() => new Set());
   
   // Estados para edición de imagen
   const [mostrarModalEditarImagen, setMostrarModalEditarImagen] = useState(false);
@@ -193,6 +208,150 @@ const DashboardProfesional = () => {
     }
   };
 
+  const recargarDatosProfesional = async () => {
+    if (!usuario?.uid) return;
+    const datos = await obtenerProfesionalPorUid(usuario.uid);
+    setDatosProfesional(datos);
+  };
+
+  const agregarCitaMutando = (citaId) => {
+    if (citaId == null) return;
+    setCitasMutando((prev) => new Set(prev).add(String(citaId)));
+  };
+
+  const quitarCitaMutando = (citaId) => {
+    if (citaId == null) return;
+    setCitasMutando((prev) => {
+      const next = new Set(prev);
+      next.delete(String(citaId));
+      return next;
+    });
+  };
+
+  const estadoCitaNorm = (cita) =>
+    String(cita?.estado ?? '')
+      .trim()
+      .toLowerCase();
+
+  const handleConfirmarCitaCliente = async (cita) => {
+    if (!cita?.id || !usuario?.uid) return;
+    agregarCitaMutando(cita.id);
+    try {
+      await actualizarCitaEnAmbosLados(
+        cita,
+        { estado: 'confirmada' },
+        { profesionalId: usuario.uid },
+      );
+      await recargarDatosProfesional();
+      mostrarExito(
+        'La cita quedó confirmada. El cliente verá el cambio en su panel.',
+        'Listo',
+      );
+    } catch (error) {
+      console.error('Error al confirmar cita:', error);
+      mostrarError('No se pudo confirmar la cita. Intentá de nuevo.');
+    } finally {
+      quitarCitaMutando(cita.id);
+    }
+  };
+
+  const handleMarcarCitaCompletada = async (cita) => {
+    if (!cita?.id || !usuario?.uid) return;
+    agregarCitaMutando(cita.id);
+    try {
+      await actualizarCitaEnAmbosLados(
+        cita,
+        { estado: 'completada' },
+        { profesionalId: usuario.uid },
+      );
+      await recargarDatosProfesional();
+      mostrarExito('La cita se marcó como completada.', 'Listo');
+    } catch (error) {
+      console.error('Error al completar cita:', error);
+      mostrarError('No se pudo completar la cita. Intentá de nuevo.');
+    } finally {
+      quitarCitaMutando(cita.id);
+    }
+  };
+
+  const handleCancelarCitaProfesional = async (cita) => {
+    if (!cita?.id || !usuario?.uid) return;
+    const ok = await confirmar(
+      '¿Marcar esta cita como cancelada? El cliente verá el estado actualizado en su panel.',
+      {
+        titulo: 'Cancelar cita',
+        textoConfirmar: 'Sí, cancelar',
+        textoCancelar: 'Volver',
+      },
+    );
+    if (!ok) return;
+    agregarCitaMutando(cita.id);
+    try {
+      await actualizarCitaEnAmbosLados(
+        cita,
+        { estado: 'cancelada' },
+        { profesionalId: usuario.uid },
+      );
+      await recargarDatosProfesional();
+      mostrarExito('La cita quedó cancelada.', 'Listo');
+    } catch (error) {
+      console.error('Error al cancelar cita:', error);
+      mostrarError('No se pudo cancelar la cita. Intentá de nuevo.');
+    } finally {
+      quitarCitaMutando(cita.id);
+    }
+  };
+
+  const abrirModalReprogramar = (cita) => {
+    setCitaReprogramando(cita);
+    setFormReprogramar({
+      fecha: cita.fecha || '',
+      hora: cita.hora || '',
+      duracion: Number(cita.duracion) > 0 ? Number(cita.duracion) : 60,
+    });
+  };
+
+  const cerrarModalReprogramar = () => {
+    setCitaReprogramando(null);
+    setFormReprogramar({ fecha: '', hora: '', duracion: 60 });
+  };
+
+  const handleGuardarReprogramacion = async (e) => {
+    e.preventDefault();
+    if (!citaReprogramando?.id || !usuario?.uid) return;
+    const { fecha, hora, duracion } = formReprogramar;
+    if (!fecha || !hora) {
+      mostrarError('Completá fecha y hora.', 'Datos incompletos');
+      return;
+    }
+    agregarCitaMutando(citaReprogramando.id);
+    try {
+      const d = Number(duracion) > 0 ? Number(duracion) : 60;
+      await actualizarCitaEnAmbosLados(
+        citaReprogramando,
+        {
+          fecha,
+          hora,
+          duracion: d,
+          fechaCompleta: `${fecha} ${hora}`,
+          estado: 'reprogramada',
+        },
+        { profesionalId: usuario.uid },
+      );
+      await recargarDatosProfesional();
+      cerrarModalReprogramar();
+      mostrarExito(
+        'Horario actualizado. El cliente verá el cambio como “Cambio de horario”.',
+        'Listo',
+      );
+    } catch (error) {
+      console.error('Error al reprogramar cita:', error);
+      mostrarError('No se pudo guardar el nuevo horario. Intentá de nuevo.');
+    } finally {
+      quitarCitaMutando(citaReprogramando.id);
+    }
+  };
+
   // Renderizar contenido específico según tipo de profesional
   const renderContenidoEspecifico = () => {
     if (!datosProfesional) return null;
@@ -264,7 +423,10 @@ const DashboardProfesional = () => {
               {datosProfesional?.citas && datosProfesional.citas.length > 0 ? (
                 <div className="space-y-4">
                   {datosProfesional.citas.map((cita, index) => (
-                    <div key={index} className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                    <div
+                      key={cita.id != null ? String(cita.id) : `cita-${index}`}
+                      className="bg-white rounded-lg p-4 shadow-sm border border-gray-200"
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center space-x-4">
@@ -303,13 +465,26 @@ const DashboardProfesional = () => {
                                 )}
                               </div>
                               <div className="mt-2">
-                                <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                                  cita.estado === 'confirmada' ? 'bg-green-100 text-green-800' :
-                                  cita.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                                  cita.estado === 'cancelada' ? 'bg-red-100 text-red-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {cita.estado}
+                                <span
+                                  className={`inline-block px-2 py-1 text-xs rounded-full ${
+                                    estadoCitaNorm(cita) === 'confirmada'
+                                      ? 'bg-green-100 text-green-800'
+                                      : estadoCitaNorm(cita) === 'pendiente'
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : estadoCitaNorm(cita) === 'cancelada'
+                                          ? 'bg-red-100 text-red-800'
+                                          : estadoCitaNorm(cita) === 'reprogramada'
+                                            ? 'bg-sky-100 text-sky-900'
+                                            : estadoCitaNorm(cita) === 'completada'
+                                              ? 'bg-emerald-100 text-emerald-900'
+                                              : 'bg-gray-100 text-gray-800'
+                                  }`}
+                                >
+                                  {estadoCitaNorm(cita) === 'reprogramada'
+                                    ? 'Cambio de horario'
+                                    : estadoCitaNorm(cita) === 'completada'
+                                      ? 'Completada'
+                                      : cita.estado || '—'}
                                 </span>
                                 {cita.esPrimeraVisita && (
                                   <span className="inline-block px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 ml-2">
@@ -320,23 +495,60 @@ const DashboardProfesional = () => {
                             </div>
                           </div>
                         </div>
-                        <div className="flex space-x-2">
+                        <div className="flex flex-col gap-2 sm:items-end">
                           {cita.mascotaId && (
-                            <button 
-                            onClick={ () => handleVerMascota(cita) }
-                              className="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600 transition-colors duration-200"
+                            <button
+                              type="button"
+                              onClick={() => handleVerMascota(cita)}
+                              className="bg-blue-500 text-white px-3 py-1.5 rounded text-xs hover:bg-blue-600 transition-colors duration-200 whitespace-nowrap"
                             >
-                              Ver Mascota
+                              Ver mascota
                             </button>
                           )}
-                          <button 
-                            className="bg-orange-500 text-white px-3 py-1 rounded text-xs hover:bg-orange-600 transition-colors duration-200"
-                            onClick={() => {
-                              // Aquí puedes agregar lógica para editar la cita 
-                            }}
-                          >
-                            Editar
-                          </button>
+                          {estadoCitaNorm(cita) !== 'cancelada' &&
+                            estadoCitaNorm(cita) !== 'completada' && (
+                              <>
+                                {(estadoCitaNorm(cita) === 'pendiente' ||
+                                  estadoCitaNorm(cita) === 'reprogramada') && (
+                                  <button
+                                    type="button"
+                                    disabled={citasMutando.has(String(cita.id))}
+                                    className="bg-green-600 text-white px-3 py-1.5 rounded text-xs hover:bg-green-700 transition-colors duration-200 disabled:opacity-50 whitespace-nowrap"
+                                    onClick={() => handleConfirmarCitaCliente(cita)}
+                                  >
+                                    {citasMutando.has(String(cita.id))
+                                      ? 'Guardando…'
+                                      : 'Confirmar'}
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  disabled={citasMutando.has(String(cita.id))}
+                                  className="bg-orange-500 text-white px-3 py-1.5 rounded text-xs hover:bg-orange-600 transition-colors duration-200 disabled:opacity-50 whitespace-nowrap"
+                                  onClick={() => abrirModalReprogramar(cita)}
+                                >
+                                  Cambiar horario
+                                </button>
+                                {estadoCitaNorm(cita) === 'confirmada' && (
+                                  <button
+                                    type="button"
+                                    disabled={citasMutando.has(String(cita.id))}
+                                    className="bg-emerald-600 text-white px-3 py-1.5 rounded text-xs hover:bg-emerald-700 transition-colors duration-200 disabled:opacity-50 whitespace-nowrap"
+                                    onClick={() => handleMarcarCitaCompletada(cita)}
+                                  >
+                                    Completar
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  disabled={citasMutando.has(String(cita.id))}
+                                  className="bg-red-500 text-white px-3 py-1.5 rounded text-xs hover:bg-red-600 transition-colors duration-200 disabled:opacity-50 whitespace-nowrap"
+                                  onClick={() => handleCancelarCitaProfesional(cita)}
+                                >
+                                  Cancelar cita
+                                </button>
+                              </>
+                            )}
                         </div>
                       </div>
                     </div>
@@ -614,6 +826,100 @@ const DashboardProfesional = () => {
             </div>
           </div>
       </div>
+
+      {/* Reprogramar cita (arrays embebidos usuario + profesional) */}
+      {citaReprogramando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div
+            className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-reprogramar-cita"
+          >
+            <h3
+              id="titulo-reprogramar-cita"
+              className="text-lg font-bold text-gray-900 mb-1"
+            >
+              Cambiar horario
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Mascota:{' '}
+              <span className="font-medium">
+                {citaReprogramando.mascotaNombre || '—'}
+              </span>
+              . El cliente verá el estado “Cambio de horario” hasta que confirmes de nuevo.
+            </p>
+            <form onSubmit={handleGuardarReprogramacion} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Fecha
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formReprogramar.fecha}
+                    onChange={(e) =>
+                      setFormReprogramar((p) => ({ ...p, fecha: e.target.value }))
+                    }
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Hora
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={formReprogramar.hora}
+                    onChange={(e) =>
+                      setFormReprogramar((p) => ({ ...p, hora: e.target.value }))
+                    }
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Duración (min)
+                </label>
+                <input
+                  type="number"
+                  min={15}
+                  step={15}
+                  value={formReprogramar.duracion}
+                  onChange={(e) =>
+                    setFormReprogramar((p) => ({
+                      ...p,
+                      duracion: parseInt(e.target.value, 10) || 60,
+                    }))
+                  }
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={cerrarModalReprogramar}
+                  className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cerrar
+                </button>
+                <button
+                  type="submit"
+                  disabled={citasMutando.has(String(citaReprogramando.id))}
+                  className="flex-1 rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {citasMutando.has(String(citaReprogramando.id))
+                    ? 'Guardando…'
+                    : 'Guardar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Sistema de Citas */}
       {mostrarCitas && (

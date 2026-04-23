@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { useAuth } from '../contexts/AuthContext';
@@ -109,6 +109,16 @@ const PetProfile = () => {
     cargarConsejoDelHistorial,
     limpiarHistorial
   } = useConsejosIA(mascota?.raza, usuario?.uid, mascota?.id, mascota);
+
+  const recargarChapitasMascota = useCallback(async () => {
+    if (!id) return;
+    try {
+      const lista = await getChapitasByMascotaId(id);
+      setChapitasDeEstaMascota(lista);
+    } catch (e) {
+      console.error('Error al recargar chapitas:', e);
+    }
+  }, [id]);
 
   // Cargar datos de la mascota específica
   useEffect(() => {
@@ -1009,6 +1019,7 @@ const PetProfile = () => {
                 mascotaFoto={mascota.fotoUrl}
                 monto={5000} // Puedes hacer esto dinámico
                 onCerrar={() => setOpenMetodoPago(false)}
+                onPagoRegistrado={recargarChapitasMascota}
               />
             </div>
           </div>

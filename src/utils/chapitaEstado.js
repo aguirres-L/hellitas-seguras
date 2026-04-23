@@ -10,7 +10,7 @@ function sinAcentos(str) {
     .replace(/\p{M}/gu, '');
 }
 
-function normalizarEstadoChapita(estado) {
+export function normalizarEstadoChapita(estado) {
   if (estado == null || estado === '') return '';
 
   const plano = sinAcentos(String(estado).trim()).toLowerCase();
@@ -40,6 +40,14 @@ function normalizarEstadoChapita(estado) {
   if (conEspacios === 'fabricacion' || slug === 'fabricacion') return 'fabricacion';
 
   if (conEspacios === 'pendiente' || slug === 'pendiente') return 'pendiente';
+  if (
+    conEspacios === 'pagada' ||
+    conEspacios === 'pago recibido' ||
+    conEspacios === 'pago acreditado' ||
+    slug === 'pagada'
+  ) {
+    return 'confirmado';
+  }
   if (conEspacios === 'confirmado' || slug === 'confirmado') return 'confirmado';
   if (conEspacios === 'aprobado' || slug === 'aprobado') return 'aprobado';
   if (conEspacios === 'entregado' || slug === 'entregado') return 'entregado';
@@ -49,6 +57,16 @@ function normalizarEstadoChapita(estado) {
   if (conEspacios === 'completado' || slug === 'completado') return 'completado';
 
   return slug;
+}
+
+const ESTADOS_AVISO_PAGO_ACREDITADO = new Set(['confirmado', 'aprobado']);
+
+/**
+ * Estados en los que el pago quedó acreditado/aceptado: mostrar notificación
+ * mientras el usuario no haya "visto" el aviso en el panel Chapitas.
+ */
+export function requiereNotifPagoAcreditado(estado) {
+  return ESTADOS_AVISO_PAGO_ACREDITADO.has(normalizarEstadoChapita(estado));
 }
 
 const ETIQUETAS_CORTAS = {

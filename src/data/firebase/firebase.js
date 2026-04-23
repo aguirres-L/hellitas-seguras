@@ -11,7 +11,8 @@ import {
   orderBy,
   limit,
   setDoc,
-  arrayUnion
+  arrayUnion,
+  onSnapshot
 } from "firebase/firestore";
 import { ref, deleteObject } from "firebase/storage";
 import { sendPasswordResetEmail } from "firebase/auth";
@@ -1007,6 +1008,100 @@ export const eliminarCitaDeProfesional = async (profesionalId, citaId) => {
 };
 
 /**
+ * Actualiza campos de una cita dentro del array embebido `citas` del usuario.
+ */
+export const actualizarCitaEnUsuario = async (usuarioId, citaId, parches) => {
+  try {
+    const usuario = await getDataById('usuarios', usuarioId);
+    if (!usuario?.citas?.length) {
+      throw new Error('Usuario no encontrado o sin citas');
+    }
+    const idBuscado = String(citaId);
+    let encontrada = false;
+    const citasActualizadas = usuario.citas.map((c) => {
+      if (String(c.id) !== idBuscado) return c;
+      encontrada = true;
+      return { ...c, ...parches, fechaActualizacion: new Date() };
+    });
+    if (!encontrada) {
+      throw new Error('Cita no encontrada en el usuario');
+    }
+    await updateDataCollection('usuarios', usuarioId, {
+      citas: citasActualizadas,
+    });
+  } catch (error) {
+    console.error('Error al actualizar cita del usuario:', error);
+    throw error;
+  }
+};
+
+/**
+ * Actualiza campos de una cita dentro del array embebido `citas` del profesional.
+ */
+export const actualizarCitaEnProfesional = async (profesionalId, citaId, parches) => {
+  try {
+    const profesional = await getDataById('profesionales', profesionalId);
+    if (!profesional?.citas?.length) {
+      throw new Error('Profesional no encontrado o sin citas');
+    }
+    const idBuscado = String(citaId);
+    let encontrada = false;
+    const citasActualizadas = profesional.citas.map((c) => {
+      if (String(c.id) !== idBuscado) return c;
+      encontrada = true;
+      return { ...c, ...parches, fechaActualizacion: new Date() };
+    });
+    if (!encontrada) {
+      throw new Error('Cita no encontrada en el profesional');
+    }
+    await updateDataCollection('profesionales', profesionalId, {
+      citas: citasActualizadas,
+    });
+  } catch (error) {
+    console.error('Error al actualizar cita del profesional:', error);
+    throw error;
+  }
+};
+
+/**
+ * Resuelve el id del documento profesional asociado a una cita (vet / peluquería / paseador).
+ */
+export const resolverProfesionalIdDesdeCita = (cita, fallbackProfesionalId = null) => {
+  if (fallbackProfesionalId) return fallbackProfesionalId;
+  return cita?.clinicaId || cita?.peluqueriaId || cita?.paseadorId || null;
+};
+
+/**
+ * Aplica los mismos cambios a la cita en profesional y en el cliente (arrays embebidos).
+ * Es el camino correcto para confirmar, reprogramar o cancelar desde el dashboard profesional.
+ *
+ * @param {Object} cita - Objeto cita con id y clienteId (y clinicaId / peluqueriaId / paseadorId)
+ * @param {Object} parches - Campos a fusionar (estado, fecha, hora, duracion, etc.)
+ * @param {Object} [opciones]
+ * @param {string} [opciones.profesionalId] - Si falta en la cita, usar el uid del profesional logueado
+ */
+export const actualizarCitaEnAmbosLados = async (cita, parches, opciones = {}) => {
+  const citaId = cita?.id;
+  if (citaId == null || citaId === '') {
+    throw new Error('La cita no tiene id válido');
+  }
+  const profesionalId = resolverProfesionalIdDesdeCita(cita, opciones.profesionalId);
+  if (!profesionalId) {
+    throw new Error('No se pudo determinar el profesional de la cita');
+  }
+  const clienteId = cita.clienteId || opciones.clienteIdFallback || null;
+
+  await actualizarCitaEnProfesional(profesionalId, citaId, parches);
+  if (clienteId) {
+    await actualizarCitaEnUsuario(clienteId, citaId, parches);
+  } else {
+    console.warn(
+      'actualizarCitaEnAmbosLados: la cita no tiene clienteId; solo se actualizó el lado del profesional',
+    );
+  }
+};
+
+/**
  * Elimina una cita completamente (tanto del usuario como del profesional)
  * @param {Object} cita - Objeto de la cita con toda la información
  * @returns {Promise<void>}
@@ -1271,14 +1366,47 @@ export const eliminarMascota = async (mascotaId) => {
  */
 export const actualizarEstadoChapita = async (chapitaId, nuevoEstado) => {
   try {
+    const ahora = new Date();
     await updateDataCollection('pagoChapita', chapitaId, {
       estado: nuevoEstado,
-      fechaActualizacion: new Date()
+      fechaActualizacion: ahora,
+      ...(nuevoEstado !== 'pendiente' && {
+        transferenciaPendienteVerificacion: false,
+        transferenciaVerificadaEn: ahora,
+      }),
     });
   } catch (error) {
     console.error('Error al actualizar estado de chapita:', error);
     throw error;
   }
+};
+
+/**
+ * Suscripción en vivo a pagoChapita del usuario (para notificaciones en navbar).
+ * @param {string} uid
+ * @param {(chapitas: Array<Record<string, unknown> & { id: string }>) => void} onData
+ * @param {(e: import('firebase/firestore').FirestoreError) => void} [onError]
+ * @returns {() => void} unsubscribe
+ */
+export const suscribirPagoChapitaPorUsuarioId = (uid, onData, onError) => {
+  if (!uid) {
+    return () => {};
+  }
+  const q = query(
+    collection(db, 'pagoChapita'),
+    where('usuarioId', '==', uid)
+  );
+  return onSnapshot(
+    q,
+    (snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      onData(list);
+    },
+    (err) => {
+      if (onError) onError(err);
+      else console.error('suscribirPagoChapitaPorUsuarioId', err);
+    }
+  );
 };
 
 // ==================== FUNCIONES DE AUTENTICACIÓN ====================

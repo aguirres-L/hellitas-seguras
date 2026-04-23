@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { db } from '../data/firebase/firebaseConfig';
 import { useAuth } from '../contexts/AuthContext';
 import { Navbar } from './Navbar';
 import { 
@@ -16,6 +18,7 @@ import { TrendingUp } from 'lucide-react';
 import DecoracionForm from './decoracionUi/DecoracionForm';
 import GraficoComponente from './uiDashboardSuperAdmin/GraficoComponente';
 import SugerenciasMejorasPanel from './uiDashboardSuperAdmin/SugerenciasMejorasPanel';
+import UiPanelLiquidacionesSuperAdmin from './uiDashboardSuperAdmin/UiPanelLiquidacionesSuperAdmin';
 import { getAllChapitas } from '../data/hook/getAllChapitas';
 import { useNotificacionApp } from '../contexts/NotificacionAppContext';
 
@@ -24,7 +27,7 @@ const DashboardSuperAdmin = () => {
   const navigate = useNavigate();
   const { usuario, cerrarSesion, isCargandoLogout } = useAuth();
   const { typeTheme } = useTheme();
-  const { mostrarExito, mostrarError } = useNotificacionApp();
+  const { mostrarExito, mostrarError, mostrarInfo } = useNotificacionApp();
   
   // Estados para datos del super admin
   const [datosUsuario, setDatosUsuario] = useState(null);
@@ -129,6 +132,10 @@ const DashboardSuperAdmin = () => {
   });
   const [isVerificandoMensualidades, setIsVerificandoMensualidades] = useState(false);
   const [ultimaVerificacion, setUltimaVerificacion] = useState(null);
+
+  /** Transferencias bancarias por chapita pendientes de verificar (similar a la columna de membresía) */
+  const [pendTransferChapita, setPendTransferChapita] = useState(0);
+  const refPrimeraEmisionPagoChapita = useRef(true);
 
   // Función para cerrar sesión
   const handleCerrarSesion = async () => {
@@ -285,6 +292,46 @@ const DashboardSuperAdmin = () => {
   useEffect(() => {
     cargarDatosUsuario();
   }, [usuario?.uid]);
+
+  // Nuevas transferencias por chapita: tiempo real (Firestore) + notificación in-app
+  useEffect(() => {
+    if (datosUsuario?.rol !== 'superAdmin') return;
+
+    const q = query(collection(db, 'pagoChapita'), where('estado', '==', 'pendiente'));
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const n = list.filter(
+          (d) => d.metodoPago === 'transferencia' && d.transferenciaPendienteVerificacion !== false
+        ).length;
+        setPendTransferChapita(n);
+
+        if (refPrimeraEmisionPagoChapita.current) {
+          refPrimeraEmisionPagoChapita.current = false;
+          return;
+        }
+        snap.docChanges().forEach((cambio) => {
+          if (cambio.type !== 'added') return;
+          const d = cambio.doc.data();
+          if (d.metodoPago === 'transferencia' && d.estado === 'pendiente') {
+            const m = d.monto != null ? Number(d.monto).toLocaleString('es-CL') : '—';
+            mostrarInfo(
+              `${d.usuarioNombre || d.usuarioEmail || 'Usuario'} — ${d.mascotaNombre || 'Mascota'} — $${m} CLP. Revisá la pestaña Liquidaciones.`,
+              'Nueva transferencia (chapita)'
+            );
+          }
+        });
+      },
+      (err) => {
+        console.error('Listener pagoChapita:', err);
+      }
+    );
+    return () => {
+      refPrimeraEmisionPagoChapita.current = true;
+      unsub();
+    };
+  }, [datosUsuario?.rol, mostrarInfo]);
 
   // Cargar datos según la pestaña activa
   useEffect(() => {
@@ -618,6 +665,49 @@ const DashboardSuperAdmin = () => {
           )}
         </div>
 
+        {/* Transferencias por chapita pendientes (Firestore en tiempo real; aviso al ingresar un pago nuevo) */}
+        <div
+          className={`mb-8 rounded-xl p-6 shadow-lg ${
+            typeTheme === 'light' ? 'bg-white/80 backdrop-blur-sm' : 'bg-gray-800/80 backdrop-blur-sm'
+          }`}
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3
+                className={`text-lg font-semibold ${
+                  typeTheme === 'light' ? 'text-gray-900' : 'text-white'
+                }`}
+              >
+                🏷️ Transferencias por chapita
+              </h3>
+              <p
+                className={`text-sm ${
+                  typeTheme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                }`}
+              >
+                Pagos declarados por transferencia; el contador se actualiza al vuelo. Verificá el banco y el pedido en
+                Liquidaciones.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <span
+                className={`text-2xl font-bold ${
+                  pendTransferChapita > 0 ? 'text-amber-600' : 'text-gray-500'
+                }`}
+              >
+                {pendTransferChapita} pendiente{pendTransferChapita === 1 ? '' : 's'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPestañaActiva('liquidaciones')}
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              >
+                Abrir liquidaciones
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Pestañas de navegación */}
         <div className={typeTheme === 'light'
           ? "bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8"
@@ -904,6 +994,19 @@ const DashboardSuperAdmin = () => {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {pestañaActiva === 'liquidaciones' && (
+            <div>
+              <h3
+                className={
+                  typeTheme === 'light' ? 'mb-6 text-xl font-bold text-gray-900' : 'mb-6 text-xl font-bold text-white'
+                }
+              >
+                Pagos: suscripciones y chapitas
+              </h3>
+              <UiPanelLiquidacionesSuperAdmin typeTheme={typeTheme} />
             </div>
           )}
 

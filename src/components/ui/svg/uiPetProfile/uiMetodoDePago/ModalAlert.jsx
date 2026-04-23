@@ -12,8 +12,6 @@ export default function ModalAlert({ typeAlert, mensaje, onCerrar }) {
     function handleButton(){
         if(mensaje?.from === 'suscripcion'){
             navigate('/dashboard');
-        }else{
-            navigate('/perfil');
         }
         onCerrar();
     }

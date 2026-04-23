@@ -27,10 +27,7 @@ export default function Hero(){
       
          
         <div className="max-w-5xl mx-auto">
-
-          <UseFrameMotion tipoAnimacion="scale" duracion={1} delay={0.8}>
-          <SliderHome/>
-          </UseFrameMotion>
+          <SliderHome />
 
           <HowItWorks/>
               {/* Planes y precios */}

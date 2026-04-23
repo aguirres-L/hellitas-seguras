@@ -21,6 +21,7 @@ import { DashboardCitasColapsable } from './DashboardCitasColapsable';
 import ModalAlertFormularioAgregarMascota from './uiDashboardUser/ModalAlertFormulariAgregarMascota';
 import { DashboardTabBar } from './uiDashboardUser/DashboardTabBar';
 import { useNotificacionApp } from '../contexts/NotificacionAppContext';
+import { useNotificacionesEstadoCitasUsuario } from '../hooks/useNotificacionesEstadoCitasUsuario';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -64,17 +65,29 @@ const Dashboard = () => {
 
   /** Pestañas inferiores solo en móvil (< md) */
   const [pestanaActiva, setPestanaActiva] = useState('mascotas');
-  /** Contador para badge en TabBar "Citas" tras agendar (vet/peluquería); se limpia al abrir esa pestaña */
-  const [pendientesTabCitas, setPendientesTabCitas] = useState(0);
   /** ID de la última cita creada: se resalta en la lista hasta que el usuario sale de la pestaña Citas tras verla */
   const [idCitaDestacar, setIdCitaDestacar] = useState(null);
   const visitoCitasConDestacadoRef = useRef(false);
+  const pestanaAnteriorRef = useRef(pestanaActiva);
 
+  const {
+    cantidadNovedadesEstado,
+    idsConNovedadEstado,
+    marcarTodasCitasEstadoVistas,
+  } = useNotificacionesEstadoCitasUsuario(datosUsuario?.citas, usuario?.uid);
+
+  /** Al salir de Citas: guardar estados vistos (el badge vuelve a reflejar solo cambios nuevos del profesional) */
   useEffect(() => {
-    if (pestanaActiva === 'citas') {
-      setPendientesTabCitas(0);
+    const salioDeCitas = pestanaAnteriorRef.current === 'citas' && pestanaActiva !== 'citas';
+    pestanaAnteriorRef.current = pestanaActiva;
+    if (salioDeCitas) {
+      marcarTodasCitasEstadoVistas();
     }
-  }, [pestanaActiva]);
+  }, [pestanaActiva, marcarTodasCitasEstadoVistas]);
+
+  /** En la pestaña Citas el badge se oculta (ya estás viendo el listado); en el resto muestra novedades */
+  const cantidadBadgeCitasTab =
+    pestanaActiva === 'citas' ? 0 : cantidadNovedadesEstado;
 
   useEffect(() => {
     if (pestanaActiva === 'citas' && idCitaDestacar) {
@@ -258,7 +271,6 @@ const Dashboard = () => {
     setClinicaSeleccionada(null);
    // Marcar que las citas se actualizaron
    marcarCitasActualizadas();
-    setPendientesTabCitas((n) => Math.min(n + 1, 99));
     if (datosCita?.id) setIdCitaDestacar(datosCita.id);
 
   };
@@ -270,7 +282,6 @@ const Dashboard = () => {
     setPeluqueriaSeleccionada(null);
     // Marcar que las citas se actualizaron
     marcarCitasActualizadas();
-    setPendientesTabCitas((n) => Math.min(n + 1, 99));
     if (datosCita?.id) setIdCitaDestacar(datosCita.id);
   };
 
@@ -278,7 +289,6 @@ const Dashboard = () => {
     setMostrarFormularioPaseador(false);
     setPaseadorSeleccionado(null);
     marcarCitasActualizadas();
-    setPendientesTabCitas((n) => Math.min(n + 1, 99));
     if (datosCita?.id) setIdCitaDestacar(datosCita.id);
   };
 
@@ -597,6 +607,8 @@ const handleCancelarCita = async (cita) => {
           handleCancelarCita={handleCancelarCita}
           idCitaDestacar={idCitaDestacar}
           onIrAProfesionales={irAProfesionalesDesdeCitas}
+          idsConNovedadEstado={idsConNovedadEstado}
+          onMarcarNovedadesEstadoVistas={marcarTodasCitasEstadoVistas}
         />
               )}
 
@@ -820,6 +832,8 @@ const handleCancelarCita = async (cita) => {
           handleCancelarCita={handleCancelarCita}
           idCitaDestacar={idCitaDestacar}
           onIrAProfesionales={irAProfesionalesDesdeCitas}
+          idsConNovedadEstado={idsConNovedadEstado}
+          onMarcarNovedadesEstadoVistas={marcarTodasCitasEstadoVistas}
         />
           </div>
 
@@ -893,7 +907,7 @@ const handleCancelarCita = async (cita) => {
         pestanaActiva={pestanaActiva}
         onCambiarPestana={setPestanaActiva}
         typeTheme={typeTheme}
-        cantidadCitasNuevasEnTab={pendientesTabCitas}
+        cantidadCitasNuevasEnTab={cantidadBadgeCitasTab}
       />
 
       {/* Modales de Formularios */}

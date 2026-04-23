@@ -1,8 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { getChapitaFiletForUserId } from '../data/hook/getChapitaFiletForUserId';
 import { etiquetaEstadoChapita, clasePuntoEstadoChapita } from '../utils/chapitaEstado';
+
+export interface PagoChapitaItem {
+  id: string;
+  mascotaNombre?: string;
+  estado?: string;
+  fechaActualizacion?: { toDate?: () => Date } | null;
+  fotoMascota?: string;
+  usuarioId?: string;
+  mascotaId?: string;
+}
 
 export interface NotificacionChapita {
   id: string;
@@ -20,6 +28,10 @@ export interface NotificacionesChapitasProps {
   typeTheme: 'light' | 'dark';
   /** En drawer móvil: lista en flujo (evita recorte por overflow del panel). */
   isModoInline?: boolean;
+  pagoChapitas: PagoChapitaItem[];
+  isCargandoPagoChapitas: boolean;
+  /** IDs con pago acreditado (confirmado/aprobado) aún no "vistos" en el panel. */
+  idsAvisoPagoNuevo: string[];
 }
 
 export const NotificacionesChapitas: React.FC<NotificacionesChapitasProps> = ({
@@ -27,10 +39,30 @@ export const NotificacionesChapitas: React.FC<NotificacionesChapitasProps> = ({
   onCerrar,
   typeTheme,
   isModoInline = false,
+  pagoChapitas,
+  isCargandoPagoChapitas,
+  idsAvisoPagoNuevo,
 }) => {
-  const { usuario } = useAuth();
-  const [notificaciones, setNotificaciones] = useState<NotificacionChapita[]>([]);
-  const [isCargando, setIsCargando] = useState(false);
+  const setAvisoNuevo = useMemo(() => new Set(idsAvisoPagoNuevo), [idsAvisoPagoNuevo]);
+
+  const notificaciones = useMemo<NotificacionChapita[]>(() => {
+    return pagoChapitas
+      .map((chapita) => ({
+        id: chapita.id,
+        nombreMascota: chapita.mascotaNombre || 'Mascota sin nombre',
+        estado: chapita.estado || 'sin estado',
+        fechaActualizacion:
+          chapita.fechaActualizacion?.toDate?.()?.toISOString() || new Date().toISOString(),
+        fotoUrl: chapita.fotoMascota,
+        usuarioId: chapita.usuarioId || '',
+        mascotaId: chapita.mascotaId,
+      }))
+      .sort(
+        (a, b) =>
+          new Date(b.fechaActualizacion).getTime() - new Date(a.fechaActualizacion).getTime()
+      );
+  }, [pagoChapitas]);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Cerrar dropdown al hacer click fuera
@@ -50,53 +82,6 @@ export const NotificacionesChapitas: React.FC<NotificacionesChapitasProps> = ({
     };
   }, [isAbierto, onCerrar]);
 
-  // Función para cargar chapitas del usuario (reutilizada de ModalDetailUserComun)
-  const getAllChapitasUsuario = async () => {
-    if (!usuario?.uid) {
-      return;
-    }
-    
-    try {
-      // Cargar pagos de chapitas
-      
-      const chapitasUsuario = await getChapitaFiletForUserId(usuario.uid);
-      
-      // Transformar datos para el formato de notificaciones
-      const notificacionesChapitas = chapitasUsuario.map((chapita) => ({
-        id: chapita.id,
-        nombreMascota: chapita.mascotaNombre || 'Mascota sin nombre',
-        estado: chapita.estado || 'sin estado',
-        fechaActualizacion: chapita.fechaActualizacion?.toDate?.()?.toISOString() || new Date().toISOString(),
-        fotoUrl: chapita.fotoMascota,
-        usuarioId: chapita.usuarioId,
-        mascotaId: chapita.mascotaId,
-      }))
-      .sort((a, b) => new Date(b.fechaActualizacion).getTime() - new Date(a.fechaActualizacion).getTime());
-
-      setNotificaciones(notificacionesChapitas);
-    } catch (error) {
-      console.error('Error al cargar pagos:', error);
-    }
-  };
-
-  // Cargar notificaciones de chapitas
-  useEffect(() => {
-    const cargarNotificaciones = async () => {
-      if (!usuario?.uid || !isAbierto) return;
-
-      try {
-        setIsCargando(true);
-        await getAllChapitasUsuario();
-      } catch (error) {
-        console.error('Error al cargar notificaciones:', error);
-      } finally {
-        setIsCargando(false);
-      }
-    };
-
-    cargarNotificaciones();
-  }, [usuario?.uid, isAbierto]);
-
   if (!isAbierto) return null;
 
   const clasesContenedor = isModoInline
@@ -114,9 +99,11 @@ export const NotificacionesChapitas: React.FC<NotificacionesChapitasProps> = ({
   return (
     <div ref={dropdownRef} className={clasesContenedor}>
       {/* Header */}
-      <div className={`px-4 py-3 border-b ${
-        typeTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
-      }`}>
+      <div
+        className={`px-4 py-3 border-b ${
+          typeTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+        }`}
+      >
         <h3
           className={`font-semibold ${
             typeTheme === 'dark' ? 'text-white' : 'text-gray-900'
@@ -131,41 +118,76 @@ export const NotificacionesChapitas: React.FC<NotificacionesChapitasProps> = ({
         >
           Tocá una fila para ir al perfil y abrir la pestaña de chapita con el detalle del pedido.
         </p>
+        {idsAvisoPagoNuevo.length > 0 && (
+          <p
+            className={`mt-2 rounded-md border px-2.5 py-1.5 text-xs font-medium leading-snug ${
+              typeTheme === 'dark'
+                ? 'border-orange-600/60 bg-orange-900/30 text-orange-200'
+                : 'border-orange-200 bg-orange-50 text-orange-900'
+            }`}
+          >
+            Tenés {idsAvisoPagoNuevo.length} novedad{idsAvisoPagoNuevo.length > 1 ? 'es' : ''} (cambio de
+            estado o pedido en revisión). Fijate las filas con “Nuevo”.
+          </p>
+        )}
       </div>
 
       {/* Contenido */}
       <div className="max-h-96 overflow-y-auto">
-        {isCargando ? (
+        {isCargandoPagoChapitas ? (
           <div className="p-4 text-center">
             <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
-            <p className={`mt-2 text-sm ${
-              typeTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-            }`}>
+            <p
+              className={`mt-2 text-sm ${
+                typeTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              }`}
+            >
               Cargando notificaciones...
             </p>
           </div>
         ) : notificaciones.length === 0 ? (
           <div className="p-6 text-center">
-            <div className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center ${
-              typeTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
-            }`}>
-              <svg className={`w-6 h-6 ${
-                typeTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM9 7H4l5-5v5z" />
+            <div
+              className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center ${
+                typeTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
+              }`}
+            >
+              <svg
+                className={`w-6 h-6 ${
+                  typeTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 17h5l-5 5v-5zM9 7H4l5-5v5z"
+                />
               </svg>
             </div>
-            <p className={`text-sm ${
-              typeTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-            }`}>
+            <p
+              className={`text-sm ${
+                typeTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}
+            >
               No hay notificaciones de chapitas
             </p>
           </div>
         ) : (
           <div className="p-2">
             {notificaciones.map((notificacion) => {
+              const isNuevaNotifPago = setAvisoNuevo.has(notificacion.id);
               const filaClass = `flex items-center rounded-lg p-3 mb-2 transition-colors duration-200 ${
-                typeTheme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                isNuevaNotifPago
+                  ? typeTheme === 'dark'
+                    ? 'border border-orange-500/50 bg-orange-900/20 hover:bg-gray-700'
+                    : 'border border-orange-200 bg-orange-50/90 hover:bg-orange-50'
+                  : typeTheme === 'dark'
+                    ? 'hover:bg-gray-700'
+                    : 'hover:bg-gray-50'
               }`;
               const contenido = (
                 <>
@@ -185,13 +207,20 @@ export const NotificacionesChapitas: React.FC<NotificacionesChapitasProps> = ({
                       >
                         {notificacion.nombreMascota}
                       </p>
-                      <span
-                        className={`shrink-0 text-xs ${
-                          typeTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                        }`}
-                      >
-                        {new Date(notificacion.fechaActualizacion).toLocaleDateString()}
-                      </span>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {isNuevaNotifPago && (
+                          <span className="rounded-full bg-orange-500 px-1.5 py-0.5 text-[0.65rem] font-bold uppercase text-white">
+                            Nuevo
+                          </span>
+                        )}
+                        <span
+                          className={`text-xs ${
+                            typeTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                          }`}
+                        >
+                          {new Date(notificacion.fechaActualizacion).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
                     <div className="mt-1 flex items-center">
                       <div

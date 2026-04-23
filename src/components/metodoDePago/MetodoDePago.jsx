@@ -7,7 +7,14 @@ import { addDataCollection } from '../../data/firebase';
 import { CONFIG_PAGOS } from '../../data/firebase/config_Pagos/datosPagos';
 
 
-export default function MetodoDePago({ mascotaNombre, mascotaFoto, mascotaId, monto = 7000, onCerrar }) {
+export default function MetodoDePago({
+  mascotaNombre,
+  mascotaFoto,
+  mascotaId,
+  monto = 7000,
+  onCerrar,
+  onPagoRegistrado
+}) {
   const { usuario } = useAuth();
 
   const navigate = useNavigate();
@@ -73,32 +80,41 @@ export default function MetodoDePago({ mascotaNombre, mascotaFoto, mascotaId, mo
       fechaPago: new Date(),
       fotoMascota: mascotaFoto,
       mascotaId: mascotaId,
-      // Para transferencias, podrías agregar:
+      // Para transferencias (mismo criterio que suscripción: panel super admin + verificación banco)
       ...(metodoSeleccionado === 'transferencia' && {
         cbuDestino: CONFIG_PAGOS.CBU_CUENTA,
         aliasDestino: CONFIG_PAGOS.ALIAS_CUENTA,
-        bancoDestino: CONFIG_PAGOS.BANCO
-      })
+        bancoDestino: CONFIG_PAGOS.BANCO,
+        transferenciaPendienteVerificacion: true,
+        declaracionTransferenciaEn: new Date(),
+        tipoPago: 'chapita',
+      }),
     };
 
     
 
     
     const idDelPago = await addDataCollection('pagoChapita', datosDelPago)
-    
-    
-      // Mostrar modal de éxito
-      setIsModalAlert(true);
-      setTipoAlert('success');
-      setMensaje({
-        tipo: 'Éxito',
-        mensaje: `Pago procesado correctamente. ID: ${idDelPago}. Te contactaremos pronto.`
-      });
-      
-      // Cerrar modal después de un tiempo
-      setTimeout(() => {
-        onCerrar();
-      }, 4000);
+    if (onPagoRegistrado) {
+      try {
+        await onPagoRegistrado(idDelPago);
+      } catch (e) {
+        console.error('onPagoRegistrado', e);
+      }
+    }
+
+    // Mostrar modal de éxito
+    setIsModalAlert(true);
+    setTipoAlert('success');
+    setMensaje({
+      tipo: 'Éxito',
+      mensaje: `Pago procesado correctamente. ID: ${idDelPago}. Te contactaremos pronto.`
+    });
+
+    // Cerrar modal después de un tiempo
+    setTimeout(() => {
+      onCerrar();
+    }, 4000);
     } catch (error) {
       
       setIsModalAlert(true);
