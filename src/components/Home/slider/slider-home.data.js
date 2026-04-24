@@ -20,9 +20,20 @@ import rescate1 from '../../../assets/121.PNG';
 import rescate2 from '../../../assets/aa.PNG';
 import rescate3 from '../../../assets/cc.PNG';
 
+import milo from '../../../assets/model_IA/milo.jpeg';
+import milo2 from '../../../assets/model_IA/milo2.jpeg';
+import nicky from '../../../assets/model_IA/nicky.jpeg';
+import nicky2 from '../../../assets/model_IA/nicky2.jpeg';
+import rocco from '../../../assets/model_IA/roco.jpeg';
+import rocco2 from '../../../assets/model_IA/roco2.jpeg';
+import lore from '../../../assets/model_IA/lore.jpeg';
+import lore2 from '../../../assets/model_IA/lore2.jpeg';
+
+
+const modelosWithIA = [milo2 , nicky , rocco , lore, milo, nicky2, rocco2, lore2];
 const urlPlacasLáser = [uno, cinco, dos, seis, tres, siete, cuatro, ocho];
 const urlVideoQr = videoChapita;
-const urlPets = [pet3, pet1, pet2, pet, pet4, pet5, pet6, pet8];
+const urlPets = [pet, pet1, pet2, pet3, pet4, pet5, pet6, pet8];
 const urlRescate = [rescate1, rescate2, rescate3];
 
 export const datosSlides = [
@@ -36,7 +47,7 @@ export const datosSlides = [
       'Durabilidad premium: Materiales resistentes a agua, sol y arañazos.',
       'Más que un accesorio: un tributo a su esencia.',
     ],
-    imagenUrl: urlPlacasLáser,
+    imagenUrl: modelosWithIA,
     isVideo: false,
     imagenAlt: 'Placa grabada con láser personalizada',
   },
