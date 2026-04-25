@@ -43,7 +43,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   mostrarNavegacionInterna = false,
 }) => {
   const navigate = useNavigate();
-  const { usuario, datosUsuario } = useAuth();
+  const { usuario, datosUsuario, tipoUsuario } = useAuth();
+
+  /** Chapitas: solo usuarios finales (mascotas / pedidos de chapita). No profesionales ni admins. */
+  const mostrarChapitasEnMenu =
+    tipoUsuario === 'usuario' &&
+    datosUsuario?.rol !== 'admin' &&
+    datosUsuario?.rol !== 'superAdmin';
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [notificacionesAbiertas, setNotificacionesAbiertas] = useState(false);
   const [modalSugerenciasAbierto, setModalSugerenciasAbierto] = useState(false);
@@ -56,7 +62,9 @@ export const Navbar: React.FC<NavbarProps> = ({
     idsAvisoPagoNuevo,
     cantidadSinLeerAvisoPago,
     marcarAvisosPagoVistos
-  } = usePagoChapitaNotificaciones(tipo === 'home' ? undefined : usuario?.uid);
+  } = usePagoChapitaNotificaciones(
+    tipo === 'home' || !mostrarChapitasEnMenu ? undefined : usuario?.uid
+  );
 
   // Estado para controlar si mostramos el video o la imagen
   const [mostrarVideo, setMostrarVideo] = useState(true);
@@ -297,7 +305,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
       )}
 
-      {mostrarConfiguracion && usuario && (
+      {mostrarChapitasEnMenu && mostrarConfiguracion && usuario && (
         <div className="relative w-full min-w-0">
           <button
             type="button"
@@ -475,14 +483,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           aria-label={
             menuAbierto
               ? 'Cerrar menú'
-              : cantidadSinLeerAvisoPago > 0
+              : mostrarChapitasEnMenu && cantidadSinLeerAvisoPago > 0
                 ? `Abrir menú. Hay ${cantidadSinLeerAvisoPago} novedad${
                     cantidadSinLeerAvisoPago > 1 ? 'es' : ''
                   } en tus chapitas (toca Chapitas abajo).`
                 : 'Abrir menú'
           }
         >
-          {cantidadSinLeerAvisoPago > 0 && (
+          {mostrarChapitasEnMenu && cantidadSinLeerAvisoPago > 0 && (
             <span
               className="absolute right-0.5 top-0.5 z-10 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[0.6rem] font-bold leading-none text-white shadow"
               aria-hidden
