@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Navbar } from './Navbar';
 import { FormularioCitaVeterinaria } from './FormularioCitaVeterinaria';
@@ -8,7 +8,7 @@ import { FormularioCitaPeluqueria } from './FormularioCitaPeluqueria';
 import { FormularioCitaPaseador } from './FormularioCitaPaseador';
 import Peluquerias from './Peluquerias';
 import Veterinarias from './Veterinarias';
-import { agregarMascotaAUsuario, obtenerUsuarioPorUid,
+import { agregarMascotaAUsuario, obtenerUsuarioPorUid, getAllDataCollection,
    obtenerProfesionalesPorTipo, eliminarCita, actualizarCita, 
    eliminarCitaCompleta } from '../data/firebase/firebase';
 import { FormularioMascota } from './FormularioMascota';
@@ -22,9 +22,12 @@ import ModalAlertFormularioAgregarMascota from './uiDashboardUser/ModalAlertForm
 import { DashboardTabBar } from './uiDashboardUser/DashboardTabBar';
 import { useNotificacionApp } from '../contexts/NotificacionAppContext';
 import { useNotificacionesEstadoCitasUsuario } from '../hooks/useNotificacionesEstadoCitasUsuario';
+import FormularioReporteMascota from './FormularioReporteMascota';
+import UseFrameMotion from './hook_frame_motion/UseFrameMotion';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { usuario, cerrarSesion, isCargandoLogout } = useAuth();
   const { typeTheme } = useTheme();
   const { mostrarError, mostrarExito, confirmar } = useNotificacionApp();
@@ -41,6 +44,7 @@ const Dashboard = () => {
   const [datosUsuario, setDatosUsuario] = useState(null);
   const [isCargandoUsuario, setIsCargandoUsuario] = useState(false);
   const [mostrarFormularioMascota, setMostrarFormularioMascota] = useState(false);
+  const [mostrarFormularioReporteMascota, setMostrarFormularioReporteMascota] = useState(false);
   
   // Estados para el modal de alerta de mascota
   const [mostrarModalAlertaMascota, setMostrarModalAlertaMascota] = useState(false);
@@ -57,6 +61,10 @@ const Dashboard = () => {
   const [isCargandoVeterinarios, setIsCargandoVeterinarios] = useState(false);
   const [isCargandoPeluqueros, setIsCargandoPeluqueros] = useState(false);
   const [isCargandoPaseadores, setIsCargandoPaseadores] = useState(false);
+  const [reportesPerdidas, setReportesPerdidas] = useState([]);
+  const [isCargandoReportesPerdidas, setIsCargandoReportesPerdidas] = useState(false);
+  const [mostrarNuevaAlertaTemporal, setMostrarNuevaAlertaTemporal] = useState(false);
+  const [imagenPerdidaModal, setImagenPerdidaModal] = useState(null);
   const [citasCancelando, setCitasCancelando] = useState(new Set()); // Para controlar qué citas se están cancelando
   // Filtro por zona
   const [mostrarTodosProfesionales, setMostrarTodosProfesionales] = useState(false);
@@ -69,6 +77,7 @@ const Dashboard = () => {
   const [idCitaDestacar, setIdCitaDestacar] = useState(null);
   const visitoCitasConDestacadoRef = useRef(false);
   const pestanaAnteriorRef = useRef(pestanaActiva);
+  const ultimaAlertaPerdidaMostradaRef = useRef(null);
 
   const {
     cantidadNovedadesEstado,
@@ -108,6 +117,14 @@ const Dashboard = () => {
     if (!window.matchMedia('(max-width: 767px)').matches) return;
     window.scrollTo(0, 0);
   }, [pestanaActiva]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab === 'perdidas') {
+      setPestanaActiva('perdidas');
+    }
+  }, [location.search]);
 
   // Datos simulados de mascotas del usuario
   const mascotasUsuario = [
@@ -182,6 +199,25 @@ const Dashboard = () => {
     especialidadResumen: profesional.especialidad || '',
   });
 
+  const cargarReportesPerdidas = async () => {
+    setIsCargandoReportesPerdidas(true);
+    try {
+      const reportes = await getAllDataCollection('reportes-mascotas');
+      const perdidasActivas = reportes
+        .filter((reporte) => reporte.tipoPublicacion === 'perdida' && reporte.activa !== false)
+        .sort((a, b) => {
+          const fechaA = a.fechaCreacion?.seconds ? new Date(a.fechaCreacion.seconds * 1000) : new Date(a.fechaCreacion || 0);
+          const fechaB = b.fechaCreacion?.seconds ? new Date(b.fechaCreacion.seconds * 1000) : new Date(b.fechaCreacion || 0);
+          return fechaB - fechaA;
+        });
+      setReportesPerdidas(perdidasActivas);
+    } catch (error) {
+      console.error('Error al cargar reportes de mascotas perdidas:', error);
+    } finally {
+      setIsCargandoReportesPerdidas(false);
+    }
+  };
+
 
 
     // Función para cargar profesionales
@@ -224,6 +260,32 @@ const Dashboard = () => {
   useEffect(() => {
     cargarProfesionales();
   }, []);
+
+  useEffect(() => {
+    cargarReportesPerdidas();
+    const intervalo = window.setInterval(cargarReportesPerdidas, 60000);
+    return () => window.clearInterval(intervalo);
+  }, []);
+
+  useEffect(() => {
+    if (!reportesPerdidas.length) {
+      setMostrarNuevaAlertaTemporal(false);
+      return;
+    }
+
+    const idUltimaPerdida = reportesPerdidas[0]?.id;
+    if (!idUltimaPerdida) return;
+    if (ultimaAlertaPerdidaMostradaRef.current === idUltimaPerdida) return;
+
+    setMostrarNuevaAlertaTemporal(true);
+    ultimaAlertaPerdidaMostradaRef.current = idUltimaPerdida;
+
+    const timeoutId = window.setTimeout(() => {
+      setMostrarNuevaAlertaTemporal(false);
+    }, 12000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [reportesPerdidas]);
 
   // Función para cerrar sesión
   const handleCerrarSesion = async () => {
@@ -432,6 +494,92 @@ const handleCancelarCita = async (cita) => {
 
   const easePanelMovil = [0.4, 0, 0.2, 1];
 
+  const abrirModalImagenPerdida = (urlImagen, nombreMascota) => {
+    setImagenPerdidaModal({
+      url: urlImagen || '/dog-avatar.png',
+      nombre: nombreMascota || 'Mascota perdida'
+    });
+  };
+
+  const cerrarModalImagenPerdida = () => {
+    setImagenPerdidaModal(null);
+  };
+
+  const renderSeccionPerdidas = () => (
+    <div className={typeTheme === 'light'
+      ? 'bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8'
+      : 'bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8'
+    }>
+      <h3 className={typeTheme === 'light' ? 'text-xl font-bold text-gray-900 mb-2' : 'text-xl font-bold text-white mb-2'}>
+        Mascotas perdidas
+      </h3>
+      <p className={typeTheme === 'light' ? 'text-sm text-gray-600 mb-5' : 'text-sm text-gray-300 mb-5'}>
+        Acá ves la alerta más reciente y el listado completo de mascotas reportadas como perdidas.
+      </p>
+
+      {isCargandoReportesPerdidas ? (
+        <div className="text-center py-8">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+          <p className="mt-2 text-gray-500">Cargando alertas...</p>
+        </div>
+      ) : reportesPerdidas.length === 0 ? (
+        <div className="text-center py-8 bg-red-50 rounded-lg border border-red-100">
+          <p className="font-semibold text-red-800">No hay alertas activas en este momento.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {mostrarNuevaAlertaTemporal && (
+            <div className="rounded-xl border-2 border-red-200 bg-red-50 p-4">
+              <p className="text-xs uppercase tracking-wide text-red-700 font-semibold mb-2">Nueva alerta</p>
+              <div className="flex items-start gap-3">
+                <img
+                  src={reportesPerdidas[0]?.imagen || '/dog-avatar.png'}
+                  alt={reportesPerdidas[0]?.nombreMascota || 'Mascota perdida'}
+                  className="w-14 h-14 rounded-full object-cover border border-red-200 bg-white cursor-pointer hover:scale-105 transition-transform"
+                  onClick={() => abrirModalImagenPerdida(reportesPerdidas[0]?.imagen, reportesPerdidas[0]?.nombreMascota)}
+                />
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-lg font-bold text-red-900">{reportesPerdidas[0]?.nombreMascota || 'Mascota perdida'}</h4>
+                  <p className="text-sm text-red-800 mt-1">{reportesPerdidas[0]?.descripcion}</p>
+                  <p className="text-xs text-red-700 mt-2">Ubicación: {reportesPerdidas[0]?.ubicacion || 'No informada'}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid md:grid-cols-2 gap-4">
+            {reportesPerdidas.map((reporte) => (
+              <div key={reporte.id} className="rounded-lg border border-red-200 bg-white p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <img
+                      src={reporte.imagen || '/dog-avatar.png'}
+                      alt={reporte.nombreMascota || 'Mascota perdida'}
+                      className="w-12 h-12 rounded-full object-cover border border-red-200 bg-white cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => abrirModalImagenPerdida(reporte.imagen, reporte.nombreMascota)}
+                    />
+                    <h5 className="font-semibold text-gray-900 truncate">{reporte.nombreMascota || 'Mascota perdida'}</h5>
+                  </div>
+                  <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Activa</span>
+                </div>
+                <p className="text-sm text-gray-700 line-clamp-3">{reporte.descripcion}</p>
+                <p className="text-xs text-gray-500 mt-2">Ubicación: {reporte.ubicacion || 'No informada'}</p>
+                <p className="text-xs text-gray-500">Contacto: {reporte.contacto || 'No informado'}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const obtenerClaseCardMascota = (isPerdida) => {
+    if (isPerdida) {
+      return 'bg-red-50 p-4 rounded-lg shadow-sm border border-red-300 hover:shadow-md hover:border-red-400 transition-all duration-200 cursor-pointer group';
+    }
+    return 'bg-white p-4 rounded-lg shadow-sm border border-orange-100 hover:shadow-md hover:border-orange-300 transition-all duration-200 cursor-pointer group';
+  };
+
   return (
     <div className={
       typeTheme === 'light'
@@ -485,6 +633,28 @@ const handleCancelarCita = async (cita) => {
           : "bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8"
         }>
           <h3 className={typeTheme === 'light'?"text-xl font-bold text-gray-900 mb-4":'text-xl font-bold text-white mb-4' } >Tus Mascotas</h3>
+          <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              className="min-h-[48px] rounded-lg border-2 border-dashed border-orange-300 bg-orange-50 hover:border-orange-400 hover:bg-orange-100 transition-colors"
+              onClick={() => setMostrarFormularioMascota(true)}
+            >
+              <span className="inline-flex items-center gap-2 text-orange-700 font-semibold text-sm">
+                <span className="w-6 h-6 rounded-full bg-orange-200 text-orange-700 inline-flex items-center justify-center font-bold">+</span>
+                Agregar mascota
+              </span>
+            </button>
+            <button
+              type="button"
+              className="min-h-[48px] rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 hover:border-blue-400 hover:bg-blue-100 transition-colors"
+              onClick={() => setMostrarFormularioReporteMascota(true)}
+            >
+              <span className="inline-flex items-center gap-2 text-blue-700 font-semibold text-sm">
+                <span className="w-6 h-6 rounded-full bg-blue-200 text-blue-700 inline-flex items-center justify-center font-bold">!</span>
+                Reportar avistamiento/perdida
+              </span>
+            </button>
+          </div>
           
           {isCargandoUsuario ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -501,15 +671,27 @@ const handleCancelarCita = async (cita) => {
                 <Link 
                   key={mascota.id || idx} 
                   to={`/pet-profile/${mascota.id || idx}`}
-                  className="bg-white p-4 rounded-lg shadow-sm border border-orange-100 hover:shadow-md hover:border-orange-300 transition-all duration-200 cursor-pointer group"
+                  className={obtenerClaseCardMascota(mascota.isPerdida)}
                 >
                   {/* Header con foto si existe */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h4 className="font-bold text-lg text-gray-900 group-hover:text-orange-600 transition-colors">
-                        {mascota.nombre}
-                      </h4>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-bold text-lg text-gray-900 group-hover:text-orange-600 transition-colors">
+                          {mascota.nombre}
+                        </h4>
+                        {mascota.isPerdida && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                            PERDIDA
+                          </span>
+                        )}
+                      </div>
                       <p className="text-gray-600 text-sm">{mascota.raza} • {mascota.edad}</p>
+                      {mascota.isPerdida && (
+                        <p className="text-xs text-red-700 mt-1 font-medium">
+                          Alerta activa. Si ya la encontraste, actualizá el estado en su perfil.
+                        </p>
+                      )}
                     </div>
                     {mascota.fotoUrl && (
                       <img 
@@ -575,7 +757,7 @@ const handleCancelarCita = async (cita) => {
                   
                   {/* Indicador de click */}
                   <div className="flex items-center justify-end mt-2">
-                    <span className="text-xs text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${mascota.isPerdida ? 'text-red-600' : 'text-orange-500'}`}>
                       Ver perfil →
                     </span>
                   </div>
@@ -583,15 +765,6 @@ const handleCancelarCita = async (cita) => {
               ))}
               
               {/* Botón para agregar nueva mascota */}
-              <div className="p-4 rounded-lg border-2 border-dashed border-orange-300 flex items-center justify-center hover:border-orange-400 hover:bg-orange-50 transition-colors cursor-pointer"
-                   onClick={() => setMostrarFormularioMascota(true)}>
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-2xl text-orange-600 font-bold">+</span>
-                  </div>
-                  <p className="text-sm text-orange-600 font-medium">Agregar Mascota</p>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -701,6 +874,8 @@ const handleCancelarCita = async (cita) => {
           />
                 </>
               )}
+
+              {pestanaActiva === 'perdidas' && renderSeccionPerdidas()}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -727,6 +902,28 @@ const handleCancelarCita = async (cita) => {
           : "bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8"
         }>
           <h3 className={typeTheme === 'light'?"text-xl font-bold text-gray-900 mb-4":'text-xl font-bold text-white mb-4' } >Tus Mascotas</h3>
+          <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              className="min-h-[48px] rounded-lg border-2 border-dashed border-orange-300 bg-orange-50 hover:border-orange-400 hover:bg-orange-100 transition-colors"
+              onClick={() => setMostrarFormularioMascota(true)}
+            >
+              <span className="inline-flex items-center gap-2 text-orange-700 font-semibold text-sm">
+                <span className="w-6 h-6 rounded-full bg-orange-200 text-orange-700 inline-flex items-center justify-center font-bold">+</span>
+                Agregar mascota
+              </span>
+            </button>
+            <button
+              type="button"
+              className="min-h-[48px] rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 hover:border-blue-400 hover:bg-blue-100 transition-colors"
+              onClick={() => setMostrarFormularioReporteMascota(true)}
+            >
+              <span className="inline-flex items-center gap-2 text-blue-700 font-semibold text-sm">
+                <span className="w-6 h-6 rounded-full bg-blue-200 text-blue-700 inline-flex items-center justify-center font-bold">!</span>
+                Reportar avistamiento/perdida
+              </span>
+            </button>
+          </div>
           
           {isCargandoUsuario ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -740,14 +937,26 @@ const handleCancelarCita = async (cita) => {
                 <Link 
                   key={mascota.id || idx} 
                   to={`/pet-profile/${mascota.id || idx}`}
-                  className="bg-white p-4 rounded-lg shadow-sm border border-orange-100 hover:shadow-md hover:border-orange-300 transition-all duration-200 cursor-pointer group"
+                  className={obtenerClaseCardMascota(mascota.isPerdida)}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h4 className="font-bold text-lg text-gray-900 group-hover:text-orange-600 transition-colors">
-                        {mascota.nombre}
-                      </h4>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-bold text-lg text-gray-900 group-hover:text-orange-600 transition-colors">
+                          {mascota.nombre}
+                        </h4>
+                        {mascota.isPerdida && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                            PERDIDA
+                          </span>
+                        )}
+                      </div>
                       <p className="text-gray-600 text-sm">{mascota.raza} • {mascota.edad}</p>
+                      {mascota.isPerdida && (
+                        <p className="text-xs text-red-700 mt-1 font-medium">
+                          Alerta activa. Si ya la encontraste, actualizá el estado en su perfil.
+                        </p>
+                      )}
                     </div>
                     {mascota.fotoUrl && (
                       <img 
@@ -803,21 +1012,12 @@ const handleCancelarCita = async (cita) => {
                     </div>
                   )}
                   <div className="flex items-center justify-end mt-2">
-                    <span className="text-xs text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${mascota.isPerdida ? 'text-red-600' : 'text-orange-500'}`}>
                       Ver perfil →
                     </span>
                   </div>
                 </Link>
               ))}
-              <div className="p-4 rounded-lg border-2 border-dashed border-orange-300 flex items-center justify-center hover:border-orange-400 hover:bg-orange-50 transition-colors cursor-pointer"
-                   onClick={() => setMostrarFormularioMascota(true)}>
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-2xl text-orange-600 font-bold">+</span>
-                  </div>
-                  <p className="text-sm text-orange-600 font-medium">Agregar Mascota</p>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -900,6 +1100,10 @@ const handleCancelarCita = async (cita) => {
             onSolicitarCita={manejarAbrirFormularioPaseador}
           />
           </div>
+
+          <div id="panel-perdidas" role="tabpanel" aria-labelledby="tab-dashboard-perdidas">
+            {renderSeccionPerdidas()}
+          </div>
         </div>
       </div>
 
@@ -908,6 +1112,7 @@ const handleCancelarCita = async (cita) => {
         onCambiarPestana={setPestanaActiva}
         typeTheme={typeTheme}
         cantidadCitasNuevasEnTab={cantidadBadgeCitasTab}
+        cantidadPerdidasEnTab={reportesPerdidas.length}
       />
 
       {/* Modales de Formularios */}
@@ -971,6 +1176,66 @@ const handleCancelarCita = async (cita) => {
           </div>
         </div>
       )}
+
+      {mostrarFormularioReporteMascota && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[97vh] overflow-y-auto">
+            <div className="p-4">
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="text-lg font-bold text-gray-900">Nuevo reporte comunitario</h4>
+                <button
+                  type="button"
+                  onClick={() => setMostrarFormularioReporteMascota(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                  aria-label="Cerrar formulario"
+                >
+                  ×
+                </button>
+              </div>
+              <FormularioReporteMascota
+                usuario={usuario}
+                onPublicacionCreada={() => mostrarExito('Reporte publicado correctamente.')}
+                onCerrar={() => setMostrarFormularioReporteMascota(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <AnimatePresence>
+        {imagenPerdidaModal && (
+          <UseFrameMotion
+            tipoAnimacion="fade"
+            duracion={0.2}
+            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+            onClick={cerrarModalImagenPerdida}
+          >
+            <UseFrameMotion
+              tipoAnimacion="scale"
+              duracion={0.28}
+              className="relative max-w-3xl w-full bg-white rounded-2xl overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={cerrarModalImagenPerdida}
+                className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                aria-label="Cerrar imagen"
+              >
+                ×
+              </button>
+              <img
+                src={imagenPerdidaModal.url}
+                alt={imagenPerdidaModal.nombre}
+                className="w-full max-h-[80vh] object-contain bg-gray-100"
+              />
+              <div className="px-4 py-3 border-t border-gray-200">
+                <p className="font-semibold text-gray-900">{imagenPerdidaModal.nombre}</p>
+              </div>
+            </UseFrameMotion>
+          </UseFrameMotion>
+        )}
+      </AnimatePresence>
 
       {/* Modal de alerta para agregar mascota */}
       <ModalAlertFormularioAgregarMascota

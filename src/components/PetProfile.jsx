@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { useAuth } from '../contexts/AuthContext';
-import { obtenerUsuarioPorUid, actualizarMascota } from '../data/firebase/firebase';
+import { obtenerUsuarioPorUid, actualizarMascota, addDataCollection, searchDataByField, deleteDataCollection } from '../data/firebase/firebase';
 import { SistemaCitas } from './SistemaCitas';
 import { EditarMascota } from './EditarMascota';
 import typeProfesionalStore from '../service/zustand';
@@ -340,6 +340,39 @@ const PetProfile = () => {
       await actualizarMascota(mascota.id, {
         isPerdida: nuevoEstado
       });
+
+      // Protocolo automático: crear/eliminar publicación en reportes-mascotas
+      const reportesDelUsuario = await searchDataByField('reportes-mascotas', 'publicadoPorUid', usuario.uid);
+      const reportesAutomaticosMascota = reportesDelUsuario.filter(
+        (reporte) => reporte.origen === 'sistema_perdida' && reporte.mascotaId === mascota.id
+      );
+
+      if (nuevoEstado) {
+        const yaExisteActivo = reportesAutomaticosMascota.some((reporte) => reporte.activa !== false);
+        const tieneChapita = chapitasDeEstaMascota.length > 0;
+        if (tieneChapita && !yaExisteActivo) {
+          // TODO(n8n): disparar workflow de email automático (seguimiento) para consultar periódicamente
+          // si la mascota fue encontrada mientras la alerta siga activa.
+          await addDataCollection('reportes-mascotas', {
+            tipoPublicacion: 'perdida',
+            titulo: 'Mascota perdida',
+            nombreMascota: mascota.nombre || 'Sin nombre',
+            descripcion: `Se reporta como perdida a ${mascota.nombre || 'la mascota'}. Si tenés información, por favor comunicáte con su familia.`,
+            ubicacion: 'No informada',
+            contacto: mascota.contacto || usuario?.email || 'No informado',
+            imagen: mascota.fotoUrl || null,
+            activa: true,
+            origen: 'sistema_perdida',
+            mascotaId: mascota.id,
+            publicadoPorUid: usuario.uid,
+            publicadoPorEmail: usuario?.email || null
+          });
+        }
+      } else {
+        for (const reporte of reportesAutomaticosMascota) {
+          await deleteDataCollection('reportes-mascotas', reporte.id);
+        }
+      }
       
       // No recargamos la página, el estado ya está actualizado
       // La UI se actualizará automáticamente gracias al estado de React

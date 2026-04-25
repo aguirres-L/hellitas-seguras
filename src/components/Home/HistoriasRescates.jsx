@@ -1,15 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { getAllDataCollection, obtenerDetalleOng } from '../../data/firebase/firebase';
+import { getAllDataCollection, obtenerDetalleOng, updateDataCollection } from '../../data/firebase/firebase';
 import UseFrameMotion from '../hook_frame_motion/UseFrameMotion';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Este componente no recibe props
 export default function HistoriasRescates() {
+  const TOTAL_PASOS_FORMULARIO = 5;
+  const mensajesPasoFormulario = [
+    {
+      titulo: 'Primero, contanos sobre vos',
+      subtitulo: 'Esto nos ayuda a armar un primer perfil para una adopción responsable.'
+    },
+    {
+      titulo: '¿Dónde vivís y cómo te contactamos?',
+      subtitulo: 'Tu barrio y teléfono son clave para coordinar entrevista y seguimiento.'
+    },
+    {
+      titulo: 'Convivencia en casa',
+      subtitulo: 'Queremos entender el entorno donde viviría la mascota.'
+    },
+    {
+      titulo: 'Tu hogar',
+      subtitulo: 'Tipo de vivienda y espacio disponible para la mascota.'
+    },
+    {
+      titulo: 'Motivación para adoptar',
+      subtitulo: 'Una breve descripción de por qué querés adoptar y cómo sería su vida.'
+    }
+  ];
+
   const [historiasRescate, setHistoriasRescate] = useState([]);
+  const [reportesComunidad, setReportesComunidad] = useState([]);
   const [isCargando, setIsCargando] = useState(true);
   const [error, setError] = useState(null);
+  const [filtroTipoPublicacion, setFiltroTipoPublicacion] = useState('todas');
   const [noticiaSeleccionada, setNoticiaSeleccionada] = useState(null);
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [mostrarFormularioAdopcion, setMostrarFormularioAdopcion] = useState(false);
+  const [mascotaFormulario, setMascotaFormulario] = useState(null);
+  const [isEnviandoSolicitud, setIsEnviandoSolicitud] = useState(false);
+  const [errorFormulario, setErrorFormulario] = useState('');
+  const [pasoFormulario, setPasoFormulario] = useState(0);
+  const [formularioAdopcion, setFormularioAdopcion] = useState({
+    nombreCompleto: '',
+    barrio: '',
+    telefono: '',
+    tieneOtrasMascotas: '',
+    tieneHijos: '',
+    tipoVivienda: '',
+    motivoAdopcion: ''
+  });
   
   // Estado para datos de la ONG
   const [datosOng, setDatosOng] = useState(null);
@@ -74,6 +114,8 @@ export default function HistoriasRescates() {
       ? 'encontró su hogar' 
       : historia.estado === 'en_adopcion'
         ? 'busca su hogar'
+        : historia.estado === 'en_tramite'
+          ? 'está en revisión de adopción'
         : 'fue rescatada';
     
     return `${nombre}: ${estado}`;
@@ -90,6 +132,8 @@ export default function HistoriasRescates() {
       return `${nombre} es un ${especie} que encontró una familia llena de amor después de ser rescatado. Su historia es un testimonio del poder de la esperanza y la dedicación.`;
     } else if (historia.estado === 'en_adopcion') {
       return `${nombre} es un ${especie} rescatado que está buscando un hogar lleno de amor y cuidado.`;
+    } else if (historia.estado === 'en_tramite') {
+      return `${nombre} ya recibió una postulación y se encuentra en etapa de revisión para adopción responsable.`;
     } else {
       return `${nombre} es un ${especie} que fue rescatado y está en proceso de rehabilitación.`;
     }
@@ -114,14 +158,21 @@ export default function HistoriasRescates() {
     cargarDatosOng();
   }, []);
 
-  // Cargar historias desde Firebase
+  const obtenerFechaOrdenable = (fecha) => {
+    if (!fecha) return new Date(0);
+    if (fecha.seconds) return new Date(fecha.seconds * 1000);
+    return new Date(fecha);
+  };
+
+  // Cargar publicaciones desde Firebase
   useEffect(() => {
-    const cargarHistorias = async () => {
+    const cargarPublicaciones = async () => {
       setIsCargando(true);
       setError(null);
       
       try {
         const todasLasHistorias = await getAllDataCollection('historias-de-rescates');
+        const reportes = await getAllDataCollection('reportes-mascotas');
         
         // Transformar datos de Firebase al formato esperado por el componente
         const historiasTransformadas = todasLasHistorias.map((historia) => {
@@ -141,37 +192,48 @@ export default function HistoriasRescates() {
             estado: estadoBooleano,
             tiempoRescate: calcularTiempoRescate(historia.fechaRescate || historia.fechaCreacion),
             // Mantener datos originales para el modal
-            estadoOriginal: historia.estado,
+            estadoOriginal: historia.estado || 'en_adopcion',
             contacto: historia.contacto,
-            ubicacion: historia.ubicacion
+            ubicacion: historia.ubicacion,
+            tipoPublicacion: 'adopcion',
+            fechaOrdenable: obtenerFechaOrdenable(historia.fechaCreacion || historia.fechaRescate)
           };
         });
 
-        // Ordenar por fecha de creación (más recientes primero)
-        historiasTransformadas.sort((a, b) => {
-          const fechaA = todasLasHistorias.find(h => h.id === a.id)?.fechaCreacion;
-          const fechaB = todasLasHistorias.find(h => h.id === b.id)?.fechaCreacion;
-          
-          const fechaAObj = fechaA?.seconds 
-            ? new Date(fechaA.seconds * 1000)
-            : new Date(fechaA || 0);
-          const fechaBObj = fechaB?.seconds 
-            ? new Date(fechaB.seconds * 1000)
-            : new Date(fechaB || 0);
-          
-          return fechaBObj - fechaAObj;
-        });
+        const reportesTransformados = reportes.map((reporte) => ({
+          id: `reporte-${reporte.id}`,
+          idFirestore: reporte.id,
+          imagen: reporte.imagen || 'https://via.placeholder.com/400x300?text=Sin+imagen',
+          titulo: reporte.titulo || (reporte.tipoPublicacion === 'perdida' ? 'Mascota perdida' : 'Avistamiento de mascota'),
+          descripcion: reporte.descripcion || 'Publicación comunitaria',
+          nombreMascota: reporte.nombreMascota || 'Sin nombre',
+          edad: reporte.edad || 'No especificada',
+          raza: reporte.raza || 'No especificada',
+          historia: reporte.descripcion || 'Sin detalles adicionales',
+          fechaRescate: formatearFecha(reporte.fechaCreacion),
+          estado: false,
+          tiempoRescate: 'Reciente',
+          estadoOriginal: reporte.tipoPublicacion === 'perdida' ? 'perdida' : 'avistamiento',
+          contacto: reporte.contacto || '',
+          ubicacion: reporte.ubicacion || 'No informada',
+          tipoPublicacion: reporte.tipoPublicacion === 'perdida' ? 'perdida' : 'avistamiento',
+          fechaOrdenable: obtenerFechaOrdenable(reporte.fechaCreacion)
+        }));
+
+        historiasTransformadas.sort((a, b) => b.fechaOrdenable - a.fechaOrdenable);
+        reportesTransformados.sort((a, b) => b.fechaOrdenable - a.fechaOrdenable);
 
         setHistoriasRescate(historiasTransformadas);
+        setReportesComunidad(reportesTransformados);
       } catch (err) {
-        console.error('Error al cargar historias:', err);
-        setError('Error al cargar las historias de rescates. Por favor, intenta recargar la página.');
+        console.error('Error al cargar publicaciones:', err);
+        setError('Error al cargar las publicaciones. Por favor, intentá recargar la página.');
       } finally {
         setIsCargando(false);
       }
     };
 
-    cargarHistorias();
+    cargarPublicaciones();
   }, []);
 
   const abrirNoticia = (noticia) => {
@@ -182,6 +244,68 @@ export default function HistoriasRescates() {
   const cerrarModal = () => {
     setMostrarModal(false);
     setNoticiaSeleccionada(null);
+  };
+
+  const abrirFormulario = (mascota) => {
+    setMascotaFormulario(mascota);
+    setErrorFormulario('');
+    setPasoFormulario(0);
+    setMostrarFormularioAdopcion(true);
+  };
+
+  const cerrarFormulario = () => {
+    setMostrarFormularioAdopcion(false);
+    setMascotaFormulario(null);
+    setErrorFormulario('');
+    setPasoFormulario(0);
+    setFormularioAdopcion({
+      nombreCompleto: '',
+      barrio: '',
+      telefono: '',
+      tieneOtrasMascotas: '',
+      tieneHijos: '',
+      tipoVivienda: '',
+      motivoAdopcion: ''
+    });
+  };
+
+  const onCambioFormulario = (e) => {
+    const { name, value } = e.target;
+    setFormularioAdopcion((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const puedeAvanzarPasoFormulario = () => {
+    switch (pasoFormulario) {
+      case 0:
+        return Boolean(formularioAdopcion.nombreCompleto.trim());
+      case 1:
+        return Boolean(formularioAdopcion.barrio.trim() && formularioAdopcion.telefono.trim());
+      case 2:
+        return Boolean(formularioAdopcion.tieneOtrasMascotas && formularioAdopcion.tieneHijos);
+      case 3:
+        return Boolean(formularioAdopcion.tipoVivienda.trim());
+      case 4:
+        return true;
+      default:
+        return false;
+    }
+  };
+
+  const onContinuarFormulario = () => {
+    if (!puedeAvanzarPasoFormulario()) {
+      setErrorFormulario('Completá este paso para continuar.');
+      return;
+    }
+    setErrorFormulario('');
+    setPasoFormulario((prev) => Math.min(prev + 1, TOTAL_PASOS_FORMULARIO - 1));
+  };
+
+  const onAtrasFormulario = () => {
+    setErrorFormulario('');
+    setPasoFormulario((prev) => Math.max(prev - 1, 0));
   };
 
 
@@ -274,18 +398,182 @@ export default function HistoriasRescates() {
     window.open(urlWhatsApp, '_blank');
   };
 
+  const obtenerTextoEstado = (estado) => {
+    switch (estado) {
+      case 'adoptado':
+        return 'Adoptado';
+      case 'en_tramite':
+        return 'En trámite';
+      case 'rescatado':
+        return 'Rescatado';
+      case 'avistamiento':
+        return 'Avistamiento';
+      case 'perdida':
+        return 'Mascota perdida';
+      case 'en_adopcion':
+      default:
+        return 'Disponible';
+    }
+  };
+
+  const obtenerClaseEstado = (estado) => {
+    switch (estado) {
+      case 'adoptado':
+        return 'bg-orange-100 text-orange-800';
+      case 'en_tramite':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'rescatado':
+        return 'bg-purple-100 text-purple-800';
+      case 'avistamiento':
+        return 'bg-blue-100 text-blue-800';
+      case 'perdida':
+        return 'bg-red-100 text-red-800';
+      case 'en_adopcion':
+      default:
+        return 'bg-green-100 text-green-800';
+    }
+  };
+
+  const obtenerClaseCardPorTipo = (tipoPublicacion) => {
+    switch (tipoPublicacion) {
+      case 'avistamiento':
+        return 'border-2 border-blue-200 bg-blue-50/40';
+      case 'perdida':
+        return 'border-2 border-red-200 bg-red-50/40';
+      case 'adopcion':
+      default:
+        return 'border-2 border-orange-200 bg-orange-50/30';
+    }
+  };
+
+  const obtenerDetalleTipo = (tipoPublicacion) => {
+    switch (tipoPublicacion) {
+      case 'avistamiento':
+        return 'Reporte ciudadano';
+      case 'perdida':
+        return 'Alerta comunitaria';
+      case 'adopcion':
+      default:
+        return 'Adopción responsable';
+    }
+  };
+
+  const enviarSolicitudAdopcion = async (e) => {
+    e.preventDefault();
+    if (!mascotaFormulario) return;
+
+    if (
+      !formularioAdopcion.nombreCompleto.trim() ||
+      !formularioAdopcion.barrio.trim() ||
+      !formularioAdopcion.telefono.trim() ||
+      !formularioAdopcion.tieneOtrasMascotas ||
+      !formularioAdopcion.tieneHijos ||
+      !formularioAdopcion.tipoVivienda.trim()
+    ) {
+      setErrorFormulario('Faltan datos obligatorios para enviar la postulación.');
+      return;
+    }
+
+    setIsEnviandoSolicitud(true);
+    setErrorFormulario('');
+
+    try {
+      const numeroWhatsApp = datosOng?.whatsapp
+        ? formatearNumeroWhatsApp(datosOng.whatsapp)
+        : '5491112345678';
+
+      const numeroSoloDigitos = String(numeroWhatsApp).replace(/[^\d]/g, '');
+      const nombreOng = datosOng?.nombreOng || 'Patitas que Ayudan';
+
+      const mensaje = [
+        `Hola ${nombreOng}, quiero postularme para adoptar a ${mascotaFormulario.nombreMascota}.`,
+        '',
+        'Perfil de la persona interesada:',
+        `- Nombre: ${formularioAdopcion.nombreCompleto}`,
+        `- Barrio: ${formularioAdopcion.barrio}`,
+        `- Teléfono: ${formularioAdopcion.telefono}`,
+        `- ¿Tiene otras mascotas?: ${formularioAdopcion.tieneOtrasMascotas || 'No informado'}`,
+        `- ¿Tiene hijos?: ${formularioAdopcion.tieneHijos || 'No informado'}`,
+        `- Tipo de vivienda: ${formularioAdopcion.tipoVivienda || 'No informado'}`,
+        `- Motivo de adopción: ${formularioAdopcion.motivoAdopcion || 'No informado'}`,
+        '',
+        `Mascota consultada: ${mascotaFormulario.nombreMascota} (${mascotaFormulario.raza}, ${mascotaFormulario.edad})`,
+      ].join('\n');
+
+      if (mascotaFormulario.estadoOriginal !== 'en_tramite' && mascotaFormulario.estadoOriginal !== 'adoptado') {
+        await updateDataCollection('historias-de-rescates', mascotaFormulario.id, { estado: 'en_tramite' });
+
+        setHistoriasRescate((prev) =>
+          prev.map((item) =>
+            item.id === mascotaFormulario.id
+              ? { ...item, estadoOriginal: 'en_tramite' }
+              : item
+          )
+        );
+
+        setNoticiaSeleccionada((prev) =>
+          prev && prev.id === mascotaFormulario.id
+            ? { ...prev, estadoOriginal: 'en_tramite' }
+            : prev
+        );
+      }
+
+      const urlWhatsApp = `https://wa.me/${numeroSoloDigitos}?text=${encodeURIComponent(mensaje)}`;
+      window.open(urlWhatsApp, '_blank');
+      cerrarFormulario();
+    } catch (err) {
+      console.error('Error al enviar solicitud de adopción:', err);
+      setErrorFormulario('No pudimos iniciar la solicitud. Intentá nuevamente.');
+    } finally {
+      setIsEnviandoSolicitud(false);
+    }
+  };
+
+  const publicaciones = [...historiasRescate, ...reportesComunidad]
+    .sort((a, b) => b.fechaOrdenable - a.fechaOrdenable);
+
+  const publicacionesFiltradas = filtroTipoPublicacion === 'todas'
+    ? publicaciones
+    : publicaciones.filter((item) => item.tipoPublicacion === filtroTipoPublicacion);
+
   return (
     <section className="relative container mx-auto md:py-20 py-12 mt-6 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
-            Historias de rescates
+            Historias, avistamientos y mascotas perdidas
           </h2>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Conoce las increíbles transformaciones de nuestras mascotas rescatadas. 
-            Cada historia es una prueba de que el amor y la dedicación pueden cambiar vidas.
+            Conocé adopciones, reportes de avistamientos y alertas de mascotas perdidas en un mismo lugar.
+            Así toda la comunidad puede ayudar más rápido.
           </p>
+          <div className="mt-6 flex flex-wrap gap-2 justify-center">
+            <button
+              onClick={() => setFiltroTipoPublicacion('todas')}
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${filtroTipoPublicacion === 'todas' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              Todas
+            </button>
+            <button
+              onClick={() => setFiltroTipoPublicacion('adopcion')}
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${filtroTipoPublicacion === 'adopcion' ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-800 hover:bg-orange-200'}`}
+            >
+              Adopción
+            </button>
+            <button
+              onClick={() => setFiltroTipoPublicacion('avistamiento')}
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${filtroTipoPublicacion === 'avistamiento' ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'}`}
+            >
+              Avistamientos
+            </button>
+            <button
+              onClick={() => setFiltroTipoPublicacion('perdida')}
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${filtroTipoPublicacion === 'perdida' ? 'bg-red-500 text-white' : 'bg-red-100 text-red-800 hover:bg-red-200'}`}
+            >
+              Perdidas
+            </button>
+          </div>
         </div>
 
         {/* Estado de carga */}
@@ -312,21 +600,21 @@ export default function HistoriasRescates() {
         {/* Grid de noticias */}
         {!isCargando && !error && (
           <>
-            {historiasRescate.length === 0 ? (
+            {publicacionesFiltradas.length === 0 ? (
               <div className="text-center py-12">
                 <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <p className="text-lg font-medium text-gray-900 mb-2">
-                  Aún no hay historias de rescates disponibles
+                  Aún no hay publicaciones disponibles
                 </p>
                 <p className="text-gray-600">
-                  Las historias de rescates aparecerán aquí cuando sean creadas.
+                  Las publicaciones aparecerán aquí cuando sean creadas.
                 </p>
               </div>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {historiasRescate.map((noticia, indice) => {
+                {publicacionesFiltradas.map((noticia, indice) => {
                   // Obtener animación determinística para esta card
                   const tipoAnimacionCard = obtenerAnimacionParaCard(noticia.id);
                   // Delay escalonado para crear efecto cascada (cada card aparece un poco después)
@@ -341,7 +629,7 @@ export default function HistoriasRescates() {
                       waitForUserView={true}
                     >
                       <article 
-                        className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer"
+                        className={`rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer ${obtenerClaseCardPorTipo(noticia.tipoPublicacion)}`}
                         onClick={() => abrirNoticia(noticia)}
                       >
                         {/* Imagen */}
@@ -355,17 +643,18 @@ export default function HistoriasRescates() {
                             }}
                           />
                           <div className="absolute top-4 right-4">
-                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                              noticia.estado === false 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-orange-100 text-orange-800'
-                            }`}>
-                              {noticia.estado ? 'Adoptado' : 'Disponible'}
+                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${obtenerClaseEstado(noticia.estadoOriginal)}`}>
+                              {obtenerTextoEstado(noticia.estadoOriginal)}
                             </span>
                           </div>
                           <div className="absolute bottom-4 left-4">
                             <span className="inline-block bg-black/70 text-white text-xs px-2 py-1 rounded">
                               {noticia.fechaRescate}
+                            </span>
+                          </div>
+                          <div className="absolute top-4 left-4">
+                            <span className="inline-block bg-white/90 text-gray-700 text-xs px-2 py-1 rounded font-semibold">
+                              {obtenerDetalleTipo(noticia.tipoPublicacion)}
                             </span>
                           </div>
                         </div>
@@ -635,12 +924,8 @@ export default function HistoriasRescates() {
                     }}
                   />
                   <div className="absolute top-4 right-4">
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                      noticiaSeleccionada.estado === true 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-orange-100 text-orange-800'
-                    }`}>
-                      {noticiaSeleccionada.estado === true ? 'Adoptado' : 'Disponible'}
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${obtenerClaseEstado(noticiaSeleccionada.estadoOriginal)}`}>
+                      {obtenerTextoEstado(noticiaSeleccionada.estadoOriginal)}
                     </span>
                   </div>
                 </div>
@@ -671,26 +956,274 @@ export default function HistoriasRescates() {
                   <p className="text-gray-700 leading-relaxed text-sm">
                     {noticiaSeleccionada.historia}
                   </p>
+                  {(noticiaSeleccionada.ubicacion || noticiaSeleccionada.contacto) && (
+                    <div className="mt-4 bg-gray-50 rounded-lg p-3 text-sm">
+                      {noticiaSeleccionada.ubicacion && (
+                        <p className="text-gray-700">
+                          <span className="font-semibold">Ubicación:</span> {noticiaSeleccionada.ubicacion}
+                        </p>
+                      )}
+                      {noticiaSeleccionada.contacto && (
+                        <p className="text-gray-700 mt-1">
+                          <span className="font-semibold">Contacto:</span> {noticiaSeleccionada.contacto}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Footer del modal */}
              
-            { noticiaSeleccionada.estado === false ? (
+            { noticiaSeleccionada.estadoOriginal === 'en_adopcion' ? (
               <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-                <button onClick={() => infoAdoptar(noticiaSeleccionada)} className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200">
-                  ¡Quiero adoptar una mascota como esta!
+                <button onClick={() => abrirFormulario(noticiaSeleccionada)} className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200">
+                  Quiero postular para adoptarla
                 </button>
               </div>
-            ):(
-              ''
-            )}
+            ) : noticiaSeleccionada.estadoOriginal === 'en_tramite' ? (
+              <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+                <p className="text-yellow-700 font-medium">
+                  Esta mascota ya está en revisión de adopción. Podés consultar por WhatsApp para quedar en lista de espera.
+                </p>
+                <button
+                  onClick={() => infoAdoptar(noticiaSeleccionada)}
+                  className="mt-4 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
+                >
+                  Consultar por WhatsApp
+                </button>
+              </div>
+            ) : null}
 
             </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Modal formulario de postulación */}
+      <AnimatePresence>
+        {mostrarFormularioAdopcion && mascotaFormulario && (
+          <motion.div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            onClick={cerrarFormulario}
+          >
+            <motion.div
+              className="bg-white rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.25 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-gray-200 flex justify-between items-start">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-800">Perfil para adopción</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Completá tu perfil para postular por {mascotaFormulario.nombreMascota}.
+                  </p>
+                </div>
+                <button
+                  onClick={cerrarFormulario}
+                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                  type="button"
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={enviarSolicitudAdopcion} className="p-6">
+                <div className="mb-6">
+                  <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
+                    <span>Paso {pasoFormulario + 1} de {TOTAL_PASOS_FORMULARIO}</span>
+                    <span className="text-green-600 font-medium">
+                      {Math.round(((pasoFormulario + 1) / TOTAL_PASOS_FORMULARIO) * 100)}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-green-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${((pasoFormulario + 1) / TOTAL_PASOS_FORMULARIO) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-6 animate-fade-in">
+                  <h4 className="text-2xl font-bold text-gray-900 leading-tight">
+                    {mensajesPasoFormulario[pasoFormulario]?.titulo}
+                  </h4>
+                  <p className="mt-2 text-gray-600 text-base leading-relaxed">
+                    {mensajesPasoFormulario[pasoFormulario]?.subtitulo}
+                  </p>
+                </div>
+
+                <div className="min-h-[180px] animate-fade-in">
+                  {pasoFormulario === 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nombre completo *</label>
+                      <input
+                        type="text"
+                        name="nombreCompleto"
+                        value={formularioAdopcion.nombreCompleto}
+                        onChange={onCambioFormulario}
+                        className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none"
+                        placeholder="Ej: Juan Pérez"
+                        autoFocus
+                      />
+                    </div>
+                  )}
+
+                  {pasoFormulario === 1 && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Barrio *</label>
+                        <input
+                          type="text"
+                          name="barrio"
+                          value={formularioAdopcion.barrio}
+                          onChange={onCambioFormulario}
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none"
+                          placeholder="Ej: Caballito"
+                          autoFocus
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Teléfono *</label>
+                        <input
+                          type="text"
+                          name="telefono"
+                          value={formularioAdopcion.telefono}
+                          onChange={onCambioFormulario}
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none"
+                          placeholder="Ej: +54 9 11 1234 5678"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {pasoFormulario === 2 && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">¿Tenés otras mascotas? *</label>
+                        <select
+                          name="tieneOtrasMascotas"
+                          value={formularioAdopcion.tieneOtrasMascotas}
+                          onChange={onCambioFormulario}
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none"
+                          autoFocus
+                        >
+                          <option value="">Seleccionar</option>
+                          <option value="Sí">Sí</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">¿Tenés hijos? *</label>
+                        <select
+                          name="tieneHijos"
+                          value={formularioAdopcion.tieneHijos}
+                          onChange={onCambioFormulario}
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none"
+                        >
+                          <option value="">Seleccionar</option>
+                          <option value="Sí">Sí</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {pasoFormulario === 3 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de vivienda *</label>
+                      <input
+                        type="text"
+                        name="tipoVivienda"
+                        value={formularioAdopcion.tipoVivienda}
+                        onChange={onCambioFormulario}
+                        className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none"
+                        placeholder="Ej: Departamento con balcón, casa con patio, etc."
+                        autoFocus
+                      />
+                    </div>
+                  )}
+
+                  {pasoFormulario === 4 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        ¿Por qué querés adoptar? (opcional)
+                      </label>
+                      <textarea
+                        name="motivoAdopcion"
+                        value={formularioAdopcion.motivoAdopcion}
+                        onChange={onCambioFormulario}
+                        className="w-full border border-gray-300 rounded-xl px-4 py-3 min-h-[140px] resize-y text-base focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none"
+                        placeholder="Contanos brevemente tu motivación y cómo sería su hogar."
+                        autoFocus
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {errorFormulario && (
+                  <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
+                    {errorFormulario}
+                  </div>
+                )}
+
+                <div className="mt-8 pt-2 border-t border-gray-100 flex flex-col-reverse sm:flex-row gap-3 sm:items-center">
+                  <div className="sm:flex-1 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={cerrarFormulario}
+                      className="px-4 py-3 rounded-lg font-semibold border-2 border-gray-200 text-gray-700 bg-gray-50 hover:bg-gray-100 transition-all duration-200 text-base"
+                      disabled={isEnviandoSolicitud}
+                    >
+                      Cancelar
+                    </button>
+                    {pasoFormulario > 0 && (
+                      <button
+                        type="button"
+                        onClick={onAtrasFormulario}
+                        className="px-4 py-3 rounded-lg font-semibold border-2 border-green-200 text-green-700 bg-green-50 hover:bg-green-100 transition-all duration-200 text-base"
+                        disabled={isEnviandoSolicitud}
+                      >
+                        Atrás
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex w-full sm:w-auto sm:justify-end sm:flex-1">
+                    {pasoFormulario < TOTAL_PASOS_FORMULARIO - 1 ? (
+                      <button
+                        type="button"
+                        className="w-full sm:w-auto bg-green-600 text-white px-5 py-3 rounded-lg font-semibold shadow-md hover:bg-green-700 transition-all duration-200 text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={onContinuarFormulario}
+                        disabled={isEnviandoSolicitud}
+                      >
+                        Continuar
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        className="w-full sm:min-w-[270px] bg-green-600 text-white px-5 py-3 rounded-lg font-semibold shadow-md hover:bg-green-700 transition-all duration-200 text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isEnviandoSolicitud}
+                      >
+                        {isEnviandoSolicitud ? 'Enviando...' : 'Enviar por WhatsApp y marcar en trámite'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </section>
   );
 }

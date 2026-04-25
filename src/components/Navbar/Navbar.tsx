@@ -15,6 +15,7 @@ import { usePagoChapitaNotificaciones } from '../../hooks/usePagoChapitaNotifica
 import UseFrameMotion from '../hook_frame_motion/UseFrameMotion';
 import { MobileMenuDrawer } from './MobileMenuDrawer';
 import ModalSugerenciasMejoras from './ModalSugerenciasMejoras';
+import { getAllDataCollection } from '../../data/firebase/firebase';
 // Importar video como módulo desde src/assets (Vite lo procesará correctamente)
 // @ts-ignore - Vite procesa archivos .mp4 y devuelve la URL como string
 import videoLogo from '../../assets/pets/milo9.mp4';
@@ -53,6 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [notificacionesAbiertas, setNotificacionesAbiertas] = useState(false);
   const [modalSugerenciasAbierto, setModalSugerenciasAbierto] = useState(false);
+  const [cantidadMascotasPerdidasActivas, setCantidadMascotasPerdidasActivas] = useState(0);
 
   const { typeTheme, toggleTheme } = useTheme();
 
@@ -78,6 +80,31 @@ export const Navbar: React.FC<NavbarProps> = ({
 
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (tipo === 'home' || !usuario?.uid) return;
+
+    let montado = true;
+    const cargarPerdidasActivas = async () => {
+      try {
+        const reportes = await getAllDataCollection('reportes-mascotas');
+        if (!montado) return;
+        const totalActivas = reportes.filter(
+          (reporte) => reporte.tipoPublicacion === 'perdida' && reporte.activa !== false
+        ).length;
+        setCantidadMascotasPerdidasActivas(totalActivas);
+      } catch (error) {
+        console.error('Error al cargar alertas de mascotas perdidas:', error);
+      }
+    };
+
+    cargarPerdidasActivas();
+    const intervalo = window.setInterval(cargarPerdidasActivas, 60000);
+    return () => {
+      montado = false;
+      window.clearInterval(intervalo);
+    };
+  }, [tipo, usuario?.uid]);
 
   // Handler cuando el video termina de cargar
   const handleVideoLoaded = () => {
@@ -371,6 +398,38 @@ export const Navbar: React.FC<NavbarProps> = ({
             idsAvisoPagoNuevo={idsAvisoPagoNuevo}
           />
         </div>
+      )}
+
+      {mostrarConfiguracion && usuario && (
+        <Link
+          to="/dashboard?tab=perdidas"
+          className={
+            typeTheme === 'dark'
+              ? 'text-gray-200 hover:text-red-400 transition-colors duration-200 text-sm gap-2 flex items-center'
+              : 'text-gray-600 hover:text-red-600 transition-colors duration-200 text-sm gap-2 flex items-center'
+          }
+          onClick={() => setMenuAbierto(false)}
+          aria-label={
+            cantidadMascotasPerdidasActivas > 0
+              ? `Mascotas perdidas, ${cantidadMascotasPerdidasActivas} alertas activas`
+              : 'Mascotas perdidas'
+          }
+        >
+          <span className="relative inline-flex items-center">
+            <svg className="h-4 w-4 shrink-0 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-7.938 4h15.876c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            {cantidadMascotasPerdidasActivas > 0 && (
+              <span
+                className="absolute -right-2.5 -top-1.5 min-h-[1.1rem] min-w-[1.1rem] rounded-full bg-red-500 px-1 text-center text-[0.65rem] font-bold leading-tight text-white"
+                aria-hidden
+              >
+                {cantidadMascotasPerdidasActivas > 9 ? '9+' : cantidadMascotasPerdidasActivas}
+              </span>
+            )}
+          </span>
+          <span>Mascotas perdidas</span>
+        </Link>
       )}
 
       {mostrarConfiguracion && usuario && (

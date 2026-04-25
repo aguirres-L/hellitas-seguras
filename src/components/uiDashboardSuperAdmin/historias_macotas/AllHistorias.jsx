@@ -16,7 +16,7 @@ export default function AllHistorias() {
   const [historias, setHistorias] = useState([]);
   const [isCargando, setIsCargando] = useState(false);
   const [error, setError] = useState(null);
-  const [filtroEstado, setFiltroEstado] = useState('todos'); // 'todos', 'en_adopcion', 'adoptado'
+  const [filtroEstado, setFiltroEstado] = useState('todos'); // 'todos', 'en_adopcion', 'en_tramite', 'adoptado'
 
   // Cargar historias al montar el componente
   useEffect(() => {
@@ -28,12 +28,8 @@ export default function AllHistorias() {
     setError(null);
     try {
       const todasLasHistorias = await getAllDataCollection('historias-de-rescates');
-      // Filtrar solo las que están en estado de adopción
-      const historiasEnAdopcion = todasLasHistorias.filter(
-        historia => historia.estado === 'en_adopcion' || !historia.estado
-      );
       // Ordenar por fecha de creación (más recientes primero)
-      historiasEnAdopcion.sort((a, b) => {
+      todasLasHistorias.sort((a, b) => {
         const fechaA = a.fechaCreacion?.seconds 
           ? new Date(a.fechaCreacion.seconds * 1000)
           : new Date(a.fechaCreacion || 0);
@@ -42,7 +38,7 @@ export default function AllHistorias() {
           : new Date(b.fechaCreacion || 0);
         return fechaB - fechaA;
       });
-      setHistorias(historiasEnAdopcion);
+      setHistorias(todasLasHistorias);
     } catch (err) {
       console.error('Error al cargar historias:', err);
       setError('Error al cargar las historias. Inténtalo de nuevo.');
@@ -91,6 +87,8 @@ export default function AllHistorias() {
         return 'bg-green-100 text-green-800 border-green-300';
       case 'adoptado':
         return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'en_tramite':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       case 'rescatado':
         return 'bg-purple-100 text-purple-800 border-purple-300';
       default:
@@ -132,6 +130,18 @@ export default function AllHistorias() {
             }`}
           >
             En Adopción
+          </button>
+          <button
+            onClick={() => setFiltroEstado('en_tramite')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              filtroEstado === 'en_tramite'
+                ? 'bg-yellow-500 text-white'
+                : typeTheme === 'light'
+                  ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            En Trámite
           </button>
           <button
             onClick={() => setFiltroEstado('adoptado')}
@@ -247,6 +257,7 @@ export default function AllHistorias() {
                       )}`}
                     >
                       {historia.estado === 'en_adopcion' ? 'En Adopción' : 
+                       historia.estado === 'en_tramite' ? 'En Trámite' :
                        historia.estado === 'adoptado' ? 'Adoptado' :
                        historia.estado === 'rescatado' ? 'Rescatado' : historia.estado}
                     </span>

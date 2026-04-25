@@ -11,6 +11,7 @@ import NewHistoria from './uiDashboardSuperAdmin/historias_macotas/NewHistoria';
 import InformationOfOng from './uiDashboardSuperAdmin/data_of_ong/InformationOfOng';
 import { AdminDashboardTabBar } from './uiDashboardSuperAdmin/AdminDashboardTabBar';
 import { useNotificacionApp } from '../contexts/NotificacionAppContext';
+import FormularioReporteMascota from './FormularioReporteMascota';
 
 // Constantes financieras configurables
 const VALOR_MENSUALIDAD = 3000; // CLP
@@ -24,13 +25,13 @@ const DashboardAdmin = () => {
   const navigate = useNavigate();
   const { usuario, cerrarSesion, isCargandoLogout } = useAuth();
   const { typeTheme } = useTheme();
-  const { mostrarError } = useNotificacionApp();
+  const { mostrarError, mostrarExito } = useNotificacionApp();
   
   // Estados para datos administrativos
   const [datosUsuario, setDatosUsuario] = useState(null);
   const [isCargandoUsuario, setIsCargandoUsuario] = useState(false);
   const [pestañaActiva, setPestañaActiva] = useState('liquidaciones');
-  const [subPestañaHistorias, setSubPestañaHistorias] = useState('ver'); // 'ver' o 'crear'
+  const [subPestañaHistorias, setSubPestañaHistorias] = useState('ver'); // 'ver', 'crear' o 'reporte'
   const [mesSeleccionado, setMesSeleccionado] = useState(new Date().getMonth());
   const [añoSeleccionado, setAñoSeleccionado] = useState(new Date().getFullYear());
 
@@ -980,16 +981,35 @@ const DashboardAdmin = () => {
                   >
                     Crear Nueva Historia
                   </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={subPestañaHistorias === 'reporte'}
+                    onClick={() => setSubPestañaHistorias('reporte')}
+                    className={clasesSubPestañaHistorias('reporte')}
+                  >
+                    Crear avistamiento/perdida
+                  </button>
                 </nav>
               </div>
 
               {/* Contenido según sub-pestaña */}
               {subPestañaHistorias === 'ver' ? (
                 <AllHistorias />
-              ) : (
+              ) : subPestañaHistorias === 'crear' ? (
                 <NewHistoria 
                   onHistoriaCreada={() => setSubPestañaHistorias('ver')}
                 />
+              ) : (
+                <div className="max-w-2xl">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">
+                    Nuevo reporte comunitario
+                  </h3>
+                  <FormularioReporteMascota
+                    usuario={usuario}
+                    onPublicacionCreada={() => mostrarExito('Reporte publicado correctamente.')}
+                  />
+                </div>
               )}
             </div>
           )}

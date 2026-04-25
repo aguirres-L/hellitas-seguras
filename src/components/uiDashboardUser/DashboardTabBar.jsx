@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { PawPrint, Calendar, Store, Dog } from 'lucide-react';
+import { PawPrint, Calendar, Store, Dog, TriangleAlert } from 'lucide-react';
 
 const pestanas = [
   { id: 'mascotas', etiqueta: 'Mascotas', Icono: PawPrint },
   { id: 'citas', etiqueta: 'Citas', Icono: Calendar },
   { id: 'profesionales', etiqueta: 'Profesionales', Icono: Store },
   { id: 'paseadores', etiqueta: 'Paseadores', Icono: Dog },
+  { id: 'perdidas', etiqueta: 'Perdidas', Icono: TriangleAlert },
 ];
 
 const N_PESTANAS = pestanas.length;
@@ -36,12 +37,14 @@ const transicionColorIcono = {
  * @param {(id: string) => void} props.onCambiarPestana
  * @param {'light'|'dark'} props.typeTheme
  * @param {number} [props.cantidadCitasNuevasEnTab] — badge en pestaña Citas (p. ej. tras crear cita)
+ * @param {number} [props.cantidadPerdidasEnTab] — badge en pestaña Perdidas
  */
 export function DashboardTabBar({
   pestanaActiva,
   onCambiarPestana,
   typeTheme,
   cantidadCitasNuevasEnTab = 0,
+  cantidadPerdidasEnTab = 0,
 }) {
   const indiceActivo = useMemo(() => {
     const i = pestanas.findIndex((p) => p.id === pestanaActiva);
@@ -87,11 +90,15 @@ export function DashboardTabBar({
           const isActiva = pestanaActiva === id;
 
           const mostrarBadgeCitas = id === 'citas' && cantidadCitasNuevasEnTab > 0;
+          const mostrarBadgePerdidas = id === 'perdidas' && cantidadPerdidasEnTab > 0;
+          const mostrarBadge = mostrarBadgeCitas || mostrarBadgePerdidas;
           const etiquetaAccesible =
             mostrarBadgeCitas
               ? `Citas, ${cantidadCitasNuevasEnTab} ${
                   cantidadCitasNuevasEnTab === 1 ? 'nueva por revisar' : 'nuevas por revisar'
                 }`
+              : mostrarBadgePerdidas
+                ? `Mascotas perdidas, ${cantidadPerdidasEnTab} alertas activas`
               : undefined;
 
           return (
@@ -104,7 +111,13 @@ export function DashboardTabBar({
               id={`tab-dashboard-${id}`}
               tabIndex={isActiva ? 0 : -1}
               aria-label={etiquetaAccesible}
-              title={mostrarBadgeCitas ? 'Tenés citas nuevas en esta sección' : undefined}
+              title={
+                mostrarBadgeCitas
+                  ? 'Tenés citas nuevas en esta sección'
+                  : mostrarBadgePerdidas
+                    ? 'Hay alertas activas de mascotas perdidas'
+                    : undefined
+              }
               onClick={() => onCambiarPestana(id)}
               whileTap={{ scale: 0.96 }}
               transition={{ type: 'spring', stiffness: 500, damping: 35 }}
@@ -129,14 +142,16 @@ export function DashboardTabBar({
                 >
                   <Icono className="h-5 w-5 shrink-0" strokeWidth={isActiva ? 2.5 : 2} aria-hidden />
                 </motion.span>
-                {mostrarBadgeCitas && (
+                {mostrarBadge && (
                   <span
                     className={`absolute -right-2 -top-1 flex min-h-[17px] min-w-[17px] items-center justify-center rounded-full border-2 px-0.5 text-[9px] font-bold leading-none text-white ${
                       esLight ? 'border-white bg-red-500' : 'border-gray-900 bg-red-500'
                     }`}
                     aria-hidden
                   >
-                    {cantidadCitasNuevasEnTab > 9 ? '9+' : cantidadCitasNuevasEnTab}
+                    {(mostrarBadgeCitas ? cantidadCitasNuevasEnTab : cantidadPerdidasEnTab) > 9
+                      ? '9+'
+                      : (mostrarBadgeCitas ? cantidadCitasNuevasEnTab : cantidadPerdidasEnTab)}
                   </span>
                 )}
               </span>
