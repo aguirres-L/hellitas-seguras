@@ -96,7 +96,7 @@ export default function FormularioReporteMascota({ usuario, onPublicacionCreada,
         />
       </div>
 
-     
+      
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la mascota (opcional)</label>

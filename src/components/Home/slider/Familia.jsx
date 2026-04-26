@@ -24,7 +24,14 @@ const mascotasFamilia = [
     imagenReal: milo,
     imagen3D: milo3D,
     personalidad: ['Muy mimoso', 'Alegre', 'Juguetón', 'Compañero', 'Guardián'],
-    emoji: '🧠',
+    historia:
+      'Milo llegó en 2018 para demostrarme qué significa la resiliencia. Juntos crecimos: él llegó cuando yo tenía 20 años y hoy, a mis 28, sigue siendo mi compañero fiel. Superó de todo, desde perderse en las fiestas y volver solo, hasta sobrevivir a una inundación en 2019. Pasó de correr tras animales en el campo a disfrutar de sus días recibiendo mimos en un sillón de Barrio Cofico. Milo no es solo mi mascota, es mi hijo y el testigo de mi crecimiento.',
+    mensajeImpacto:
+      'Su historia es prueba de que, con una oportunidad, cualquier animal puede transformar su destino.',
+    llamadoAccion:
+      'Sumate para que más compañeros como Milo encuentren un lugar seguro.',
+    posicionImagen: '50% 32%',
+    emoji: '',
     color: 'from-blue-50 to-blue-100',
     colorBorde: 'border-blue-200',
   },
@@ -33,7 +40,8 @@ const mascotasFamilia = [
     imagenReal: nicky,
     imagen3D: nicky3D,
     personalidad: ['Tierno', 'Independiente', 'Dormilón', 'Sociable con otros perros', 'Guardián'],
-    emoji: '😴',
+    posicionImagen: '50% 30%',
+    emoji: '',
     color: 'from-purple-50 to-purple-100',
     colorBorde: 'border-purple-200',
   },
@@ -42,7 +50,8 @@ const mascotasFamilia = [
     imagenReal: rocco,
     imagen3D: rocco3D,
     personalidad: ['Tierno', 'Cariñoso', 'Compañero', 'Juguetón', 'Energético'],
-    emoji: '⚡',
+    posicionImagen: '50% 34%',
+    emoji: '',
     color: 'from-yellow-50 to-yellow-100',
     colorBorde: 'border-yellow-200',
   },
@@ -51,7 +60,14 @@ const mascotasFamilia = [
     imagenReal: lore,
     imagen3D: lore3D,
     personalidad: ['Compañero', 'Mimoso', 'Amable', 'Educado', 'Fiel'],
-    emoji: '🏠',
+    historia:
+      'Lorenzo llegó en 2012 para cambiarlo todo. De aquel cachorro diminuto que dormía entre peluches, pasó a ser el "hijo perruno" que hoy cuida a mis padrinos y abuela, recibiendo a todos con un "regalo" en la boca y un amor incondicional.',
+    mensajeImpacto:
+      'Su historia nos enseña que los animales transforman vidas con gestos simples. Por eso, este espacio existe: para que más historias como la suya sean posibles.',
+    llamadoAccion:
+      'Muchos animales esperan esa oportunidad. Si nos unimos, podemos cambiar su realidad.',
+    posicionImagen: '50% 24%',
+    emoji: '',
     color: 'from-green-50 to-green-100',
     colorBorde: 'border-green-200',
   },
@@ -75,14 +91,14 @@ export default function Familia({ onCerrar, manejarClickFondo }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-5 bg-black/50 backdrop-blur-sm pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-[max(0.5rem,env(safe-area-inset-top))]"
+      className="fixed inset-0 z-50 flex items-center justify-center p-1.5 sm:p-3 md:p-4 bg-black/50 backdrop-blur-sm pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-[max(0.25rem,env(safe-area-inset-top))]"
       onClick={manejarClickFondo}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-titulo-familia"
     >
       <div
-        className="relative w-full max-w-4xl lg:max-w-5xl h-[min(90vh,90dvh)] max-h-[calc(100svh-1rem)] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl"
+        className="relative w-full max-w-4xl lg:max-w-5xl h-[min(96vh,96dvh)] max-h-[calc(100dvh-0.5rem)] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header del modal */}
@@ -118,7 +134,7 @@ export default function Familia({ onCerrar, manejarClickFondo }) {
               </h2>
               {vista === 'lista' && (
                 <p className="text-sm text-gray-600 mt-0.5 hidden sm:block">
-                  Tocá un personaje 3D para ver foto real y personalidad
+                  Tocá un personaje 3D para ver su foto real e historia
                 </p>
               )}
             </div>
@@ -141,20 +157,23 @@ export default function Familia({ onCerrar, manejarClickFondo }) {
             {vista === 'lista' ? (
               <motion.div
                 key="vista-lista"
-                className="p-5 sm:p-6 lg:p-8 flex flex-col flex-1 min-h-0 justify-center sm:justify-start"
+                className="p-4 sm:p-6 lg:p-8 flex flex-col flex-1 min-h-0 justify-center sm:justify-start"
                 initial={animacionesPredefinidasFrameMotion.fade.initial}
                 animate={animacionesPredefinidasFrameMotion.fade.animate}
                 exit={animacionesPredefinidasFrameMotion.fade.exit}
                 transition={transicionVista}
               >
-                <UseFrameMotion tipoAnimacion="slideUp" duracion={0.42} delay={0.05} className="text-center mb-6">
-                  <p className="text-base sm:text-lg text-gray-700 leading-relaxed max-w-2xl mx-auto">
+                <UseFrameMotion tipoAnimacion="slideUp" duracion={0.42} delay={0.05} className="text-center mb-5 sm:mb-7">
+                  <p className="text-sm sm:text-base text-gray-500 font-medium tracking-wide uppercase">
+                    Historias reales
+                  </p>
+                  <p className="text-base sm:text-lg text-gray-700 leading-relaxed max-w-2xl mx-auto mt-2">
                     Mascotas reales detrás de las animaciones 3D. Elegí un personaje para conocerlo.
                   </p>
                 </UseFrameMotion>
 
                 <div
-                  className="flex flex-row flex-wrap justify-center items-end gap-4 sm:gap-6 lg:gap-8 py-2"
+                  className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6 py-2 max-w-4xl mx-auto w-full"
                   role="list"
                   aria-label="Personajes 3D, elegí uno para ver el detalle"
                 >
@@ -169,7 +188,7 @@ export default function Familia({ onCerrar, manejarClickFondo }) {
                       <button
                         type="button"
                         onClick={() => abrirDetalle(mascota)}
-                        className={`group relative rounded-2xl border-2 ${mascota.colorBorde} bg-gradient-to-br ${mascota.color} p-3 sm:p-4 shadow-md hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 transition-shadow w-[140px] sm:w-[160px] lg:w-[180px]`}
+                        className={`group relative rounded-2xl border-2 ${mascota.colorBorde} bg-gradient-to-br ${mascota.color} p-3 sm:p-4 shadow-md hover:shadow-xl hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 transition-all w-full`}
                         aria-label={`Ver detalle de ${mascota.nombre}`}
                       >
                         <div className="aspect-square rounded-xl overflow-hidden bg-white/80 flex items-center justify-center">
@@ -189,14 +208,14 @@ export default function Familia({ onCerrar, manejarClickFondo }) {
                 </div>
 
                 <p className="text-center text-xs text-gray-500 mt-6 sm:hidden">
-                  Tocá un personaje para ver foto real y personalidad
+                  Tocá un personaje para ver su foto real e historia
                 </p>
               </motion.div>
             ) : (
               mascotaSeleccionada && (
                 <motion.div
                   key={`vista-detalle-${mascotaSeleccionada.nombre}`}
-                  className="p-5 sm:p-6 lg:p-8 flex flex-col flex-1 min-h-0"
+                  className="p-3 sm:p-6 lg:p-8 flex flex-col flex-1 min-h-0"
                   initial={animacionesPredefinidasFrameMotion.slideLeft.initial}
                   animate={animacionesPredefinidasFrameMotion.slideLeft.animate}
                   exit={animacionesPredefinidasFrameMotion.slideLeft.exit}
@@ -206,41 +225,47 @@ export default function Familia({ onCerrar, manejarClickFondo }) {
                     tipoAnimacion="fade"
                     duracion={0.4}
                     delay={0.08}
-                    className="flex flex-col flex-1 min-h-0 gap-5"
+                    className="flex flex-col flex-1 min-h-0 gap-3 sm:gap-5"
                   >
-                    {/* Foto real: se muestra completa (sin recortes agresivos) */}
-                    <div
-                      className={`rounded-2xl border-2 ${mascotaSeleccionada.colorBorde} bg-gradient-to-b from-gray-50 to-gray-100/90 overflow-hidden shadow-inner flex-1 min-h-[240px] flex flex-col`}
-                    >
-                      <div className="flex flex-1 min-h-[240px] max-h-[min(62vh,620px)] items-center justify-center w-full p-2 sm:p-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 flex-1 min-h-0">
+                      {/* Foto real: ocupa todo el alto disponible del detalle */}
+                      <div
+                        className={`rounded-2xl border-2 ${mascotaSeleccionada.colorBorde} bg-gradient-to-b from-gray-50 to-gray-100/90 overflow-hidden shadow-inner h-[40vh] sm:h-[56vh] lg:h-full min-h-[220px] lg:min-h-0 lg:col-span-7`}
+                      >
                         <img
                           src={mascotaSeleccionada.imagenReal}
                           alt={`${mascotaSeleccionada.nombre} — foto`}
-                          className="max-h-[min(62vh,620px)] w-full h-auto object-contain object-center"
+                          className="w-full h-full object-cover object-center"
+                          style={{ objectPosition: mascotaSeleccionada.posicionImagen || '50% 50%' }}
                           loading="lazy"
                         />
                       </div>
-                    </div>
 
-                    <div
-                      className={`shrink-0 rounded-2xl border ${mascotaSeleccionada.colorBorde} bg-gradient-to-br ${mascotaSeleccionada.color} p-4 sm:p-5`}
-                    >
-                      <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <span aria-hidden>✨</span>
-                        Personalidad
-                      </h4>
-                      <ul className="space-y-2">
-                        {mascotaSeleccionada.personalidad.map((caracteristica, idx) => (
-                          <li key={idx} className="text-sm sm:text-base text-gray-800 flex items-start gap-2">
-                            <span className="text-orange-500 mt-1 shrink-0">•</span>
-                            <span>{caracteristica}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="text-xs sm:text-sm text-gray-600 text-center leading-relaxed mt-4 pt-4 border-t border-black/5">
-                        <span className="font-semibold">💚</span> Esta personalidad inspira las animaciones de Huellitas
-                        Seguras.
-                      </p>
+                      <div className="lg:col-span-5 flex flex-col">
+                        <div className="rounded-2xl border border-orange-200 bg-white p-3.5 sm:p-5 shadow-sm h-full">
+                          <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                            <span aria-hidden>📖</span>
+                            Historia
+                          </h4>
+                          {mascotaSeleccionada.historia ? (
+                            <>
+                              <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
+                                {mascotaSeleccionada.historia}
+                              </p>
+                              <p className="text-sm sm:text-base text-gray-700 leading-relaxed mt-3">
+                                {mascotaSeleccionada.mensajeImpacto}
+                              </p>
+                              <p className="text-sm sm:text-base font-semibold text-orange-700 leading-relaxed mt-3 pt-3 border-t border-orange-100">
+                                {mascotaSeleccionada.llamadoAccion}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+                              Estamos preparando su historia completa. Muy pronto vas a poder conocer su recorrido.
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </UseFrameMotion>
                 </motion.div>
