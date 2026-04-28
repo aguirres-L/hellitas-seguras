@@ -1,4 +1,6 @@
-import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+
+const intervaloAutoplayGaleriaMs = 4000;
 
 /**
  * Galería horizontal (segundo nivel) bajo un slide de producto.
@@ -42,6 +44,20 @@ export default function InnerImageGallery({
     if (el) el.scrollTo({ left: 0, behavior: 'auto' });
     setíndiceFoto(0);
   }, [claveGaleria]);
+
+  // Autoplay solo para galerías de imágenes (no video)
+  useEffect(() => {
+    if (isVideo || !hayMásDeUna) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      const siguiente = (índiceFoto + 1) % filas.length;
+      irA(siguiente);
+    }, intervaloAutoplayGaleriaMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [índiceFoto, filas.length, hayMásDeUna, irA, isVideo]);
 
   return (
     <div

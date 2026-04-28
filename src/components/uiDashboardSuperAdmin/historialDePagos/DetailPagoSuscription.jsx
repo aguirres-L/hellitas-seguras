@@ -40,6 +40,16 @@ export default function DetailPagoSuscription({ pagosSuscripciones, typeTheme, i
             ) : (
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {pagosSuscripciones.map((pago, index) => (
+                  (() => {
+                    const usuarioPago =
+                      pago.usuarioNombre ||
+                      pago.nombreUsuario ||
+                      pago.userName ||
+                      pago.usuarioEmail ||
+                      pago.usuarioId ||
+                      'N/A';
+
+                    return (
                   <div key={pago.id || index} className={`rounded-lg p-4 border ${
                     typeTheme === 'light' ? 'bg-white border-gray-200' : 'bg-gray-600 border-gray-500'
                   }`}>
@@ -110,6 +120,16 @@ export default function DetailPagoSuscription({ pagosSuscripciones, typeTheme, i
                           {pago.tipo === 'suscripcion_mensual' ? 'Suscripción Mensual' : 'Error Tipo de Pago'}
                         </p>
                       </div>
+                      <div>
+                        <label className={`font-medium ${
+                          typeTheme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                        }`}>
+                          Usuario:
+                        </label>
+                        <p className={`${typeTheme === 'light' ? 'text-gray-900' : 'text-white'}`}>
+                          {usuarioPago}
+                        </p>
+                      </div>
                     </div>
   
                {/*      {pago.metodoPago === 'transferencia' && (
@@ -129,6 +149,8 @@ export default function DetailPagoSuscription({ pagosSuscripciones, typeTheme, i
                       </div>
                     )} */}
                   </div>
+                    );
+                  })()
                 ))}
               </div>
             )}

@@ -22,15 +22,17 @@ const mascotasFamilia = [
   {
     nombre: 'Milo',
     imagenReal: milo,
+    imagenesReales: [milo, nicky, milo, nicky],
     imagen3D: milo3D,
-    personalidad: ['Muy mimoso', 'Alegre', 'Juguetón', 'Compañero', 'Guardián'],
+    personalidad: ['Muy mimoso', 'Alegre', 'Juguetón', 'Extremadamente inteligente', 'Guardián'],
     historia:
-      'Milo llegó en 2018 para demostrarme qué significa la resiliencia. Juntos crecimos: él llegó cuando yo tenía 20 años y hoy, a mis 28, sigue siendo mi compañero fiel. Superó de todo, desde perderse en las fiestas y volver solo, hasta sobrevivir a una inundación en 2019. Pasó de correr tras animales en el campo a disfrutar de sus días recibiendo mimos en un sillón de Barrio Cofico. Milo no es solo mi mascota, es mi hijo y el testigo de mi crecimiento.',
+      'Milo llegó en 2018 para enseñarme el verdadero significado de la resiliencia. Crecimos juntos, vi como el afrontaba cada desafio siempre con una sonrisa en el rostro. Superó una inundacion a finales de 2019, demostrando una astucia asombrosa. Es tan inteligente que domina comandos como sentarse, dar la mano y quedarse quieto, aunque su truco favorito siempre es "buscar" comida. Pasó de correr y cazar en el campo a ser el rey del sillón. Milo me enseño lo que es ser un compañero incondicional.',
     mensajeImpacto:
-      'Su historia es prueba de que, con una oportunidad, cualquier animal puede transformar su destino.',
+      'Su vida es prueba de que, con amor y una oportunidad, cualquier animal puede transformar su destino y sorprenderte con su capacidad.',
     llamadoAccion:
-      'Sumate para que más compañeros como Milo encuentren un lugar seguro.',
+      'Sumate para que más compañeros brillantes como Milo encuentren un lugar seguro donde brillar.',
     posicionImagen: '50% 32%',
+    posicionesImagenes: ['50% 32%', '50% 32%', '50% 32%', '50% 32%'],
     emoji: '',
     color: 'from-blue-50 to-blue-100',
     colorBorde: 'border-blue-200',
@@ -38,9 +40,17 @@ const mascotasFamilia = [
   {
     nombre: 'Nicky',
     imagenReal: nicky,
+    imagenesReales: [nicky, nicky, nicky, nicky],
     imagen3D: nicky3D,
     personalidad: ['Tierno', 'Independiente', 'Dormilón', 'Sociable con otros perros', 'Guardián'],
+    historia:
+      'Nicky llegó a la vida de mi novia en 2015, justo cuando ella más lo necesitaba. Venía de un pasado difícil, marcado por el rechazo y la falta de espacio donde incluso su propia madre lo desplazó. Al principio se mostraba distante, como si el concepto de "mimos" le resultara ajeno y la soledad fuera su único refugio seguro. Sin embargo, con paciencia y mucho cariño, aprendió a confiar y se transformó en un compañero amoroso, juguetón y siempre presente, de esos que con su silencio te hacen sentir que nunca estás solo.',
+    mensajeImpacto:
+      'Su historia nos enseña que incluso quienes parten del rechazo pueden florecer por completo cuando reciben una verdadera oportunidad.',
+    llamadoAccion:
+      'Tu apoyo puede ser el comienzo de una nueva vida para un animal que hoy se siente solo.',
     posicionImagen: '50% 30%',
+    posicionesImagenes: ['50% 30%', '50% 30%', '50% 30%', '50% 30%'],
     emoji: '',
     color: 'from-purple-50 to-purple-100',
     colorBorde: 'border-purple-200',
@@ -48,9 +58,17 @@ const mascotasFamilia = [
   {
     nombre: 'Rocco',
     imagenReal: rocco,
+    imagenesReales: [rocco, rocco, rocco, rocco],
     imagen3D: rocco3D,
     personalidad: ['Tierno', 'Cariñoso', 'Compañero', 'Juguetón', 'Energético'],
+    historia:
+      'Rocco llegó en 2014 con apenas dos meses y se volvió el hilo conductor de mi historia. Estuvo en cada etapa, desde los juegos de mi niñez hasta los desafíos de hoy, siendo esa presencia constante que nunca falla. Con su energía inagotable y su espíritu sociable, tiene el don de transformar cualquier día común en uno especial solo con su presencia. Más que una mascota, es compañía pura y lealtad sin condiciones; él vio quién fui y en quién me convertí, creciendo a la par mía en cada paso.',
+    mensajeImpacto:
+      'Su vida demuestra que hay compañeros que no entienden de tiempos ni de etapas, sino de un amor que es para siempre.',
+    llamadoAccion:
+      'Ayudanos a conectar más vidas para que ningún perro se quede sin su testigo de crecimiento.',
     posicionImagen: '50% 34%',
+    posicionesImagenes: ['50% 34%', '50% 34%', '50% 34%', '50% 34%'],
     emoji: '',
     color: 'from-yellow-50 to-yellow-100',
     colorBorde: 'border-yellow-200',
@@ -58,6 +76,7 @@ const mascotasFamilia = [
   {
     nombre: 'Lorenzo',
     imagenReal: lore,
+    imagenesReales: [lore, lore, lore, lore],
     imagen3D: lore3D,
     personalidad: ['Compañero', 'Mimoso', 'Amable', 'Educado', 'Fiel'],
     historia:
@@ -67,6 +86,7 @@ const mascotasFamilia = [
     llamadoAccion:
       'Muchos animales esperan esa oportunidad. Si nos unimos, podemos cambiar su realidad.',
     posicionImagen: '50% 24%',
+    posicionesImagenes: ['50% 24%', '50% 24%', '50% 24%', '50% 24%'],
     emoji: '',
     color: 'from-green-50 to-green-100',
     colorBorde: 'border-green-200',
@@ -78,15 +98,18 @@ const transicionVista = crearTransicionFrameMotion(0.32, 0);
 export default function Familia({ onCerrar, manejarClickFondo }) {
   const [vista, setVista] = useState('lista');
   const [mascotaSeleccionada, setMascotaSeleccionada] = useState(null);
+  const [indiceFotoActual, setIndiceFotoActual] = useState(0);
 
   const abrirDetalle = (mascota) => {
     setMascotaSeleccionada(mascota);
+    setIndiceFotoActual(0);
     setVista('detalle');
   };
 
   const volverALista = () => {
     setVista('lista');
     setMascotaSeleccionada(null);
+    setIndiceFotoActual(0);
   };
 
   return (
@@ -230,15 +253,40 @@ export default function Familia({ onCerrar, manejarClickFondo }) {
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 flex-1 min-h-0">
                       {/* Foto real: ocupa todo el alto disponible del detalle */}
                       <div
-                        className={`rounded-2xl border-2 ${mascotaSeleccionada.colorBorde} bg-gradient-to-b from-gray-50 to-gray-100/90 overflow-hidden shadow-inner h-[40vh] sm:h-[56vh] lg:h-full min-h-[220px] lg:min-h-0 lg:col-span-7`}
+                        className={`relative rounded-2xl border-2 ${mascotaSeleccionada.colorBorde} bg-gradient-to-b from-gray-50 to-gray-100/90 overflow-hidden shadow-inner h-[40vh] sm:h-[56vh] lg:h-full min-h-[220px] lg:min-h-0 lg:col-span-7`}
                       >
                         <img
-                          src={mascotaSeleccionada.imagenReal}
+                          src={
+                            mascotaSeleccionada.imagenesReales?.[indiceFotoActual] || mascotaSeleccionada.imagenReal
+                          }
                           alt={`${mascotaSeleccionada.nombre} — foto`}
                           className="w-full h-full object-cover object-center"
-                          style={{ objectPosition: mascotaSeleccionada.posicionImagen || '50% 50%' }}
+                          style={{
+                            objectPosition:
+                              mascotaSeleccionada.posicionesImagenes?.[indiceFotoActual] ||
+                              mascotaSeleccionada.posicionImagen ||
+                              '50% 50%',
+                          }}
                           loading="lazy"
                         />
+                        {Array.isArray(mascotaSeleccionada.imagenesReales) &&
+                          mascotaSeleccionada.imagenesReales.length > 1 && (
+                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-center space-x-2 rounded-full px-3 py-2 bg-black/35 backdrop-blur-sm">
+                              {mascotaSeleccionada.imagenesReales.map((_, i) => (
+                                <button
+                                  type="button"
+                                  key={`${mascotaSeleccionada.nombre}-foto-overlay-${i}`}
+                                  onClick={() => setIndiceFotoActual(i)}
+                                  className={`h-2.5 w-2.5 rounded-full transition duration-200 ${
+                                    i === indiceFotoActual
+                                      ? 'scale-125 bg-white'
+                                      : 'bg-white/50 hover:bg-white/80'
+                                  }`}
+                                  aria-label={`Ver foto ${i + 1} de ${mascotaSeleccionada.nombre}`}
+                                />
+                              ))}
+                            </div>
+                          )}
                       </div>
 
                       <div className="lg:col-span-5 flex flex-col">

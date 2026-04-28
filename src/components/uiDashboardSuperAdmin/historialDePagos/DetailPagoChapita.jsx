@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { actualizarEstadoChapita } from '../../../data/firebase/firebase';
+import { deleteDataCollection } from '../../../data/firebase';
 import ModalAlert from '../../ui/svg/uiPetProfile/uiMetodoDePago/ModalAlert';
 import { descargarQRCode, mostrarPreviewQR } from '../../genertaQR/QrComponent';
 import { useNotificacionApp } from '../../../contexts/NotificacionAppContext';
@@ -27,6 +28,18 @@ export default function DetailPagoChapita({ obtenerColorEstado, pagosChapitas, t
         } catch (error) {
             console.error('Error al actualizar estado:', error);
             mostrarError('Error al actualizar el estado de la chapita');
+        }
+    };
+
+    const manejarEliminarChapita = async (chapitaId) => {
+        try {
+            await deleteDataCollection('pagoChapita', chapitaId);
+            if (onEstadoActualizado) {
+                onEstadoActualizado();
+            }
+        } catch (error) {
+            console.error('Error al eliminar chapita:', error);
+            mostrarError('Error al eliminar la chapita');
         }
     };
 
@@ -58,18 +71,29 @@ export default function DetailPagoChapita({ obtenerColorEstado, pagosChapitas, t
             estadoActual,
             nuevoEstado,
             mascotaNombre,
-            ...mensajes[nuevoEstado]
+            ...mensajes[nuevoEstado],
+            onConfirmar: async () => {
+                await manejarCambioEstado(chapitaId, nuevoEstado);
+                cerrarModal();
+            }
         });
         setMostrarModal(true);
     };
 
-    // Función para confirmar el cambio de estado
-    const confirmarCambioEstado = async () => {
-        if (datosConfirmacion) {
-            await manejarCambioEstado(datosConfirmacion.chapitaId, datosConfirmacion.nuevoEstado);
-            setMostrarModal(false);
-            setDatosConfirmacion(null);
-        }
+    const mostrarConfirmacionEliminar = (pago) => {
+        setDatosConfirmacion({
+            titulo: '🗑️ Confirmar eliminación',
+            estadoActual: pago.estado || 'pendiente',
+            nuevoEstado: 'eliminada',
+            mensaje: `¿Seguro que querés eliminar la chapita de ${pago.mascotaNombre || 'esta mascota'}?`,
+            detalles: 'Esta acción no se puede deshacer. Se borrará el registro del pedido de chapita.',
+            textoConfirmar: 'Sí, eliminar chapita',
+            onConfirmar: async () => {
+                await manejarEliminarChapita(pago.id);
+                cerrarModal();
+            }
+        });
+        setMostrarModal(true);
     };
 
     // Función para cerrar el modal
@@ -311,6 +335,12 @@ export default function DetailPagoChapita({ obtenerColorEstado, pagosChapitas, t
                           ✅ Proceso Completado
                         </span>
                       )}
+                      <button
+                        onClick={() => mostrarConfirmacionEliminar(pago)}
+                        className="px-3 py-1 text-xs font-medium rounded-full transition-colors bg-red-100 text-red-700 hover:bg-red-200"
+                      >
+                        🗑️ Eliminar
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -324,10 +354,7 @@ export default function DetailPagoChapita({ obtenerColorEstado, pagosChapitas, t
       {mostrarModal && datosConfirmacion && (
         <ModalAlert
           typeAlert="confirmacion"
-          mensaje={{
-            ...datosConfirmacion,
-            onConfirmar: confirmarCambioEstado
-          }}
+          mensaje={datosConfirmacion}
           onCerrar={cerrarModal}
         />
       )}

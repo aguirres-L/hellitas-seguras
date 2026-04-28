@@ -8,7 +8,7 @@ import seis from '../../../assets/12.png';
 import siete from '../../../assets/13.png';
 import ocho from '../../../assets/14.png';
 import videoChapita from '../../../assets/chapita-v.mp4';
-import pet from '../../../assets/pets/slider.png';
+import pet from '../../../assets/pets/hs2.jpeg';
 import pet1 from '../../../assets/pets/slider1.png';
 import pet2 from '../../../assets/pets/slider2.png';
 import pet3 from '../../../assets/pets/slider3.png';
@@ -52,20 +52,6 @@ export const datosSlides = [
     imagenAlt: 'Placa grabada con láser personalizada',
   },
   {
-    id: 2,
-    titulo: 'Reencuentros más rápidos, menos preocupaciones',
-    descripcion:
-      'Cada placa incluye un código QR indestructible que conecta al perfil digital de tu mascota.',
-    caracteristicas: [
-      'Datos vitales en crisis: Contacto del dueño disponible al instante cuando más se necesita.',
-      'Actualización instantánea: Modifica la información en segundos sin cambiar la placa física.',
-      'Tecnología avanzada que protege lo que más amas en todo momento.',
-    ],
-    imagenUrl: urlVideoQr,
-    isVideo: true,
-    imagenAlt: 'Persona escaneando QR de la placa',
-  },
-  {
     id: 3,
     titulo: 'Cuidado completo en una plataforma',
     descripcion: 'Acceso a nuestro sistema de citas con profesionales registrados en nuestra plataforma.',
@@ -78,6 +64,21 @@ export const datosSlides = [
     isVideo: false,
     imagenAlt: 'App mostrando agenda de citas veterinarias',
   },
+  {
+    id:2,
+    titulo: 'Reencuentros más rápidos, menos preocupaciones',
+    descripcion:
+      'Cada placa incluye un código QR indestructible que conecta al perfil digital de tu mascota.',
+    caracteristicas: [
+      'Datos vitales en crisis: Contacto del dueño disponible al instante cuando más se necesita.',
+      'Actualización instantánea: Modifica la información en segundos sin cambiar la placa física.',
+      'Tecnología avanzada que protege lo que más amas en todo momento.',
+    ],
+    imagenUrl: urlVideoQr,
+    isVideo: true,
+    imagenAlt: 'Persona escaneando QR de la placa',
+  },
+
   {
     id: 4,
     titulo: 'Cuando ganan, todos ganamos',
