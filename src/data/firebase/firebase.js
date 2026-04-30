@@ -1409,6 +1409,110 @@ export const suscribirPagoChapitaPorUsuarioId = (uid, onData, onError) => {
   );
 };
 
+const eliminarDocumentosPorCampo = async (nombreColeccion, campo, valor) => {
+  const q = query(collection(db, nombreColeccion), where(campo, '==', valor));
+  const querySnapshot = await getDocs(q);
+  await Promise.all(querySnapshot.docs.map((item) => deleteDoc(item.ref)));
+};
+
+/**
+ * Elimina un usuario de Firebase Auth a través de un endpoint admin seguro.
+ * Requiere configurar VITE_SUPERADMIN_DELETE_AUTH_ENDPOINT.
+ *
+ * Endpoint esperado:
+ * - Método: POST
+ * - Body: { uid: string }
+ * - Header: Authorization: Bearer <idToken del super admin>
+ */
+const eliminarUsuarioAuthPorUid = async (uid) => {
+  const endpoint = import.meta.env.VITE_SUPERADMIN_DELETE_AUTH_ENDPOINT;
+  if (!endpoint) {
+    throw new Error('Falta configurar VITE_SUPERADMIN_DELETE_AUTH_ENDPOINT para eliminar en Auth.');
+  }
+
+  const usuarioActual = auth.currentUser;
+  if (!usuarioActual) {
+    throw new Error('No hay sesión activa para autorizar la eliminación en Auth.');
+  }
+
+  const idToken = await usuarioActual.getIdToken();
+  const respuesta = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ uid }),
+  });
+
+  if (!respuesta.ok) {
+    const texto = await respuesta.text().catch(() => '');
+    throw new Error(texto || 'No se pudo eliminar el usuario en Firebase Auth.');
+  }
+};
+
+/**
+ * Elimina un usuario común y sus datos relacionados en colecciones principales.
+ * Por defecto solo Firestore (plan Spark / sin Functions). La cuenta de Auth no se toca;
+ * podés borrarla manualmente en Console → Authentication.
+ * @param {string} usuarioId
+ * @param {{ eliminarAuth?: boolean }} [opciones] - Si `true`, llama al endpoint Admin (requiere Blaze + `VITE_SUPERADMIN_DELETE_AUTH_ENDPOINT`).
+ * @returns {Promise<void>}
+ */
+export const eliminarUsuarioYDatos = async (usuarioId, opciones = {}) => {
+  try {
+    if (!usuarioId) throw new Error('usuarioId requerido');
+    const { eliminarAuth = false } = opciones;
+
+    if (eliminarAuth) {
+      await eliminarUsuarioAuthPorUid(usuarioId);
+    }
+
+    await Promise.all([
+      eliminarDocumentosPorCampo('pagoChapita', 'usuarioId', usuarioId),
+      eliminarDocumentosPorCampo('pagoSuscripciones', 'usuarioId', usuarioId),
+      eliminarDocumentosPorCampo('sugerenciasMejoras', 'usuarioId', usuarioId),
+    ]);
+
+    await deleteDataCollection('usuarios', usuarioId);
+  } catch (error) {
+    console.error('Error al eliminar usuario y datos relacionados:', error);
+    throw error;
+  }
+};
+
+/**
+ * Elimina un profesional y sus datos relacionados.
+ * Por defecto solo Firestore. La cuenta de Auth no se toca (borrado manual si aplica).
+ * @param {string} profesionalId
+ * @param {{ eliminarAuth?: boolean }} [opciones]
+ * @returns {Promise<void>}
+ */
+export const eliminarProfesionalYDatos = async (profesionalId, opciones = {}) => {
+  try {
+    if (!profesionalId) throw new Error('profesionalId requerido');
+    const { eliminarAuth = false } = opciones;
+
+    if (eliminarAuth) {
+      await eliminarUsuarioAuthPorUid(profesionalId);
+    }
+
+    await Promise.all([
+      eliminarDocumentosPorCampo('pagoChapita', 'usuarioId', profesionalId),
+      eliminarDocumentosPorCampo('pagoSuscripciones', 'usuarioId', profesionalId),
+      eliminarDocumentosPorCampo('sugerenciasMejoras', 'usuarioId', profesionalId),
+    ]);
+
+    await Promise.all([
+      deleteDataCollection('profesionales', profesionalId),
+      deleteDataCollection('usuarios', profesionalId).catch(() => {}),
+    ]);
+  } catch (error) {
+    console.error('Error al eliminar profesional y datos relacionados:', error);
+    throw error;
+  }
+};
+
 // ==================== FUNCIONES DE AUTENTICACIÓN ====================
 
 /**

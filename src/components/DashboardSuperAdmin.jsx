@@ -7,7 +7,9 @@ import { Navbar } from './Navbar';
 import { 
   getAllDataCollection, 
   obtenerProfesionalesPorTipo,
-  obtenerUsuarioPorUid 
+  obtenerUsuarioPorUid,
+  eliminarUsuarioYDatos,
+  eliminarProfesionalYDatos
 } from '../data/firebase/firebase';
 import { useTheme } from '../contexts/ThemeContext';
 import ModalDetailUserComun from './uiDashboardSuperAdmin/ModalDetailUserComun';
@@ -21,6 +23,7 @@ import SugerenciasMejorasPanel from './uiDashboardSuperAdmin/SugerenciasMejorasP
 import UiPanelLiquidacionesSuperAdmin from './uiDashboardSuperAdmin/UiPanelLiquidacionesSuperAdmin';
 import { getAllChapitas } from '../data/hook/getAllChapitas';
 import { useNotificacionApp } from '../contexts/NotificacionAppContext';
+import ModalAlert from './ui/svg/uiPetProfile/uiMetodoDePago/ModalAlert';
 
 // Este componente no recibe props
 const DashboardSuperAdmin = () => {
@@ -45,7 +48,11 @@ const DashboardSuperAdmin = () => {
   // Estados para administradores
   const [administradores, setAdministradores] = useState([]);
   const [isCargandoAdministradores, setIsCargandoAdministradores] = useState(false);
-  
+
+  const idsAdministradoresSeleccionables = useMemo(
+    () => administradores.map((a) => a.id).filter((id) => id !== usuario?.uid),
+    [administradores, usuario?.uid]
+  );
 
   // Estados para chapitas
   const [chapitas, setChapitas] = useState([ ]);
@@ -74,7 +81,6 @@ const DashboardSuperAdmin = () => {
 
     
   }, [usuario?.uid]);
-
 
   // Estados para estadísticas
   const [estadisticas, setEstadisticas] = useState({
@@ -124,6 +130,12 @@ const DashboardSuperAdmin = () => {
   // Estados para el modal de detalles del usuario
   const [isModalAbierto, setIsModalAbierto] = useState(false);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
+  const [isModalConfirmacionAbierto, setIsModalConfirmacionAbierto] = useState(false);
+  const [datosConfirmacionEliminar, setDatosConfirmacionEliminar] = useState(null);
+  const [idsUsuariosSeleccionados, setIdsUsuariosSeleccionados] = useState([]);
+  const [idsProfesionalesSeleccionados, setIdsProfesionalesSeleccionados] = useState([]);
+  const [idsAdministradoresSeleccionados, setIdsAdministradoresSeleccionados] = useState([]);
+  const [isEliminandoMultiples, setIsEliminandoMultiples] = useState(false);
 
   // Estados para el sistema de mensualidades
   const [alertasMensualidades, setAlertasMensualidades] = useState({
@@ -292,6 +304,32 @@ const DashboardSuperAdmin = () => {
   useEffect(() => {
     cargarDatosUsuario();
   }, [usuario?.uid]);
+
+  useEffect(() => {
+    if (pestañaActiva !== 'usuarios') setIdsUsuariosSeleccionados([]);
+    if (pestañaActiva !== 'profesionales') setIdsProfesionalesSeleccionados([]);
+    if (pestañaActiva !== 'administradores') setIdsAdministradoresSeleccionados([]);
+  }, [pestañaActiva]);
+
+  useEffect(() => {
+    setIdsUsuariosSeleccionados((prev) =>
+      prev.filter((id) => usuariosComunes.some((u) => u.id === id))
+    );
+  }, [usuariosComunes]);
+
+  useEffect(() => {
+    setIdsProfesionalesSeleccionados((prev) =>
+      prev.filter((id) => profesionales.some((p) => p.id === id))
+    );
+  }, [profesionales]);
+
+  useEffect(() => {
+    setIdsAdministradoresSeleccionados((prev) =>
+      prev.filter(
+        (id) => id !== usuario?.uid && administradores.some((a) => a.id === id)
+      )
+    );
+  }, [administradores, usuario?.uid]);
 
   // Nuevas transferencias por chapita: tiempo real (Firestore) + notificación in-app
   useEffect(() => {
@@ -490,6 +528,183 @@ const DashboardSuperAdmin = () => {
     } catch (error) {
       console.error('Error al editar usuario:', error);
       mostrarError('Error al editar usuario');
+    }
+  };
+
+  const cerrarModalConfirmacionEliminar = () => {
+    setIsModalConfirmacionAbierto(false);
+    setDatosConfirmacionEliminar(null);
+  };
+
+  const solicitarEliminarEntidad = (entidad, tipo) => {
+    const etiquetaFallback =
+      tipo === 'usuario' ? 'usuario' : tipo === 'administrador' ? 'administrador' : 'profesional';
+    setDatosConfirmacionEliminar({
+      id: entidad.id,
+      tipo,
+      nombre: entidad.displayName || entidad.nombre || entidad.email || etiquetaFallback,
+    });
+    setIsModalConfirmacionAbierto(true);
+  };
+
+  const alternarUsuarioSeleccionado = (idUsuario) => {
+    setIdsUsuariosSeleccionados((prev) =>
+      prev.includes(idUsuario) ? prev.filter((x) => x !== idUsuario) : [...prev, idUsuario]
+    );
+  };
+
+  const alternarSeleccionarTodosUsuarios = () => {
+    if (usuariosComunes.length === 0) return;
+    const todosIds = usuariosComunes.map((u) => u.id);
+    const estaTodoMarcado =
+      todosIds.length > 0 && todosIds.every((id) => idsUsuariosSeleccionados.includes(id));
+    setIdsUsuariosSeleccionados(estaTodoMarcado ? [] : todosIds);
+  };
+
+  const solicitarEliminarUsuariosSeleccionados = () => {
+    if (idsUsuariosSeleccionados.length === 0) return;
+    setDatosConfirmacionEliminar({
+      tipo: 'usuarios_multiples',
+      ids: [...idsUsuariosSeleccionados],
+      count: idsUsuariosSeleccionados.length,
+    });
+    setIsModalConfirmacionAbierto(true);
+  };
+
+  const alternarProfesionalSeleccionado = (idProfesional) => {
+    setIdsProfesionalesSeleccionados((prev) =>
+      prev.includes(idProfesional) ? prev.filter((x) => x !== idProfesional) : [...prev, idProfesional]
+    );
+  };
+
+  const alternarSeleccionarTodosProfesionales = () => {
+    if (profesionales.length === 0) return;
+    const todosIds = profesionales.map((p) => p.id);
+    const estaTodoMarcado =
+      todosIds.length > 0 && todosIds.every((id) => idsProfesionalesSeleccionados.includes(id));
+    setIdsProfesionalesSeleccionados(estaTodoMarcado ? [] : todosIds);
+  };
+
+  const solicitarEliminarProfesionalesSeleccionados = () => {
+    if (idsProfesionalesSeleccionados.length === 0) return;
+    setDatosConfirmacionEliminar({
+      tipo: 'profesionales_multiples',
+      ids: [...idsProfesionalesSeleccionados],
+      count: idsProfesionalesSeleccionados.length,
+    });
+    setIsModalConfirmacionAbierto(true);
+  };
+
+  const alternarAdministradorSeleccionado = (idAdmin) => {
+    setIdsAdministradoresSeleccionados((prev) =>
+      prev.includes(idAdmin) ? prev.filter((x) => x !== idAdmin) : [...prev, idAdmin]
+    );
+  };
+
+  const alternarSeleccionarTodosAdministradores = () => {
+    if (idsAdministradoresSeleccionables.length === 0) return;
+    const estaTodoMarcado =
+      idsAdministradoresSeleccionables.length > 0 &&
+      idsAdministradoresSeleccionables.every((id) => idsAdministradoresSeleccionados.includes(id));
+    setIdsAdministradoresSeleccionados(estaTodoMarcado ? [] : [...idsAdministradoresSeleccionables]);
+  };
+
+  const solicitarEliminarAdministradoresSeleccionados = () => {
+    const ids = idsAdministradoresSeleccionados.filter((id) => id !== usuario?.uid);
+    if (ids.length === 0) return;
+    setDatosConfirmacionEliminar({
+      tipo: 'administradores_multiples',
+      ids,
+      count: ids.length,
+    });
+    setIsModalConfirmacionAbierto(true);
+  };
+
+  const confirmarEliminarEntidad = async () => {
+    if (!datosConfirmacionEliminar) return;
+
+    try {
+      if (datosConfirmacionEliminar.tipo === 'usuarios_multiples') {
+        const ids = datosConfirmacionEliminar.ids || [];
+        if (ids.length === 0) return;
+
+        setIsEliminandoMultiples(true);
+        let eliminados = 0;
+        for (const id of ids) {
+          await eliminarUsuarioYDatos(id);
+          eliminados += 1;
+        }
+        setIdsUsuariosSeleccionados([]);
+        await cargarUsuariosComunes();
+        mostrarExito(
+          eliminados === 1
+            ? 'Usuario eliminado con su información relacionada.'
+            : `Se eliminaron ${eliminados} usuarios con su información relacionada.`,
+          'Eliminación completada'
+        );
+      } else if (datosConfirmacionEliminar.tipo === 'profesionales_multiples') {
+        const ids = datosConfirmacionEliminar.ids || [];
+        if (ids.length === 0) return;
+
+        setIsEliminandoMultiples(true);
+        let eliminados = 0;
+        for (const id of ids) {
+          await eliminarProfesionalYDatos(id);
+          eliminados += 1;
+        }
+        setIdsProfesionalesSeleccionados([]);
+        await cargarProfesionales();
+        mostrarExito(
+          eliminados === 1
+            ? 'Profesional eliminado con su información relacionada.'
+            : `Se eliminaron ${eliminados} profesionales con su información relacionada.`,
+          'Eliminación completada'
+        );
+      } else if (datosConfirmacionEliminar.tipo === 'administradores_multiples') {
+        const ids = datosConfirmacionEliminar.ids || [];
+        if (ids.length === 0) return;
+
+        setIsEliminandoMultiples(true);
+        let eliminados = 0;
+        for (const id of ids) {
+          await eliminarUsuarioYDatos(id);
+          eliminados += 1;
+        }
+        setIdsAdministradoresSeleccionados([]);
+        await cargarAdministradores();
+        mostrarExito(
+          eliminados === 1
+            ? 'Administrador eliminado con su información relacionada.'
+            : `Se eliminaron ${eliminados} administradores con su información relacionada.`,
+          'Eliminación completada'
+        );
+      } else if (datosConfirmacionEliminar.tipo === 'usuario') {
+        if (!datosConfirmacionEliminar.id) return;
+        await eliminarUsuarioYDatos(datosConfirmacionEliminar.id);
+        setIdsUsuariosSeleccionados((prev) => prev.filter((x) => x !== datosConfirmacionEliminar.id));
+        await cargarUsuariosComunes();
+        mostrarExito('Usuario eliminado con su información relacionada.', 'Eliminación completada');
+      } else if (datosConfirmacionEliminar.tipo === 'administrador') {
+        if (!datosConfirmacionEliminar.id) return;
+        await eliminarUsuarioYDatos(datosConfirmacionEliminar.id);
+        setIdsAdministradoresSeleccionados((prev) => prev.filter((x) => x !== datosConfirmacionEliminar.id));
+        await cargarAdministradores();
+        mostrarExito('Administrador eliminado con su información relacionada.', 'Eliminación completada');
+      } else if (datosConfirmacionEliminar.tipo === 'profesional') {
+        if (!datosConfirmacionEliminar.id) return;
+        await eliminarProfesionalYDatos(datosConfirmacionEliminar.id);
+        setIdsProfesionalesSeleccionados((prev) => prev.filter((x) => x !== datosConfirmacionEliminar.id));
+        await cargarProfesionales();
+        mostrarExito('Profesional eliminado con su información relacionada.', 'Eliminación completada');
+      }
+
+      await cargarEstadisticas();
+      cerrarModalConfirmacionEliminar();
+    } catch (error) {
+      console.error('Error al eliminar entidad:', error);
+      mostrarError(error?.message || 'No se pudo eliminar el registro.');
+    } finally {
+      setIsEliminandoMultiples(false);
     }
   };
 
@@ -882,13 +1097,47 @@ const DashboardSuperAdmin = () => {
                 </div>
               ) : (
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-200">
+                  <div className="flex flex-col gap-3 px-6 py-4 border-b border-gray-200 sm:flex-row sm:items-center sm:justify-between">
                     <h4 className="text-lg font-semibold text-gray-900">Lista de Usuarios Comunes</h4>
+                    <div className="flex flex-wrap items-center gap-3">
+                      {idsUsuariosSeleccionados.length > 0 && (
+                        <span className="text-sm text-gray-600">
+                          {idsUsuariosSeleccionados.length} seleccionado
+                          {idsUsuariosSeleccionados.length === 1 ? '' : 's'}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={solicitarEliminarUsuariosSeleccionados}
+                        disabled={idsUsuariosSeleccionados.length === 0 || isEliminandoMultiples}
+                        className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                          idsUsuariosSeleccionados.length === 0 || isEliminandoMultiples
+                            ? 'cursor-not-allowed bg-gray-200 text-gray-500'
+                            : 'bg-red-600 text-white hover:bg-red-700'
+                        }`}
+                      >
+                        Eliminar usuarios
+                      </button>
+                    </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
+                          <th scope="col" className="w-12 px-3 py-3 text-center">
+                            <input
+                              type="checkbox"
+                              checked={
+                                usuariosComunes.length > 0 &&
+                                usuariosComunes.every((u) => idsUsuariosSeleccionados.includes(u.id))
+                              }
+                              onChange={alternarSeleccionarTodosUsuarios}
+                              disabled={usuariosComunes.length === 0}
+                              className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                              title="Seleccionar todos"
+                              aria-label="Seleccionar todos los usuarios de la lista"
+                            />
+                          </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mensualidad</th>
@@ -900,53 +1149,62 @@ const DashboardSuperAdmin = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {usuariosComunes.map((usuario) => (
-                          <tr key={usuario.id} className="hover:bg-gray-50">
+                        {usuariosComunes.map((u) => (
+                          <tr key={u.id} className="hover:bg-gray-50">
+                            <td className="px-3 py-4 text-center">
+                              <input
+                                type="checkbox"
+                                checked={idsUsuariosSeleccionados.includes(u.id)}
+                                onChange={() => alternarUsuarioSeleccionado(u.id)}
+                                className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                                aria-label={`Seleccionar usuario ${u.displayName || u.email || u.id}`}
+                              />
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 h-10 w-10">
                                   <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
                                     <span className="text-sm font-medium text-blue-600">
-                                      {usuario.displayName ? usuario.displayName.charAt(0) : usuario.email.charAt(0)}
+                                      {u.displayName ? u.displayName.charAt(0) : u.email.charAt(0)}
                                     </span>
                                   </div>
                                 </div>
                                 <div className="ml-4">
                                   <div className="text-sm font-medium text-gray-900">
-                                    {usuario.displayName || usuario.nombre || 'Sin nombre'}
+                                    {u.displayName || u.nombre || 'Sin nombre'}
                                   </div>
-                                  <div className="text-sm text-gray-500">{usuario.email}</div>
+                                  <div className="text-sm text-gray-500">{u.email}</div>
                                 </div>
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                usuario.isMember ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                u.isMember ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                               }`}>
-                                {usuario.isMember ? 'Activo' : 'Inactivo'}
+                                {u.isMember ? 'Activo' : 'Inactivo'}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${usuario.colorEstadoMensualidad || 'bg-gray-100 text-gray-800'}`}>
-                                {usuario.mensajeEstadoMensualidad || (usuario.tipoMensualidad ? 'Mensualidad Activa' : 'Sin mensualidad')}
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${u.colorEstadoMensualidad || 'bg-gray-100 text-gray-800'}`}>
+                                {u.mensajeEstadoMensualidad || (u.tipoMensualidad ? 'Mensualidad Activa' : 'Sin mensualidad')}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {usuario.infoMascotas ? usuario.infoMascotas.length : 0}
+                              {u.infoMascotas ? u.infoMascotas.length : 0}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {usuario.citas ? usuario.citas.length : 0}
+                              {u.citas ? u.citas.length : 0}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {usuario.fechaCreacion ? new Date(usuario.fechaCreacion.seconds * 1000).toLocaleDateString('es-CL') : 'N/A'}
+                              {u.fechaCreacion ? new Date(u.fechaCreacion.seconds * 1000).toLocaleDateString('es-CL') : 'N/A'}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900 max-w-[200px]">
-                              {usuario.membresiaDeclaracionTransferenciaEn ? (
+                              {u.membresiaDeclaracionTransferenciaEn ? (
                                 <div className="space-y-1">
                                   <p className="text-xs text-gray-600">
-                                    {formatearFechaHoraDeclaracion(usuario.membresiaDeclaracionTransferenciaEn)}
+                                    {formatearFechaHoraDeclaracion(u.membresiaDeclaracionTransferenciaEn)}
                                   </p>
-                                  {usuario.membresiaTransferenciaPendienteVerificacion !== false ? (
+                                  {u.membresiaTransferenciaPendienteVerificacion !== false ? (
                                     <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-900 border border-amber-200">
                                       Pendiente verificación
                                     </span>
@@ -955,9 +1213,9 @@ const DashboardSuperAdmin = () => {
                                       <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-900 border border-green-200">
                                         Verificado
                                       </span>
-                                      {usuario.membresiaTransferenciaVerificadaEn && (
+                                      {u.membresiaTransferenciaVerificadaEn && (
                                         <p className="text-[10px] text-gray-500 leading-tight">
-                                          {formatearFechaHoraDeclaracion(usuario.membresiaTransferenciaVerificadaEn)}
+                                          {formatearFechaHoraDeclaracion(u.membresiaTransferenciaVerificadaEn)}
                                         </p>
                                       )}
                                     </div>
@@ -968,23 +1226,32 @@ const DashboardSuperAdmin = () => {
                               )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              <div className="flex space-x-2">
+                              <div className="flex flex-wrap gap-x-2 gap-y-1">
                                 <button 
-                                  onClick={() => handleVerDetalles(usuario)}
+                                  type="button"
+                                  onClick={() => handleVerDetalles(u)}
                                   className="text-red-600 hover:text-red-900"
                                 >
                                   Ver Detalles
                                 </button>
                               
-                                {(usuario.estadoMensualidad === 'vencida' || usuario.estadoMensualidad === 'proxima_vencer') && (
+                                {(u.estadoMensualidad === 'vencida' || u.estadoMensualidad === 'proxima_vencer') && (
                                   <button 
-                                    onClick={() => handleRenovarMensualidad(usuario.id)}
+                                    type="button"
+                                    onClick={() => handleRenovarMensualidad(u.id)}
                                     className="text-green-600 hover:text-green-900 font-medium"
                                     title="Renovar por 1 mes"
                                   >
                                     Renovar
                                   </button>
                                 )}
+                                <button
+                                  type="button"
+                                  onClick={() => solicitarEliminarEntidad(u, 'usuario')}
+                                  className="text-red-700 hover:text-red-900 font-medium"
+                                >
+                                  Eliminar
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -1022,13 +1289,47 @@ const DashboardSuperAdmin = () => {
                 </div>
               ) : (
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-200">
+                  <div className="flex flex-col gap-3 px-6 py-4 border-b border-gray-200 sm:flex-row sm:items-center sm:justify-between">
                     <h4 className="text-lg font-semibold text-gray-900">Lista de Profesionales</h4>
+                    <div className="flex flex-wrap items-center gap-3">
+                      {idsProfesionalesSeleccionados.length > 0 && (
+                        <span className="text-sm text-gray-600">
+                          {idsProfesionalesSeleccionados.length} seleccionado
+                          {idsProfesionalesSeleccionados.length === 1 ? '' : 's'}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={solicitarEliminarProfesionalesSeleccionados}
+                        disabled={idsProfesionalesSeleccionados.length === 0 || isEliminandoMultiples}
+                        className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                          idsProfesionalesSeleccionados.length === 0 || isEliminandoMultiples
+                            ? 'cursor-not-allowed bg-gray-200 text-gray-500'
+                            : 'bg-red-600 text-white hover:bg-red-700'
+                        }`}
+                      >
+                        Eliminar profesionales
+                      </button>
+                    </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
+                          <th scope="col" className="w-12 px-3 py-3 text-center">
+                            <input
+                              type="checkbox"
+                              checked={
+                                profesionales.length > 0 &&
+                                profesionales.every((p) => idsProfesionalesSeleccionados.includes(p.id))
+                              }
+                              onChange={alternarSeleccionarTodosProfesionales}
+                              disabled={profesionales.length === 0}
+                              className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                              title="Seleccionar todos"
+                              aria-label="Seleccionar todos los profesionales de la lista"
+                            />
+                          </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profesional</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
@@ -1039,46 +1340,62 @@ const DashboardSuperAdmin = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {profesionales.map((profesional) => (
-                          <tr key={profesional.id} className="hover:bg-gray-50">
+                        {profesionales.map((p) => (
+                          <tr key={p.id} className="hover:bg-gray-50">
+                            <td className="px-3 py-4 text-center">
+                              <input
+                                type="checkbox"
+                                checked={idsProfesionalesSeleccionados.includes(p.id)}
+                                onChange={() => alternarProfesionalSeleccionado(p.id)}
+                                className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                                aria-label={`Seleccionar profesional ${p.nombre || p.email || p.id}`}
+                              />
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 h-10 w-10">
                                   <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
                                     <span className="text-sm font-medium text-green-600">
-                                      {profesional.nombre ? profesional.nombre.charAt(0) : 'P'}
+                                      {p.nombre ? p.nombre.charAt(0) : 'P'}
                                     </span>
                                   </div>
                                 </div>
                                 <div className="ml-4">
-                                  <div className="text-sm font-medium text-gray-900">{profesional.nombre}</div>
-                                  <div className="text-sm text-gray-500">{profesional.email || 'Sin email'}</div>
+                                  <div className="text-sm font-medium text-gray-900">{p.nombre}</div>
+                                  <div className="text-sm text-gray-500">{p.email || 'Sin email'}</div>
                                 </div>
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${obtenerColorTipoProfesional(profesional.tipoProfesional)}`}>
-                                {profesional.tipoProfesional}
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${obtenerColorTipoProfesional(p.tipoProfesional)}`}>
+                                {p.tipoProfesional}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${obtenerColorEstado(profesional.estado)}`}>
-                                {profesional.estado || 'activo'}
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${obtenerColorEstado(p.estado)}`}>
+                                {p.estado || 'activo'}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {profesional.especialidad || 'N/A'}
+                              {p.especialidad || 'N/A'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {profesional.citas ? profesional.citas.length : 0}
+                              {p.citas ? p.citas.length : 0}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {profesional.fechaCreacion ? new Date(profesional.fechaCreacion.seconds * 1000).toLocaleDateString('es-CL') : 'N/A'}
+                              {p.fechaCreacion ? new Date(p.fechaCreacion.seconds * 1000).toLocaleDateString('es-CL') : 'N/A'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              <div className="flex space-x-2">
-                                <button className="text-red-600 hover:text-red-900">Ver Detalles</button>
-                                <button className="text-blue-600 hover:text-blue-900">Editar</button>
+                              <div className="flex flex-wrap gap-x-2 gap-y-1">
+                                <button type="button" className="text-red-600 hover:text-red-900">Ver Detalles</button>
+                                <button type="button" className="text-blue-600 hover:text-blue-900">Editar</button>
+                                <button
+                                  type="button"
+                                  onClick={() => solicitarEliminarEntidad(p, 'profesional')}
+                                  className="text-red-700 hover:text-red-900 font-medium"
+                                >
+                                  Eliminar
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -1113,13 +1430,49 @@ const DashboardSuperAdmin = () => {
                 </div>
               ) : (
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-200">
+                  <div className="flex flex-col gap-3 px-6 py-4 border-b border-gray-200 sm:flex-row sm:items-center sm:justify-between">
                     <h4 className="text-lg font-semibold text-gray-900">Lista de Administradores</h4>
+                    <div className="flex flex-wrap items-center gap-3">
+                      {idsAdministradoresSeleccionados.length > 0 && (
+                        <span className="text-sm text-gray-600">
+                          {idsAdministradoresSeleccionados.length} seleccionado
+                          {idsAdministradoresSeleccionados.length === 1 ? '' : 's'}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={solicitarEliminarAdministradoresSeleccionados}
+                        disabled={idsAdministradoresSeleccionados.length === 0 || isEliminandoMultiples}
+                        className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                          idsAdministradoresSeleccionados.length === 0 || isEliminandoMultiples
+                            ? 'cursor-not-allowed bg-gray-200 text-gray-500'
+                            : 'bg-red-600 text-white hover:bg-red-700'
+                        }`}
+                      >
+                        Eliminar administradores
+                      </button>
+                    </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
+                          <th scope="col" className="w-12 px-3 py-3 text-center">
+                            <input
+                              type="checkbox"
+                              checked={
+                                idsAdministradoresSeleccionables.length > 0 &&
+                                idsAdministradoresSeleccionables.every((id) =>
+                                  idsAdministradoresSeleccionados.includes(id)
+                                )
+                              }
+                              onChange={alternarSeleccionarTodosAdministradores}
+                              disabled={idsAdministradoresSeleccionables.length === 0}
+                              className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                              title="Seleccionar todos"
+                              aria-label="Seleccionar todos los administradores de la lista"
+                            />
+                          </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Administrador</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organización</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
@@ -1130,39 +1483,49 @@ const DashboardSuperAdmin = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {administradores.map((admin) => (
-                          <tr key={admin.id} className="hover:bg-gray-50">
+                        {administradores.map((adm) => (
+                          <tr key={adm.id} className="hover:bg-gray-50">
+                            <td className="px-3 py-4 text-center">
+                              <input
+                                type="checkbox"
+                                checked={idsAdministradoresSeleccionados.includes(adm.id)}
+                                onChange={() => alternarAdministradorSeleccionado(adm.id)}
+                                disabled={usuario?.uid === adm.id}
+                                className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 disabled:opacity-40"
+                                aria-label={`Seleccionar administrador ${adm.displayName || adm.email || adm.id}`}
+                              />
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 h-10 w-10">
                                   <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
                                     <span className="text-sm font-medium text-purple-600">
-                                      {admin.displayName ? admin.displayName.charAt(0) : admin.email.charAt(0)}
+                                      {adm.displayName ? adm.displayName.charAt(0) : adm.email.charAt(0)}
                                     </span>
                                   </div>
                                 </div>
                                 <div className="ml-4">
                                   <div className="text-sm font-medium text-gray-900">
-                                    {admin.displayName || admin.nombre || 'Sin nombre'}
+                                    {adm.displayName || adm.nombre || 'Sin nombre'}
                                   </div>
-                                  <div className="text-sm text-gray-500">{admin.email}</div>
+                                  <div className="text-sm text-gray-500">{adm.email}</div>
                                 </div>
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {admin.nombreOrganizacion || 'Sin organización'}
+                              {adm.nombreOrganizacion || 'Sin organización'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                admin.isMember ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                adm.isMember ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                               }`}>
-                                {admin.isMember ? 'Activo' : 'Inactivo'}
+                                {adm.isMember ? 'Activo' : 'Inactivo'}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              {admin.tipoMensualidad ? (
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${obtenerColorMensualidad(admin.tipoMensualidad)}`}>
-                                  {admin.tipoMensualidad}
+                              {adm.tipoMensualidad ? (
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${obtenerColorMensualidad(adm.tipoMensualidad)}`}>
+                                  {adm.tipoMensualidad}
                                 </span>
                               ) : (
                                 <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
@@ -1171,15 +1534,24 @@ const DashboardSuperAdmin = () => {
                               )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {admin.infoMascotas ? admin.infoMascotas.length : 0}
+                              {adm.infoMascotas ? adm.infoMascotas.length : 0}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {admin.fechaCreacion ? new Date(admin.fechaCreacion.seconds * 1000).toLocaleDateString('es-CL') : 'N/A'}
+                              {adm.fechaCreacion ? new Date(adm.fechaCreacion.seconds * 1000).toLocaleDateString('es-CL') : 'N/A'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              <div className="flex space-x-2">
-                                <button className="text-red-600 hover:text-red-900">Ver Detalles</button>
-                                <button className="text-blue-600 hover:text-blue-900">Editar</button>
+                              <div className="flex flex-wrap gap-x-2 gap-y-1">
+                                <button type="button" className="text-red-600 hover:text-red-900">Ver Detalles</button>
+                                <button type="button" className="text-blue-600 hover:text-blue-900">Editar</button>
+                                {usuario?.uid !== adm.id && (
+                                  <button
+                                    type="button"
+                                    onClick={() => solicitarEliminarEntidad(adm, 'administrador')}
+                                    className="text-red-700 hover:text-red-900 font-medium"
+                                  >
+                                    Eliminar
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -1201,6 +1573,55 @@ const DashboardSuperAdmin = () => {
           isAbierto={isModalAbierto}
           onCerrar={handleCerrarModal}
           onEditarUsuario={handleEditarUsuario}
+        />
+      )}
+
+      {isModalConfirmacionAbierto && datosConfirmacionEliminar && (
+        <ModalAlert
+          typeAlert="confirmacion"
+          mensaje={{
+            titulo: (() => {
+              const t = datosConfirmacionEliminar.tipo;
+              if (t === 'usuarios_multiples') return '🗑️ Confirmar eliminación múltiple';
+              if (t === 'profesionales_multiples') return '🗑️ Confirmar eliminación de profesionales';
+              if (t === 'administradores_multiples') return '🗑️ Confirmar eliminación de administradores';
+              if (t === 'usuario') return '🗑️ Confirmar eliminación de usuario';
+              if (t === 'administrador') return '🗑️ Confirmar eliminación de administrador';
+              return '🗑️ Confirmar eliminación de profesional';
+            })(),
+            estadoActual: 'registrado',
+            nuevoEstado: 'eliminado',
+            mensaje: (() => {
+              const t = datosConfirmacionEliminar.tipo;
+              const n = datosConfirmacionEliminar.count;
+              if (t === 'usuarios_multiples') {
+                return `¿Eliminar ${n} usuario${n === 1 ? '' : 's'} seleccionado${n === 1 ? '' : 's'}?`;
+              }
+              if (t === 'profesionales_multiples') {
+                return `¿Eliminar ${n} profesional${n === 1 ? '' : 'es'} seleccionado${n === 1 ? '' : 's'}?`;
+              }
+              if (t === 'administradores_multiples') {
+                return `¿Eliminar ${n} administrador${n === 1 ? '' : 'es'} seleccionado${n === 1 ? '' : 's'}?`;
+              }
+              return `¿Estás seguro de que deseas eliminar a ${datosConfirmacionEliminar.nombre}?`;
+            })(),
+            detalles:
+              'Se eliminará el perfil y registros relacionados en Firestore (pagos y sugerencias). La cuenta de Authentication la podés borrar manualmente en la consola si hace falta.',
+            textoConfirmar: (() => {
+              const t = datosConfirmacionEliminar.tipo;
+              const n = datosConfirmacionEliminar.count;
+              if (
+                t === 'usuarios_multiples' ||
+                t === 'profesionales_multiples' ||
+                t === 'administradores_multiples'
+              ) {
+                return `Sí, eliminar ${n}`;
+              }
+              return 'Sí, eliminar';
+            })(),
+            onConfirmar: confirmarEliminarEntidad,
+          }}
+          onCerrar={cerrarModalConfirmacionEliminar}
         />
       )}
     </div>
