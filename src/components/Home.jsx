@@ -4,6 +4,7 @@ import Hero from './Home/Hero';
 /* import Beneficios from './Home/Beneficios.jsx'; */
 import Cta from './Home/Cta.jsx';
 import Footer from './Home/Footer.jsx';
+import BotonInstalarApp from './BotonInstalarApp/BotonInstalarApp';
 
 const Home = () => {
   return (/* 
@@ -25,9 +26,11 @@ const Home = () => {
 
       {/* Beneficios para profesionales */}
 {/*       <Beneficios/> */}
-      
 
-     
+      {/* CTA: instalar como app (PWA). Solo se renderiza si el navegador lo soporta o es iOS. */}
+      <section className="flex justify-center px-4 py-8">
+        <BotonInstalarApp variante="cta" />
+      </section>
 
       {/* Call to action final */}
       <Cta/>

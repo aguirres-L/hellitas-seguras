@@ -103,18 +103,15 @@ export default function MetodoDePago({
       }
     }
 
-    // Mostrar modal de éxito
     setIsModalAlert(true);
     setTipoAlert('success');
     setMensaje({
       tipo: 'Éxito',
-      mensaje: `Pago procesado correctamente. ID: ${idDelPago}. Te contactaremos pronto.`
+      from: 'chapita',
+      mensaje: metodoSeleccionado === 'transferencia'
+        ? `Listo: registramos tu transferencia (ref. ${idDelPago}). Vamos a revisar el pago con el banco y te avisaremos en cada cambio de estado de tu chapita. Podés seguir el estado desde el ícono "Chapitas" del menú o desde el perfil de ${mascotaNombre}.`
+        : `Pago procesado correctamente. ID: ${idDelPago}. Te contactaremos pronto.`
     });
-
-    // Cerrar modal después de un tiempo
-    setTimeout(() => {
-      onCerrar();
-    }, 4000);
     } catch (error) {
       
       setIsModalAlert(true);
@@ -124,7 +121,7 @@ export default function MetodoDePago({
         mensaje: 'Error al procesar el pago. Intenta nuevamente.'
       });
     } finally {
-    //  setIsProcesando(false);
+      setIsProcesando(false);
     }
   };
 
@@ -141,7 +138,7 @@ export default function MetodoDePago({
           <div>
             <h4 className="font-semibold text-gray-800">Chapita Personalizada</h4>
             <p className="text-sm text-gray-600">Para: {mascotaNombre}</p>
-            <p className="text-lg font-bold text-orange-600">$7.000</p>
+            <p className="text-lg font-bold text-orange-600">$14.000</p>
           </div>
         </div>
       </div>
@@ -233,7 +230,16 @@ export default function MetodoDePago({
       </div>
 
       {isModalAlert && (
-        <ModalAlert typeAlert={tipoAlert} mensaje={mensaje} onCerrar={() => setIsModalAlert(false)} />
+        <ModalAlert
+          typeAlert={tipoAlert}
+          mensaje={mensaje}
+          onCerrar={() => {
+            setIsModalAlert(false);
+            if (tipoAlert === 'success') {
+              onCerrar?.();
+            }
+          }}
+        />
       )}
 
      

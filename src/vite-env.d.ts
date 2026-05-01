@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference types="vite-plugin-pwa/client" />
 
 // Declaración de tipos para archivos multimedia importados con Vite
 declare module '*.mp4' {
